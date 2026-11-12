@@ -140,6 +140,21 @@
   .tag.convite { color: var(--ink); background: transparent; border: 1px solid var(--line); }
   .tag.convite.muito { border-color: var(--ink); font-weight: 600; }
   .mgrid.alist { display: block; }
+  .btn.ghost-b { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  .kseg { display: flex; gap: 6px; flex-wrap: wrap; }
+  .kseg label { border: 1px solid var(--line); border-radius: 30px; padding: 8px 13px; font-size: 13px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+  .kseg input { accent-color: var(--ink); margin: 0; }
+  .fld .sel { padding: 10px 12px; }
+  .fld input.bad, .fld select.bad, .bad { border-color: var(--error) !important; }
+  .knum { font-weight: 400; color: var(--muted); font-size: 12px; margin-left: 4px; }
+  .kpassos { display: inline-flex; gap: 3px; vertical-align: middle; margin-right: 4px; }
+  .kpassos i { width: 14px; height: 4px; border-radius: 3px; background: var(--line); display: inline-block; }
+  .kpassos i.on { background: var(--ink); }
+  .atp.k-preenchido, .atp.k-aceito { border-color: var(--gold); color: var(--gold); }
+  .atp.k-pago { background: var(--dark); border-color: var(--dark); color: var(--on-dark); }
+  #m-contrato .krow { background: var(--col); }
+  #m-contrato .anm b { font-size: 13px; }
+
   .agrp { background: var(--col); border-radius: 20px; padding: 14px 14px 8px; margin-bottom: 12px; }
   .agrp h3 { margin: 2px 4px 10px; font-size: 13.5px; font-weight: 600; display: flex; gap: 8px; align-items: baseline; }
   .agrp h3 span { color: var(--muted); font-weight: 400; font-size: 12px; }
@@ -478,7 +493,7 @@
     </section>
 
     <section id="v-membros" hidden>
-      <div class="mhead"><h1 class="page">Membros</h1><button class="btn sm" id="m-novo">Novo membro</button></div>
+      <div class="mhead"><h1 class="page">Membros</h1><span style="display:flex;gap:8px"><button class="btn sm ghost-b" id="k-novo">Novo contrato</button><button class="btn sm" id="m-novo">Novo membro</button></span></div>
       <div class="input search"><input id="mbusca" type="search" placeholder="Buscar por nome, cidade, nicho, plataforma…" autocomplete="off"></div>
       <div class="bar" id="mfilter" style="margin-top:0"></div>
       <div class="mcount" id="mcount"></div>
@@ -554,6 +569,8 @@
     <div class="quick" id="m-quick" style="margin-top:8px"></div>
     <div class="sec">Status</div>
     <div class="moves" id="m-status"></div>
+    <div class="sec">Contrato</div>
+    <div id="m-contrato"></div>
     <div class="sec">Acompanhamento</div>
     <div id="m-acomp"></div>
     <div class="sec">Dados</div>
@@ -606,6 +623,63 @@
     <div class="moves" style="margin-top:8px"><button class="move" id="j-up">Subir</button><button class="move" id="j-down">Descer</button></div>
     <div class="saved" id="j-saved"></div>
     <button class="link del" id="j-del">Apagar etapa</button>
+  </div>
+</aside>
+
+<aside class="sheet" id="ksheet" aria-hidden="true">
+  <div class="head">
+    <div><h3>Novo contrato</h3><div class="since" id="k-para"></div></div>
+    <button class="x close" aria-label="Fechar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="body">
+    <form id="kform" novalidate autocomplete="off">
+      <div class="sec">Quem preenche os dados</div>
+      <div class="kseg"><label><input type="radio" name="modo" value="membro" checked> O membro preenche</label><label><input type="radio" name="modo" value="admin"> Eu preencho</label></div>
+      <div id="k-membro">
+        <div class="fields" style="margin-top:12px"><label class="fld"><span>Nome do membro</span><input name="mnome" maxlength="120"></label><label class="fld"><span>WhatsApp</span><input name="mtel" inputmode="tel" maxlength="40"></label></div>
+        <div class="venc">Ele recebe um link, preenche os próprios dados, escolhe a forma de pagamento e já vê o contrato. A central avisa você no e-mail contato@ quando ele terminar.</div>
+      </div>
+      <div class="sec">Valores deste contrato</div>
+      <div class="fields"><label class="fld"><span>Valor anual (R$)</span><input name="anual" type="number" value="30000" min="1"></label><label class="fld"><span>Desconto à vista (%)</span><input name="desconto" type="number" value="15" min="0" max="99"></label><label class="fld"><span>Renovação anual (R$)</span><input name="renovacao" type="number" value="15000" min="0"></label></div>
+      <div class="venc">Já vêm com os valores atuais. Só mude se este contrato tiver uma condição diferente.</div>
+      <div id="k-dados" hidden>
+        <div class="sec">Dados pessoais</div>
+        <div class="fields">
+          <label class="fld" style="grid-column:1/-1"><span>Nome completo</span><input name="nome" maxlength="120"></label>
+          <label class="fld"><span>CPF</span><input name="cpf" inputmode="numeric" maxlength="14"></label>
+          <label class="fld"><span>Nascimento</span><input name="nasc" type="date"></label>
+          <label class="fld"><span>Estado civil</span><select name="civil" class="sel"><option value="">Selecione</option><option>solteiro(a)</option><option>casado(a)</option><option>em união estável</option><option>divorciado(a)</option><option>viúvo(a)</option></select></label>
+          <label class="fld"><span>Nacionalidade</span><input name="nac" value="brasileiro(a)"></label>
+          <label class="fld" style="grid-column:1/-1"><span>Profissão</span><input name="prof"></label>
+        </div>
+        <div class="sec">Endereço</div>
+        <div class="fields">
+          <label class="fld"><span>CEP</span><input name="cep" inputmode="numeric" maxlength="9"></label>
+          <label class="fld"><span>Número</span><input name="numero"></label>
+          <label class="fld" style="grid-column:1/-1"><span>Rua</span><input name="rua"></label>
+          <label class="fld"><span>Complemento</span><input name="compl"></label>
+          <label class="fld"><span>Bairro</span><input name="bairro"></label>
+          <label class="fld"><span>Cidade</span><input name="cidade"></label>
+          <label class="fld"><span>UF</span><input name="uf" maxlength="2"></label>
+        </div>
+        <div class="sec">Contato</div>
+        <div class="fields"><label class="fld"><span>E-mail</span><input name="email" type="email"></label><label class="fld"><span>Celular</span><input name="tel" inputmode="tel"></label></div>
+        <div class="sec">Quem paga</div>
+        <div class="kseg"><label><input type="radio" name="pagador" value="cpf" checked> No CPF</label><label><input type="radio" name="pagador" value="cnpj"> Empresa (CNPJ)</label><label><input type="radio" name="pagador" value="patrocinio"> Patrocinador</label></div>
+        <div class="fields" id="k-pj" hidden style="margin-top:10px">
+          <label class="fld"><span>CNPJ</span><input name="cnpj" inputmode="numeric"></label><label class="fld"><span>E-mail da nota fiscal</span><input name="emailnf" type="email"></label>
+          <label class="fld" style="grid-column:1/-1"><span>Razão social</span><input name="rs"></label>
+          <label class="fld" style="grid-column:1/-1"><span>Endereço da empresa</span><input name="endpj"></label>
+          <label class="fld" style="grid-column:1/-1"><span>Quem assina pela empresa (nome e CPF)</span><input name="rep"></label>
+        </div>
+        <div class="sec">Forma de pagamento</div>
+        <div class="kseg"><label><input type="radio" name="forma" value="mensal" checked> 12x por mês</label><label><input type="radio" name="forma" value="vista"> À vista</label></div>
+        <div class="kseg" id="k-dia" style="margin-top:8px"><span class="venc" style="margin:0 6px 0 0">Dia</span><label><input type="radio" name="dia" value="5"> 5</label><label><input type="radio" name="dia" value="10" checked> 10</label><label><input type="radio" name="dia" value="15"> 15</label><label><input type="radio" name="dia" value="20"> 20</label><label><input type="radio" name="dia" value="25"> 25</label></div>
+      </div>
+      <div class="msg" id="k-erro" style="margin-top:14px"></div>
+      <button class="btn" id="k-gerar" style="width:100%;margin-top:8px">Gerar link do formulário</button>
+    </form>
+    <div id="k-res" style="margin-top:14px"></div>
   </div>
 </aside>
 
@@ -669,7 +743,7 @@
   const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   const DEMO = LOCAL && new URLSearchParams(location.search).has('demo');
 
-  let session = null, apls = [], ideias = [], membros = [], conexoes = [], etapas = [], contatos = [], vagas = null, openId = null, ideaId = null, filtro = '';
+  let session = null, apls = [], ideias = [], membros = [], conexoes = [], etapas = [], contatos = [], contratos = [], vagas = null, openId = null, ideaId = null, filtro = '';
   if (!DEMO) { try { session = JSON.parse(localStorage.getItem(STORE)); } catch {} }
   const save = s => { session = s; try { s ? localStorage.setItem(STORE, JSON.stringify(s)) : localStorage.removeItem(STORE); } catch {} };
 
@@ -724,6 +798,9 @@
     patchEtapa: (id, b) => api(`jornada_etapas?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
     delEtapa: id => api(`jornada_etapas?id=eq.${id}`, { method: 'DELETE' }),
     contatos: () => api('membro_contatos?select=*&order=data.desc'),
+    contratos: () => api('contratos?select=id,criado_em,atualizado_em,token,numero,modo,status,membro_id,nome,telefone,anual,desconto,renovacao,dados,preenchido_em,aceito_em,pdf_path,pago_em&order=criado_em.desc'),
+    criarContrato: p => api('rpc/criar_contrato', { method: 'POST', body: JSON.stringify({ p }) }),
+    patchContrato: (id, b) => api(`contratos?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
     addContato: b => api('membro_contatos', { method: 'POST', body: JSON.stringify(b) }).then(r => r[0]),
     delContato: id => api(`membro_contatos?id=eq.${id}`, { method: 'DELETE' }),
   };
@@ -775,8 +852,8 @@
   }
 
   async function loadAll() {
-    const [a, i, m, c, j, ct] = await Promise.all([db.apls(), db.ideias(), db.membros(), db.conexoes(), db.etapas(), db.contatos()]);
-    apls = a; ideias = i; membros = m; conexoes = c; etapas = j; contatos = ct;
+    const [a, i, m, c, j, ct, k] = await Promise.all([db.apls(), db.ideias(), db.membros(), db.conexoes(), db.etapas(), db.contatos(), db.contratos().catch(() => [])]);
+    apls = a; ideias = i; membros = m; conexoes = c; etapas = j; contatos = ct; contratos = k;
     loadVagas();
   }
 
@@ -1163,7 +1240,7 @@
   const STATUS = { ativo: 'Ativo', convidado: 'Convidado', fundador: 'Fundador', removido: 'Ex-membro' };
   const RENOV = { pendente: 'Pendente', pago: 'Pago', remover: 'Remover' };
   const ANEL = { 'falta medida': 'Falta medida', 'em produção': 'Em produção', 'entregue': 'Entregue' };
-  const MFILTROS = [['atuais', 'Atuais'], ['chamar', 'Chamar'], ['aneis', 'Anéis pendentes'], ['vencer', 'Vencem em 30 dias'], ['vencidos', 'Vencidos'], ['convidado', 'Convidados'], ['ex', 'Ex-membros'], ['todos', 'Todos']];
+  const MFILTROS = [['atuais', 'Atuais'], ['chamar', 'Chamar'], ['aneis', 'Anéis pendentes'], ['contratos', 'Contratos'], ['vencer', 'Vencem em 30 dias'], ['vencidos', 'Vencidos'], ['convidado', 'Convidados'], ['ex', 'Ex-membros'], ['todos', 'Todos']];
   let mfiltro = 'atuais', mbusca = '', memId = null;
   const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   const byId = id => membros.find(m => m.id === id);
@@ -1182,7 +1259,8 @@
   const rs = v => 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
   const soma = (arr, k) => arr.reduce((s, m) => s + (Number(m[k]) || 0), 0);
   // Plano de entrada a partir de 11/2026: R$ 30 mil por ano em contrato, cobrado em 12 de R$ 2.500.
-  const PLANO_NOVO = { plano: 'R$ 30.000 Anual · 12x R$ 2.500', mensalidade: 2500, valor_renovacao: 30000 };
+  // Contrato novo: R$ 30 mil no 1º ano (12x R$ 2.500); a renovação é R$ 15 mil por ano.
+  const PLANO_NOVO = { plano: 'R$ 30.000 Anual · 12x R$ 2.500', mensalidade: 2500, valor_renovacao: 15000 };
   const waLink = t => { let d = String(t || '').replace(/\D/g, ''); if (!d) return ''; if (d.length <= 11) d = '55' + d; return 'https://wa.me/' + d; };
   // Conexões de um membro: as que estão na ficha dele e as que outros fizeram citando ele.
   function conexoesDe(id) {
@@ -1218,11 +1296,13 @@
   function contaFiltro(k) {
     if (k === 'chamar') return ['atrasado', 'semana', 'mes'].reduce((s, f) => s + contaFase(f), 0);
     if (k === 'aneis') return membros.filter(anelPendente).length;
+    if (k === 'contratos') return contratos.filter(x => ['enviado', 'preenchido', 'aceito'].includes(x.status)).length;
     const s = mfiltro, b = mbusca; mfiltro = k; mbusca = ''; const n = filtrarMembros().length; mfiltro = s; mbusca = b; return n; }
 
   function renderMembros() {
     $('#mfilter').innerHTML = MFILTROS.map(([k, l]) => `<button class="chip${mfiltro === k ? ' cur' : ''}" data-f="${k}">${l} <span class="cnt">${contaFiltro(k)}</span></button>`).join('');
     const termos = norm(mbusca).split(/\s+/).filter(Boolean);
+    if (mfiltro === 'contratos') { $('#mgrid').classList.add('alist'); renderContratos(termos); if (memId) fillMembro(byId(memId)); return; }
     if (mfiltro === 'chamar' || mfiltro === 'aneis') { $('#mgrid').classList.add('alist'); renderAcompanhamento(termos); if (memId) fillMembro(byId(memId)); return; }
     $('#mgrid').classList.remove('alist');
     const list = filtrarMembros();
@@ -1268,6 +1348,7 @@
     $('#m-info').value = m.informacoes || '';
     $('#m-pag').value = m.pagamentos || '';
     renderAcompFicha(m);
+    renderContratoFicha(m);
     renderConexoes(m);
   }
   function renderConexoes(m) {
@@ -1351,7 +1432,8 @@
     const v = m.vencimento ? new Date(m.vencimento + 'T12:00:00') : null;
     const ultimo = new Date(y, mo + 1, 0).getDate();
     const dia = Math.min(v ? v.getDate() : 1, ultimo);
-    if (m.mensalidade) return { m, valor: Number(m.mensalidade), dia, tipo: 'contrato' };
+    // Contrato mensal: paga a mensalidade até o vencimento; depois, a renovação dividida por mês.
+    if (m.mensalidade && (!v || y * 12 + mo < v.getFullYear() * 12 + v.getMonth())) return { m, valor: Number(m.mensalidade), dia, tipo: 'contrato' };
     if (!v || !m.valor_renovacao) return null;
     if (y * 12 + mo < v.getFullYear() * 12 + v.getMonth()) return null;
     const garantido = m.renovacao === 'pago';
@@ -1696,6 +1778,130 @@
     catch (err) { fail(err, 'Não foi possível apagar'); }
   });
 
+  /* ---------------- Contratos ---------------- */
+  // O membro abre em contrato.ogrupo.com.br com o token. Aqui: criar, acompanhar, marcar pago e criar a ficha.
+  const CONTRATO_URL = 'https://contrato.ogrupo.com.br/?c=';
+  const KSTATUS = { enviado: 'Enviado', preenchido: 'Preenchido', aceito: 'Aceito', pago: 'Pago', cancelado: 'Cancelado' };
+  const KORDEM = ['enviado', 'preenchido', 'aceito', 'pago'];
+  const contratosDe = id => contratos.filter(k => k.membro_id === id && k.status !== 'cancelado').sort((a, b) => a.criado_em < b.criado_em ? 1 : -1);
+  const msgContrato = k => {
+    const pn = String(k.nome || '').trim().split(/\s+/)[0], url = CONTRATO_URL + k.token;
+    return k.modo === 'membro' && k.status === 'enviado'
+      ? `Fala, ${pn}. Segue o link para você preencher seus dados e ver o contrato do The Group. Leva uns 2 minutos:\n${url}`
+      : `Fala, ${pn}. Segue o seu contrato do The Group. Dá uma lida com calma e, se tiver qualquer dúvida, me chama aqui:\n${url}`;
+  };
+  const kPassos = k => `<span class="kpassos">${KORDEM.map((s, i) => `<i class="${KORDEM.indexOf(k.status) >= i ? 'on' : ''}" title="${KSTATUS[s]}"></i>`).join('')}</span>`;
+  const kForma = k => { const d = k.dados || {}; if (!d.forma) return ''; return d.forma === 'vista' ? `à vista ${rs(k.anual * (1 - k.desconto / 100))}` : `12x ${rs(k.anual / 12)} · dia ${d.dia || 10}`; };
+  function kLinha(k, comFicha) {
+    const ficha = k.membro_id ? byId(k.membro_id) : null;
+    const quando = k.status === 'pago' && k.pago_em ? `pago em ${dataBR(k.pago_em.slice(0, 10))}` : k.aceito_em ? `aceito em ${dataBR(k.aceito_em.slice(0, 10))}` : k.preenchido_em ? `preenchido em ${dataBR(k.preenchido_em.slice(0, 10))}` : `criado em ${dataBR(k.criado_em.slice(0, 10))}`;
+    return `<div class="arow krow" data-k="${k.id}">
+      <div class="anm" style="cursor:default"><b>${esc(k.nome)} <span class="knum">${esc(k.numero)}</span></b>
+        <span>${kPassos(k)} <span class="atp k-${k.status}">${KSTATUS[k.status]}</span> ${quando}${kForma(k) ? ' · ' + kForma(k) : ''}${comFicha && ficha ? ` · <a href="#" data-open="${ficha.id}">ficha</a>` : ''}</span></div>
+      <span class="aact">
+        ${['enviado', 'preenchido'].includes(k.status) ? `<button class="abtn" data-kcopy="${k.id}">Copiar mensagem</button>` : ''}
+        ${k.status === 'aceito' ? `<button class="abtn pri" data-kpago="${k.id}">Marcar pago</button>` : ''}
+        ${['aceito', 'pago'].includes(k.status) ? `<a class="abtn" href="${CONTRATO_URL + k.token}" target="_blank" rel="noopener" title="Abre o contrato aceito, com o botão Baixar PDF">Ver e baixar PDF</a>` : ''}
+        ${['aceito', 'pago'].includes(k.status) && !k.membro_id ? `<button class="abtn" data-kficha="${k.id}">Criar ficha</button>` : ''}
+        ${['enviado', 'preenchido'].includes(k.status) ? `<button class="abtn" data-kcancel="${k.id}" title="Cancela o link">Cancelar</button>` : ''}
+      </span></div>`;
+  }
+  function renderContratos(termos) {
+    const bate = k => !termos.length || termos.every(t => norm(k.nome + ' ' + k.numero).includes(t));
+    const l = contratos.filter(k => k.status !== 'cancelado' && bate(k));
+    const grupos = [['preenchido', 'Preenchidos, esperando o aceite'], ['enviado', 'Enviados, esperando os dados'], ['aceito', 'Aceitos, esperando o pagamento'], ['pago', 'Pagos']]
+      .map(([s, t]) => [s, t, l.filter(k => k.status === s).sort((a, b) => a.atualizado_em < b.atualizado_em ? 1 : -1)]).filter(g => g[2].length);
+    $('#mcount').textContent = `${l.length} ${l.length === 1 ? 'contrato' : 'contratos'} · o membro abre em contrato.ogrupo.com.br`;
+    $('#mgrid').innerHTML = `<div style="margin-bottom:12px"><button class="btn sm" id="k-novo2">Novo contrato</button></div>` + (grupos.length ? grupos.map(([s, t, g]) => `<section class="agrp"><h3>${t} <span>${g.length}</span></h3>${g.map(k => kLinha(k, true)).join('')}</section>`).join('') : '<div class="empty">Nenhum contrato ainda</div>');
+  }
+  function renderContratoFicha(m) {
+    const l = contratosDe(m.id);
+    $('#m-contrato').innerHTML = (l.length ? l.map(k => kLinha(k, false)).join('') : '<div class="venc" style="margin:0 0 8px">Nenhum contrato ligado a esta ficha.</div>') +
+      `<button class="move" data-knovo="${m.id}">Novo contrato</button>`;
+  }
+  async function kAcao(e) {
+    const t = e.target.closest('[data-kcopy],[data-kpago],[data-kficha],[data-kcancel],[data-knovo],#k-novo2');
+    if (!t) return false;
+    e.preventDefault(); e.stopPropagation();
+    if (t.id === 'k-novo2') { abrirNovoContrato(); return true; }
+    if (t.dataset.knovo) { abrirNovoContrato(byId(t.dataset.knovo)); return true; }
+    const k = contratos.find(x => x.id === (t.dataset.kcopy || t.dataset.kpago || t.dataset.kficha || t.dataset.kcancel)); if (!k) return true;
+    try {
+      if (t.dataset.kcopy) copia(msgContrato(k), 'Mensagem copiada');
+      if (t.dataset.kpago) { if (!confirm(`Marcar o contrato de ${k.nome} como pago?`)) return true; const r = await db.patchContrato(k.id, { status: 'pago' }); Object.assign(k, r && r[0] ? r[0] : { status: 'pago', pago_em: new Date().toISOString() }); toast('Marcado como pago'); }
+      if (t.dataset.kcancel) { if (!confirm(`Cancelar o contrato de ${k.nome}? O link para de abrir.`)) return true; await db.patchContrato(k.id, { status: 'cancelado' }); k.status = 'cancelado'; toast('Contrato cancelado'); }
+      if (t.dataset.kficha) await criarFichaDoContrato(k);
+    } catch (err) { fail(err, 'Não foi possível concluir'); }
+    renderMembros(); if (memId) renderContratoFicha(byId(memId)); renderHoje();
+    return true;
+  }
+  $('#mgrid').addEventListener('click', e => { kAcao(e); }, true);
+  $('#m-contrato').addEventListener('click', e => { const o = e.target.closest('[data-open]'); if (o) { e.preventDefault(); openMembro(o.dataset.open); return; } kAcao(e); });
+
+  async function criarFichaDoContrato(k) {
+    const d = k.dados || {}, venc = new Date(); venc.setFullYear(venc.getFullYear() + 1);
+    const vista = d.forma === 'vista', anual = Number(k.anual), valorVista = anual * (1 - Number(k.desconto) / 100);
+    const m = await db.addMembro({
+      nome: k.nome, status: 'ativo', email: (d.email || '').toLowerCase() || null, telefone: d.tel || k.telefone || null, cidade: d.cidade ? `${d.cidade}/${d.uf}` : null,
+      plano: vista ? `${rs(valorVista)} à vista (contrato ${k.numero})` : `${rs(anual)} Anual · 12x ${rs(anual / 12)} (contrato ${k.numero})`,
+      mensalidade: vista ? null : anual / 12, valor_renovacao: Number(k.renovacao), vencimento: venc.toISOString().slice(0, 10), entrada: hojeISO(),
+      pagamentos: `- ${new Date().toLocaleDateString('pt-BR')} · contrato ${k.numero} aceito · ${vista ? 'à vista ' + rs(valorVista) : '12x ' + rs(anual / 12)}`,
+    });
+    membros.push(m);
+    await db.patchContrato(k.id, { membro_id: m.id }); k.membro_id = m.id;
+    toast('Ficha criada'); openMembro(m.id);
+  }
+
+  // Novo contrato: o admin preenche tudo, ou só nome e WhatsApp para o membro preencher.
+  let kFicha = null;
+  function abrirNovoContrato(m) {
+    close(); kFicha = m || null;
+    const f = $('#kform'); f.reset(); document.querySelectorAll('#kform .bad').forEach(x => x.classList.remove('bad')); $('#k-erro').textContent = ''; $('#k-res').innerHTML = '';
+    f.modo.value = 'membro'; f.mnome.value = m ? m.nome : ''; f.mtel.value = m ? (m.telefone || '') : ''; f.nome.value = m ? m.nome : ''; f.email.value = m ? (m.email || '') : ''; f.tel.value = m ? (m.telefone || '') : '';
+    $('#k-para').textContent = m ? `Fica ligado à ficha de ${m.nome}.` : 'Depois do aceite, dá para criar a ficha do membro com um toque.';
+    kModo(); sheetOn($('#ksheet')); $('#ksheet .body').scrollTop = 0;
+  }
+  function kModo() {
+    const f = $('#kform'), adm = f.modo.value === 'admin';
+    $('#k-membro').hidden = adm; $('#k-dados').hidden = !adm; $('#k-pj').hidden = !adm || f.pagador.value === 'cpf'; $('#k-dia').hidden = !adm || f.forma.value === 'vista';
+    $('#k-gerar').textContent = adm ? 'Gerar link do contrato' : 'Gerar link do formulário';
+  }
+  $('#kform').addEventListener('change', kModo);
+  $('#kform').cep.addEventListener('input', async e => {
+    const c = e.target.value.replace(/\D/g, ''); if (c.length !== 8) return;
+    try { const j = await (await fetch(`https://viacep.com.br/ws/${c}/json/`)).json(); if (j.erro) return; const f = $('#kform'); f.rua.value = j.logradouro || ''; f.bairro.value = j.bairro || ''; f.cidade.value = j.localidade || ''; f.uf.value = j.uf || ''; f.numero.focus(); } catch {}
+  });
+  const kCpfOk = c => { c = String(c).replace(/\D/g, ''); if (c.length !== 11 || /^(\d)\1+$/.test(c)) return false; for (let t = 9; t < 11; t++) { let s = 0; for (let i = 0; i < t; i++) s += +c[i] * (t + 1 - i); if (((s * 10) % 11) % 10 !== +c[t]) return false; } return true; };
+  $('#kform').addEventListener('submit', async e => {
+    e.preventDefault();
+    const f = $('#kform'), adm = f.modo.value === 'admin', b = $('#k-gerar'); $('#k-erro').textContent = '';
+    document.querySelectorAll('#kform .bad').forEach(x => x.classList.remove('bad'));
+    const precisa = adm ? ['nome', 'cpf', 'nasc', 'civil', 'nac', 'prof', 'cep', 'rua', 'numero', 'bairro', 'cidade', 'uf', 'email', 'tel', ...(f.pagador.value !== 'cpf' ? ['cnpj', 'rs', 'endpj', 'rep', 'emailnf'] : [])] : ['mnome', 'mtel'];
+    const falta = precisa.filter(k => !String(f[k].value).trim());
+    if (adm && f.cpf.value && !kCpfOk(f.cpf.value)) falta.push('cpf');
+    if (falta.length) { falta.forEach(k => f[k].classList.add('bad')); f[falta[0]].focus(); $('#k-erro').textContent = falta.includes('cpf') && f.cpf.value ? 'Confira o CPF.' : 'Preencha os campos marcados.'; return; }
+    const p = { modo: adm ? 'admin' : 'membro', anual: f.anual.value, desconto: f.desconto.value, renovacao: f.renovacao.value, membro_id: kFicha ? kFicha.id : '' };
+    if (adm) {
+      const d = Object.fromEntries(new FormData(f)); ['modo', 'mnome', 'mtel', 'anual', 'desconto', 'renovacao'].forEach(k => delete d[k]);
+      d.uf = (d.uf || '').toUpperCase(); d.end = `${d.rua}, ${d.numero}${d.compl ? ', ' + d.compl : ''}, ${d.bairro}, ${d.cidade}/${d.uf}, CEP ${d.cep}`;
+      if (d.forma !== 'mensal') d.dia = ''; if (d.pagador === 'cpf') ['cnpj', 'rs', 'endpj', 'rep', 'emailnf'].forEach(k => delete d[k]);
+      p.dados = d;
+    } else { p.nome = f.mnome.value.trim(); p.telefone = f.mtel.value.trim(); }
+    b.disabled = true;
+    try {
+      const r = await db.criarContrato(p);
+      contratos = await db.contratos();
+      const k = contratos.find(x => x.id === r.id) || { ...r, nome: adm ? p.dados.nome : p.nome, modo: p.modo };
+      $('#k-res').innerHTML = `<div class="lk-msg"><div class="lk-k">Mensagem para ${esc(String(k.nome).split(' ')[0])} (contrato ${esc(r.numero)})</div><div class="lk-txt">${esc(msgContrato(k))}</div>
+        <button class="lk-btn lk-btn2" type="button" data-kmsg="${k.id}">Copiar mensagem</button> <a class="abtn" style="margin-left:6px" href="${CONTRATO_URL + r.token}" target="_blank" rel="noopener">Abrir como o membro vê</a></div>`;
+      $('#k-res').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      renderMembros(); if (kFicha) renderContratoFicha(kFicha); toast('Contrato criado');
+    } catch (err) { $('#k-erro').textContent = err.message === 'auth' ? 'Entre de novo.' : err.message; }
+    b.disabled = false;
+  });
+  $('#k-res').addEventListener('click', e => { const t = e.target.closest('[data-kmsg]'); if (t) { const k = contratos.find(x => x.id === t.dataset.kmsg); if (k) copia(msgContrato(k), 'Mensagem copiada'); } });
+  $('#k-novo').addEventListener('click', () => abrirNovoContrato());
+
   /* ---------------- Atualizar ---------------- */
   $('#refresh').addEventListener('click', () => loadAll().then(() => { renderAll(); toast('Atualizado'); }).catch(e => fail(e, 'Não foi possível atualizar')));
   setInterval(() => {
@@ -1730,7 +1936,7 @@
       ['Lista de convidados da The House', 'feito', 20],
     ].map(([texto, status, d], n) => ({ id: 'i' + n, created_at: ago(d), updated_at: ago(Math.max(0, d - 2)), texto, status, nota: null }));
     const wait = v => new Promise(r => setTimeout(() => r(v), 120));
-    let k = 100, M = [], C = [], CT = [], cofre = null;
+    let k = 100, M = [], C = [], CT = [], K = [], cofre = null;
     const J = [{"fase": "antes", "ordem": 1, "titulo": "Aplicação", "descricao": "Quiz em aplicar.ogrupo.com.br. Recusa faturamento abaixo de 6 dígitos. O lead entra no painel.", "responsavel": "Automático", "ferramentas": "Quiz, Painel", "status": "ok", "contador": "apl_nova"}, {"fase": "antes", "ordem": 2, "titulo": "Curadoria", "descricao": "O Kayoan avalia o perfil e confirma com membros que a pessoa é confiável. Para entrar, precisa conhecer alguém lá dentro.", "responsavel": "Kayoan", "ferramentas": "Painel, WhatsApp", "status": "aberto", "contador": "apl_conversa"}, {"fase": "antes", "ordem": 3, "titulo": "Convite", "descricao": "Arte do convite e link da página de apresentação pelo WhatsApp. A página mostra tudo o que o grupo entrega e o valor: contrato anual de R$ 30 mil (R$ 2.500 por mês) ou R$ 25.500 à vista.", "responsavel": "Kayoan", "ferramentas": "WhatsApp, Página de apresentação", "status": "fazendo", "contador": null}, {"fase": "antes", "ordem": 4, "titulo": "Call", "descricao": "A pessoa marca 30 minutos no Cal.com pela própria página. A call serve para validar.", "responsavel": "Kayoan", "ferramentas": "Cal.com", "status": "ok", "contador": "apl_call"}, {"fase": "antes", "ordem": 5, "titulo": "Contrato e pagamento", "descricao": "Contrato e checkout da Lastlink (assinatura mensal) pelo WhatsApp. Arrependimento em 7 dias.", "responsavel": "Kayoan", "ferramentas": "WhatsApp, Lastlink", "status": "aberto", "contador": "apl_aprovado"}, {"fase": "durante", "ordem": 6, "titulo": "Primeiro dia", "descricao": "Acesso ao app, apresentação no grupo e divulgação no Instagram do Kayoan e do The Group.", "responsavel": "Kayoan", "ferramentas": "App, Instagram", "status": "aberto", "contador": null}, {"fase": "durante", "ordem": 7, "titulo": "Primeiro mês", "descricao": "Um encontro com quem faz sentido para o novo membro.", "responsavel": "Kayoan", "ferramentas": "App, WhatsApp", "status": "aberto", "contador": null}, {"fase": "durante", "ordem": 8, "titulo": "Rotina", "descricao": "Encontros mensais regionais (mesa de até 6 pessoas), The House 2 vezes por ano, podcast, acompanhamento leve a cada 30 dias e profundo a cada 90. No primeiro ano os encontros são all inclusive, menos a passagem.", "responsavel": "Kayoan e Amanda", "ferramentas": "App, WhatsApp", "status": "aberto", "contador": "membros_ativos"}, {"fase": "durante", "ordem": 9, "titulo": "Cobrança", "descricao": "Mensal pela Lastlink. A Amanda acompanha quem atrasa.", "responsavel": "Amanda", "ferramentas": "Lastlink, Central", "status": "aberto", "contador": "membros_mensal"}, {"fase": "depois", "ordem": 10, "titulo": "Seu ano no The Group", "descricao": "Envio 60 dias antes do fim do contrato. Formato em aberto.", "responsavel": "Kayoan", "ferramentas": "WhatsApp", "status": "aberto", "contador": "vence_60"}, {"fase": "depois", "ordem": 11, "titulo": "Renovação", "descricao": "R$ 15 mil por ano, sem o all inclusive. O formato mensal ainda está em aberto. Aviso de saída 30 dias antes.", "responsavel": "Kayoan e Amanda", "ferramentas": "WhatsApp, Lastlink", "status": "aberto", "contador": "renovar"}, {"fase": "depois", "ordem": 12, "titulo": "Saída", "descricao": "Vira ex-membro na central e é desativado no app.", "responsavel": "Kayoan", "ferramentas": "Central, App", "status": "ok", "contador": "ex_membros"}].map((e, n) => ({ id: 'j' + n, created_at: ago(30), updated_at: ago(30), ajustar: null, atualizado_por: null, ...e }));
     const carregaCofre = () => cofre || (cofre = fetch('/membros.json').then(r => r.ok ? r.json() : { membros: [] }).catch(() => ({ membros: [] })).then(d => {
       M = d.membros.map(({ conexoes, ...m }) => m);
@@ -1770,6 +1976,9 @@
       contatos: async () => { await carregaCofre(); return CT.map(x => ({ ...x })); },
       addContato: b => { const c = { id: 'ct' + k++, created_at: new Date().toISOString(), data: hojeISO(), por: 'Kayoan Felipe', ...b }; CT.push(c); return wait({ ...c }); },
       delContato: id => { CT = CT.filter(c => c.id !== id); return wait(null); },
+      contratos: async () => { await carregaCofre(); if (!K.length) { const ex = { nome: 'Rafael Exemplo', cpf: '529.982.247-25', email: 'rafael@exemplo.com', tel: '(48) 99999-1234', cidade: 'Florianópolis', uf: 'SC', forma: 'mensal', dia: '10', pagador: 'cpf' }; K.push({ id: 'k1', criado_em: ago(6), atualizado_em: ago(1), token: 'aaaaaaaaaaaaaaa1', numero: 'TG-2026-001', modo: 'membro', status: 'aceito', membro_id: null, nome: 'Rafael Exemplo', telefone: ex.tel, anual: 30000, desconto: 15, renovacao: 15000, dados: ex, preenchido_em: ago(3), aceito_em: ago(1), pdf_path: null, pago_em: null }, { id: 'k2', criado_em: ago(2), atualizado_em: ago(2), token: 'aaaaaaaaaaaaaaa2', numero: 'TG-2026-002', modo: 'membro', status: 'enviado', membro_id: null, nome: 'Bianca Teste', telefone: '(11) 98888-7777', anual: 30000, desconto: 15, renovacao: 15000, dados: null, preenchido_em: null, aceito_em: null, pdf_path: null, pago_em: null }); } return K.map(x => ({ ...x })); },
+      criarContrato: p => { const n = K.length + 1, adm = p.modo === 'admin'; const x = { id: 'k' + k++, criado_em: new Date().toISOString(), atualizado_em: new Date().toISOString(), token: 'previa' + String(k).padStart(10, '0'), numero: 'TG-2026-' + String(n).padStart(3, '0'), modo: p.modo, status: adm ? 'preenchido' : 'enviado', membro_id: p.membro_id || null, nome: adm ? p.dados.nome : p.nome, telefone: adm ? p.dados.tel : p.telefone, anual: +p.anual, desconto: +p.desconto, renovacao: +p.renovacao, dados: adm ? p.dados : null, preenchido_em: adm ? new Date().toISOString() : null, aceito_em: null, pdf_path: null, pago_em: null }; K.unshift(x); return wait({ id: x.id, token: x.token, numero: x.numero, status: x.status }); },
+      patchContrato: (id, b) => { const x = K.find(y => y.id === id); Object.assign(x || {}, b, b.status === 'pago' ? { pago_em: new Date().toISOString() } : {}); return wait(x ? [{ ...x }] : null); },
       addEtapa: b => { const e = { id: 'j' + k++, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), status: 'aberto', atualizado_por: 'Kayoan Felipe', descricao: null, responsavel: null, ferramentas: null, ajustar: null, contador: null, ...b }; J.push(e); return wait({ ...e }); },
       patchEtapa: (id, b) => { const e = J.find(x => x.id === id); Object.assign(e || {}, b, { updated_at: new Date().toISOString(), atualizado_por: 'Kayoan Felipe' }); return wait(e ? [{ ...e }] : null); },
       delEtapa: id => { J.splice(J.findIndex(x => x.id === id), 1); return wait(null); },
