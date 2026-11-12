@@ -57,6 +57,9 @@
   .nav a:hover { color: var(--ink); }
   .nav a.cur { color: var(--on-dark); background: var(--dark); }
   .nav a .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); margin-left: 6px; vertical-align: middle; }
+  .nav a .ni { display: none; }
+  .nav a { white-space: nowrap; }
+  @media (max-width: 1080px) and (min-width: 701px) { .nav a { padding: 8px 10px; font-size: 13.5px; } }
   .top .right { display: flex; gap: 18px; align-items: center; }
   .top .right .link { margin: 0; }
   main { max-width: 1180px; margin: 0 auto; padding: 28px 24px 60px; }
@@ -69,8 +72,11 @@
     .top { padding-left: 16px; padding-right: 16px; }
     .top .nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--bg); border-top: 1px solid var(--line); justify-content: space-around; padding: 8px 10px max(10px, env(safe-area-inset-bottom)); z-index: 6; }
     .top .nav { gap: 2px; padding-left: 6px; padding-right: 6px; }
-    .nav a { flex: 1 1 0; min-width: 0; text-align: center; padding: 10px 0; font-size: 12px; letter-spacing: -0.1px; white-space: nowrap; position: relative; }
-    .nav a .dot { position: absolute; top: 6px; margin-left: 2px; }
+    .nav a { flex: 1 1 0; min-width: 0; text-align: center; padding: 6px 0 4px; font-size: 10.5px; letter-spacing: 0; white-space: nowrap; position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; border-radius: 12px; }
+    .nav a .ni { display: block; width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    .nav a.cur { background: transparent; color: var(--ink); font-weight: 600; }
+    .nav a.cur .ni { stroke-width: 1.9; }
+    .nav a .dot { position: absolute; top: 4px; left: calc(50% + 9px); margin: 0; }
     main { padding: 22px 16px 110px; }
     h1.page { font-size: 26px; }
   }
@@ -263,7 +269,60 @@
   @media (max-width: 700px) { .split { grid-template-columns: 1fr 1fr; } .split b { font-size: 17px; } }
   .rnote { font-size: 12px; color: var(--muted); line-height: 1.6; margin: 14px 2px 0; }
 
+  /* Jornada */
+  .jsub { color: var(--ink-2); font-size: 14px; line-height: 1.6; margin: 0 0 16px; max-width: 640px; }
+  .jsum { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; font-size: 12.5px; color: var(--ink-2); margin-bottom: 22px; }
+  .js-total { font-weight: 600; color: var(--ink); }
+  .js-it { display: inline-flex; align-items: center; gap: 6px; }
+  .jdot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; box-sizing: border-box; }
+  .jdot.ok { background: var(--ink); }
+  .jdot.fazendo { border: 2px solid var(--gold); }
+  .jdot.ajustar { background: var(--gold); }
+  .jdot.aberto { border: 1.5px dashed var(--muted); }
+  .move .jdot { margin-right: 7px; vertical-align: -1px; }
+  .move.cur .jdot.ok { background: var(--on-dark); }
+  .jmap { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; align-items: start; }
+  @media (max-width: 980px) { .jmap { grid-template-columns: 1fr; } }
+  .jfase { background: var(--col); border-radius: 22px; padding: 18px 14px 12px; min-width: 0; }
+  .jfh { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; padding: 0 6px 14px; }
+  .jfn { font-size: 11px; font-weight: 600; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold); }
+  .jfs { font-size: 16px; font-weight: 600; margin-top: 3px; letter-spacing: -0.2px; }
+  .jprog { width: 64px; height: 4px; border-radius: 4px; background: var(--line); overflow: hidden; flex: none; margin-bottom: 6px; }
+  .jprog span { display: block; height: 100%; background: var(--ink); border-radius: 4px; }
+  .jlist { list-style: none; margin: 0; padding: 0; position: relative; }
+  .jstep { position: relative; }
+  .jstep + .jstep { margin-top: 8px; }
+  .jstep:not(:last-child)::after { content: ""; position: absolute; left: 25px; top: 44px; bottom: -10px; width: 1.5px; background: var(--line); z-index: 2; }
+  .jcard { appearance: none; border: 1px solid transparent; background: var(--card); color: var(--ink); width: 100%; text-align: left; cursor: pointer; border-radius: 16px; padding: 13px 13px 12px 12px; display: grid; grid-template-columns: 28px 1fr auto; gap: 12px; align-items: start; position: relative; z-index: 1; box-shadow: 0 1px 2px rgba(0,0,0,.04); transition: border-color .15s, transform .1s; }
+  .jcard:hover { border-color: var(--hover); }
+  .jcard:active { transform: scale(.995); }
+  .jnum { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; box-sizing: border-box; border: 1.5px dashed var(--muted); color: var(--ink-2); background: var(--card); }
+  .jstep.ok .jnum { background: var(--ink); border: 0; color: var(--on-dark); }
+  .jstep.fazendo .jnum { border: 2px solid var(--gold); color: var(--ink); }
+  .jstep.ajustar .jnum { background: var(--gold); border: 0; color: #fff; }
+  .jbody { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .jtop { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .jt { font-size: 14.5px; font-weight: 600; letter-spacing: -0.1px; }
+  .jst { font-size: 11px; color: var(--muted); }
+  .jst.ajustar, .jst.fazendo { color: var(--gold); font-weight: 500; }
+  .jd { font-size: 12.5px; color: var(--ink-2); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .jmeta { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+  .jresp, .jtool { font-size: 10.5px; border-radius: 20px; padding: 2px 8px; white-space: nowrap; }
+  .jresp { background: var(--dark); color: var(--on-dark); font-weight: 500; }
+  .jtool { background: var(--tag); color: var(--ink-2); }
+  .jaj { font-size: 12px; line-height: 1.45; color: var(--ink); border-left: 2px solid var(--gold); padding: 2px 0 2px 8px; margin-top: 3px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .jaj b { color: var(--gold); font-weight: 600; margin-right: 4px; }
+  .jcount { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.05; padding-top: 1px; min-width: 34px; }
+  .jcount b { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .jcount small { font-size: 10.5px; color: var(--muted); }
+  .jadd { margin: 12px 6px 4px; font-size: 12.5px; }
+  .jadd::before { content: "+ "; }
+  .sel { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font: inherit; font-size: 14px; background: transparent; color: var(--ink); outline: 0; width: 100%; }
+  .sel:focus { border-color: var(--ink); }
+  #j-up:disabled, #j-down:disabled { opacity: .35; cursor: default; }
+
   /* Ideias */
+
   .add { display: flex; gap: 10px; max-width: 720px; }
   .add .input { flex: 1; }
   .add .btn { margin: 0; padding: 0 24px; }
@@ -339,11 +398,12 @@
   <header class="top">
     <div class="brand"><span class="logo"></span><span>Central</span></div>
     <nav class="nav" id="nav">
-      <a href="#hoje" data-v="hoje">Hoje</a>
-      <a href="#aplicacoes" data-v="aplicacoes">Aplicações</a>
-      <a href="#membros" data-v="membros">Membros</a>
-      <a href="#receber" data-v="receber">Receber</a>
-      <a href="#ideias" data-v="ideias">Ideias</a>
+      <a href="#hoje" data-v="hoje"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 9.5 10 4l6.5 5.5V16a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1z"/><path d="M8 17v-4.5h4V17"/></svg><span class="nl">Hoje</span></a>
+      <a href="#aplicacoes" data-v="aplicacoes"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="4" height="12" rx="1.2"/><rect x="8.5" y="4" width="4" height="8" rx="1.2"/><rect x="14" y="4" width="3" height="10" rx="1.2"/></svg><span class="nl">Aplicações</span><span class="dot" hidden></span></a>
+      <a href="#membros" data-v="membros"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><circle cx="7.5" cy="7.5" r="2.6"/><path d="M2.8 16c.6-2.6 2.4-4 4.7-4s4.1 1.4 4.7 4"/><circle cx="14" cy="8" r="2"/><path d="M13 12.2c2.1-.2 3.6 1.1 4.2 3.8"/></svg><span class="nl">Membros</span></a>
+      <a href="#receber" data-v="receber"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 16.5h13"/><path d="M5.5 13.5v-3M9 13.5V7.5M12.5 13.5v-5M16 13.5V5"/></svg><span class="nl">Receber</span></a>
+      <a href="#jornada" data-v="jornada"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><circle cx="4.5" cy="15" r="1.8"/><circle cx="15.5" cy="5" r="1.8"/><path d="M6.3 15H12a2.5 2.5 0 0 0 0-5H8a2.5 2.5 0 0 1 0-5h5.7"/></svg><span class="nl">Jornada</span></a>
+      <a href="#ideias" data-v="ideias"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 14.5h5M8.3 17h3.4"/><path d="M10 3a5 5 0 0 0-3 9c.4.4.5.9.5 1.5h5c0-.6.1-1.1.5-1.5A5 5 0 0 0 10 3z"/></svg><span class="nl">Ideias</span></a>
     </nav>
     <div class="right">
       <button class="link" id="refresh">Atualizar</button>
@@ -392,6 +452,13 @@
         <div class="dias" id="r-dias"></div>
         <p class="rnote">Quem pagou o ano adiantado não aparece até o vencimento. Depois do vencimento, a renovação entra dividida por mês no dia do vencimento (R$ 6 mil = R$ 500 por mês; semestral divide por 6). Contrato mensal entra todo mês. Membros marcados para remover ficam de fora.</p>
       </div>
+    </section>
+
+    <section id="v-jornada" hidden>
+      <h1 class="page" style="margin-bottom:6px">Jornada do membro</h1>
+      <p class="jsub">Do momento em que a pessoa aplica até a vida dentro do grupo. Toque numa etapa para editar o que ela é, quem cuida e o que ajustar.</p>
+      <div class="jsum" id="jsum"></div>
+      <div class="jmap" id="jmap"></div>
     </section>
 
     <section id="v-ideias" hidden>
@@ -460,6 +527,32 @@
   </div>
 </aside>
 
+<aside class="sheet" id="jsheet" aria-hidden="true">
+  <div class="head">
+    <div style="flex:1;min-width:0"><div class="since" id="j-num" style="margin:0 0 4px"></div><textarea class="title" id="j-titulo" rows="1" maxlength="80" style="font-size:22px;font-weight:600;border-color:transparent;padding:0;resize:none"></textarea><div class="since" id="j-since"></div></div>
+    <button class="x close" aria-label="Fechar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="body">
+    <div class="sec">Status</div>
+    <div class="moves" id="j-status"></div>
+    <div class="sec">O que ajustar</div>
+    <textarea id="j-aj" maxlength="2000" placeholder="O que precisa mudar nesta etapa e qual o próximo passo"></textarea>
+    <div class="sec">Como funciona</div>
+    <textarea id="j-desc" maxlength="1200" style="min-height:110px" placeholder="O que acontece nesta etapa"></textarea>
+    <div class="sec">Quem cuida</div>
+    <div class="moves" id="j-resp"></div>
+    <div class="sec">Ferramentas</div>
+    <div class="fields" style="grid-template-columns:1fr"><label class="fld"><span>Separe por vírgula</span><input id="j-ferr" maxlength="200" placeholder="WhatsApp, Cal.com, Lastlink"></label></div>
+    <div class="sec">Quantas pessoas estão aqui</div>
+    <div class="fields" style="grid-template-columns:1fr"><label class="fld"><span>Contar a partir dos dados da central</span><select id="j-cont" class="sel"></select></label></div>
+    <div class="sec">Fase e ordem</div>
+    <div class="moves" id="j-fase"></div>
+    <div class="moves" style="margin-top:8px"><button class="move" id="j-up">Subir</button><button class="move" id="j-down">Descer</button></div>
+    <div class="saved" id="j-saved"></div>
+    <button class="link del" id="j-del">Apagar etapa</button>
+  </div>
+</aside>
+
 <aside class="sheet" id="isheet" aria-hidden="true">
   <div class="head">
     <div><div class="since" id="i-since" style="margin:0"></div></div>
@@ -521,7 +614,7 @@
   const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   const DEMO = LOCAL && new URLSearchParams(location.search).has('demo');
 
-  let session = null, apls = [], ideias = [], membros = [], conexoes = [], vagas = null, openId = null, ideaId = null, filtro = '';
+  let session = null, apls = [], ideias = [], membros = [], conexoes = [], etapas = [], vagas = null, openId = null, ideaId = null, filtro = '';
   if (!DEMO) { try { session = JSON.parse(localStorage.getItem(STORE)); } catch {} }
   const save = s => { session = s; try { s ? localStorage.setItem(STORE, JSON.stringify(s)) : localStorage.removeItem(STORE); } catch {} };
 
@@ -570,6 +663,10 @@
     delMembro: id => api(`membros?id=eq.${id}`, { method: 'DELETE' }),
     addConexao: b => api('membro_conexoes', { method: 'POST', body: JSON.stringify(b) }).then(r => r[0]),
     delConexao: id => api(`membro_conexoes?id=eq.${id}`, { method: 'DELETE' }),
+    etapas: () => api('jornada_etapas?select=*&order=fase,ordem'),
+    addEtapa: b => api('jornada_etapas', { method: 'POST', body: JSON.stringify(b) }).then(r => r[0]),
+    patchEtapa: (id, b) => api(`jornada_etapas?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
+    delEtapa: id => api(`jornada_etapas?id=eq.${id}`, { method: 'DELETE' }),
   };
 
   /* ---------------- Entrada ---------------- */
@@ -619,14 +716,14 @@
   }
 
   async function loadAll() {
-    const [a, i, m, c] = await Promise.all([db.apls(), db.ideias(), db.membros(), db.conexoes()]);
-    apls = a; ideias = i; membros = m; conexoes = c;
+    const [a, i, m, c, j] = await Promise.all([db.apls(), db.ideias(), db.membros(), db.conexoes(), db.etapas()]);
+    apls = a; ideias = i; membros = m; conexoes = c; etapas = j;
     loadVagas();
   }
 
   /* ---------------- Navegação ---------------- */
-  const VIEWS = ['hoje', 'aplicacoes', 'membros', 'receber', 'ideias'];
-  const TITULO = { hoje: 'Central', aplicacoes: 'Aplicações', membros: 'Membros', receber: 'Receber', ideias: 'Ideias' };
+  const VIEWS = ['hoje', 'aplicacoes', 'membros', 'receber', 'jornada', 'ideias'];
+  const TITULO = { hoje: 'Central', aplicacoes: 'Aplicações', membros: 'Membros', receber: 'Receber', jornada: 'Jornada do membro', ideias: 'Ideias' };
   function route() {
     const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'hoje';
     VIEWS.forEach(k => { $('#v-' + k).hidden = k !== v; });
@@ -636,11 +733,11 @@
   }
   window.addEventListener('hashchange', () => { close(); route(); window.scrollTo(0, 0); });
 
-  function renderAll() { renderHoje(); renderBoard(); renderMembros(); renderReceber(); renderIdeias(); renderNav(); }
+  function renderAll() { renderHoje(); renderBoard(); renderMembros(); renderReceber(); renderJornada(); renderIdeias(); renderNav(); }
   function renderNav() {
     const n = apls.filter(r => r.status === 'nova').length;
     const a = document.querySelector('#nav a[data-v="aplicacoes"]');
-    a.innerHTML = 'Aplicações' + (n ? '<span class="dot" aria-label="' + n + ' novas"></span>' : '');
+    a.querySelector('.dot').hidden = !n; a.title = n ? `${n} aplicações novas` : '';
   }
 
   /* ---------------- Helpers ---------------- */
@@ -788,7 +885,7 @@
     el.classList.add('on'); el.setAttribute('aria-hidden', 'false'); $('#scrim').classList.add('on');
   }
   function close() {
-    openId = null; ideaId = null; memId = null;
+    openId = null; ideaId = null; memId = null; etapaId = null;
     document.querySelectorAll('.sheet').forEach(s => { s.classList.remove('on'); s.setAttribute('aria-hidden', 'true'); });
     $('#scrim').classList.remove('on');
   }
@@ -1234,11 +1331,131 @@
   $('#r-meta-n').addEventListener('input', e => { meta.n = Math.max(0, Math.min(200, Math.round(+e.target.value || 0))); salvaMeta(); });
   $('#r-dias').addEventListener('click', e => { const b = e.target.closest('[data-mem]'); if (b) openMembro(b.dataset.mem); });
 
+  /* ---------------- Jornada do membro ---------------- */
+  const FASES = [['antes', 'Antes', 'Aquisição'], ['durante', 'Durante', 'Entrada e primeiro ano'], ['depois', 'Depois', 'Renovação ou saída']];
+  const JSTATUS = { ok: 'Funcionando', fazendo: 'Ajustando', ajustar: 'Precisa ajustar', aberto: 'Em aberto' };
+  const JRESP = ['Kayoan', 'Amanda', 'Kayoan e Amanda', 'Automático'];
+  const CONTADORES = {
+    apl_nova: ['Aplicações novas', () => apls.filter(a => a.status === 'nova').length],
+    apl_conversa: ['Aplicações em conversa', () => apls.filter(a => a.status === 'conversa').length],
+    apl_call: ['Calls marcadas', () => apls.filter(a => a.status === 'call').length],
+    apl_aprovado: ['Selecionados no quiz', () => apls.filter(a => a.status === 'aprovado').length],
+    membros_ativos: ['Membros ativos', () => membros.filter(m => m.status === 'ativo').length],
+    membros_mensal: ['Membros no plano mensal', () => membros.filter(m => m.status === 'ativo' && m.mensalidade).length],
+    vence_60: ['Vencem em 60 dias', () => membros.filter(m => atual(m) && diasAte(m.vencimento) !== null && diasAte(m.vencimento) >= 0 && diasAte(m.vencimento) <= 60).length],
+    renovar: ['Vencem em 30 dias ou vencidos', () => membros.filter(m => atual(m) && m.renovacao !== 'remover' && diasAte(m.vencimento) !== null && diasAte(m.vencimento) <= 30).length],
+    ex_membros: ['Ex-membros', () => membros.filter(m => m.status === 'removido').length],
+  };
+  let etapaId = null;
+  const etapasDa = f => etapas.filter(e => e.fase === f).sort((a, b) => a.ordem - b.ordem || a.titulo.localeCompare(b.titulo));
+  const numeroDe = () => { const map = {}; let n = 0; FASES.forEach(([f]) => etapasDa(f).forEach(e => { map[e.id] = ++n; })); return map; };
+
+  function renderJornada() {
+    const num = numeroDe();
+    const cont = s => etapas.filter(e => e.status === s).length;
+    $('#jsum').innerHTML = `<span class="js-total">${etapas.length} etapas</span>` +
+      ['ok', 'fazendo', 'ajustar', 'aberto'].map(s => `<span class="js-it"><i class="jdot ${s}"></i>${cont(s)} ${JSTATUS[s].toLowerCase()}</span>`).join('');
+    $('#jmap').innerHTML = FASES.map(([f, nome, sub], fi) => {
+      const lista = etapasDa(f), okN = lista.filter(e => e.status === 'ok').length;
+      return `<section class="jfase">
+        <header class="jfh">
+          <div><div class="jfn">${String(fi + 1).padStart(2, '0')} · ${nome}</div><div class="jfs">${sub}</div></div>
+          <div class="jprog" title="${okN} de ${lista.length} funcionando"><span style="width:${lista.length ? okN / lista.length * 100 : 0}%"></span></div>
+        </header>
+        <ol class="jlist">${lista.map(e => {
+          const c = e.contador && CONTADORES[e.contador];
+          const qtd = c ? c[1]() : null;
+          const tools = (e.ferramentas || '').split(',').map(t => t.trim()).filter(Boolean);
+          return `<li class="jstep ${e.status}">
+            <button class="jcard" data-id="${e.id}">
+              <span class="jnum">${num[e.id]}</span>
+              <span class="jbody">
+                <span class="jtop"><span class="jt">${esc(e.titulo)}</span><span class="jst ${e.status}">${JSTATUS[e.status]}</span></span>
+                ${e.descricao ? `<span class="jd">${esc(e.descricao)}</span>` : ''}
+                <span class="jmeta">${e.responsavel ? `<span class="jresp">${esc(e.responsavel)}</span>` : ''}${tools.map(t => `<span class="jtool">${esc(t)}</span>`).join('')}</span>
+                ${e.ajustar ? `<span class="jaj"><b>Ajustar</b> ${esc(e.ajustar)}</span>` : ''}
+              </span>
+              ${c ? `<span class="jcount" title="${esc(c[0])}"><b>${qtd}</b><small>${qtd === 1 ? 'pessoa' : 'pessoas'}</small></span>` : ''}
+            </button>
+          </li>`;
+        }).join('')}</ol>
+        <button class="link jadd" data-fase="${f}">Nova etapa</button>
+      </section>`;
+    }).join('');
+    if (etapaId) fillEtapa(etapas.find(e => e.id === etapaId));
+  }
+  $('#jmap').addEventListener('click', async e => {
+    const c = e.target.closest('.jcard'); if (c) { openEtapa(c.dataset.id); return; }
+    const add = e.target.closest('.jadd'); if (!add) return;
+    const f = add.dataset.fase, ordem = Math.max(0, ...etapas.map(x => x.ordem)) + 1;
+    try { const n = await db.addEtapa({ fase: f, ordem, titulo: 'Nova etapa' }); etapas.push(n); renderJornada(); openEtapa(n.id); $('#j-titulo').select(); }
+    catch (err) { fail(err, 'Não foi possível criar'); }
+  });
+
+  function openEtapa(id) { close(); etapaId = id; $('#j-saved').textContent = ''; fillEtapa(etapas.find(e => e.id === id), true); sheetOn($('#jsheet')); $('#jsheet .body').scrollTop = 0; }
+  function fillEtapa(e, force) {
+    if (!e) { close(); return; }
+    const foco = document.activeElement, dentro = $('#jsheet').contains(foco) && ['INPUT', 'TEXTAREA', 'SELECT'].includes(foco.tagName);
+    $('#j-num').textContent = `Etapa ${numeroDe()[e.id]} · ${FASES.find(f => f[0] === e.fase)[1]}`;
+    $('#j-since').textContent = e.atualizado_por ? `Atualizado por ${e.atualizado_por.split(' ')[0]} em ${new Date(e.updated_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '')}` : '';
+    $('#j-status').innerHTML = Object.entries(JSTATUS).map(([k, l]) => `<button class="move${e.status === k ? ' cur' : ''}" data-k="status" data-v="${k}"><i class="jdot ${k}"></i>${l}</button>`).join('');
+    $('#j-fase').innerHTML = FASES.map(([k, l]) => `<button class="move${e.fase === k ? ' cur' : ''}" data-k="fase" data-v="${k}">${l}</button>`).join('');
+    $('#j-resp').innerHTML = JRESP.map(r => `<button class="move${e.responsavel === r ? ' cur' : ''}" data-k="responsavel" data-v="${r}">${r}</button>`).join('');
+    const lista = etapasDa(e.fase), i = lista.findIndex(x => x.id === e.id);
+    $('#j-up').disabled = i <= 0; $('#j-down').disabled = i === lista.length - 1;
+    if (dentro && !force) return;
+    $('#j-titulo').value = e.titulo;
+    $('#j-desc').value = e.descricao || '';
+    $('#j-ferr').value = e.ferramentas || '';
+    $('#j-aj').value = e.ajustar || '';
+    $('#j-cont').innerHTML = `<option value="">Nenhum</option>` + Object.entries(CONTADORES).map(([k, [l]]) => `<option value="${k}"${e.contador === k ? ' selected' : ''}>${l}</option>`).join('');
+  }
+  async function salvaEtapa(id, campo, valor) {
+    const e = etapas.find(x => x.id === id); if (!e) return;
+    if (typeof valor === 'string') valor = valor.trim() || null;
+    if (campo === 'titulo' && !valor) { $('#j-titulo').value = e.titulo; return; }
+    if (e[campo] === valor) return;
+    const antes = e[campo]; e[campo] = valor;
+    try { const r = await db.patchEtapa(id, { [campo]: valor }); if (r && r[0]) Object.assign(e, r[0]); $('#j-saved').textContent = 'Salvo'; renderJornada(); }
+    catch (err) { e[campo] = antes; fillEtapa(e, true); fail(err, 'Não foi possível salvar'); }
+  }
+  $('#jsheet').addEventListener('click', ev => {
+    const b = ev.target.closest('.move[data-k]'); if (!b || !etapaId) return;
+    const e = etapas.find(x => x.id === etapaId);
+    let v = b.dataset.v;
+    if (b.dataset.k === 'responsavel' && e.responsavel === v) v = null;
+    if (b.dataset.k === 'fase' && e.fase !== v) salvaEtapa(etapaId, 'ordem', Math.max(0, ...etapasDa(v).map(x => x.ordem)) + 1);
+    salvaEtapa(etapaId, b.dataset.k, v).then(() => fillEtapa(etapas.find(x => x.id === etapaId), true));
+  });
+  $('#j-titulo').addEventListener('change', ev => etapaId && salvaEtapa(etapaId, 'titulo', ev.target.value));
+  $('#j-ferr').addEventListener('change', ev => etapaId && salvaEtapa(etapaId, 'ferramentas', ev.target.value.split(',').map(t => t.trim()).filter(Boolean).join(', ')));
+  $('#j-cont').addEventListener('change', ev => etapaId && salvaEtapa(etapaId, 'contador', ev.target.value || null));
+  autosave($('#j-desc'), $('#j-saved'), () => etapaId, (id, v) => salvaEtapa(id, 'descricao', v));
+  autosave($('#j-aj'), $('#j-saved'), () => etapaId, (id, v) => salvaEtapa(id, 'ajustar', v));
+  async function moveEtapa(d) {
+    const e = etapas.find(x => x.id === etapaId); if (!e) return;
+    const lista = etapasDa(e.fase), i = lista.findIndex(x => x.id === e.id), o = lista[i + d]; if (!o) return;
+    // Renumera a fase toda para não depender de ordens repetidas.
+    lista.splice(i, 1); lista.splice(i + d, 0, e);
+    const mudou = lista.map((x, k) => [x, k + 1]).filter(([x, k]) => x.ordem !== k);
+    mudou.forEach(([x, k]) => { x.ordem = k; }); renderJornada();
+    try { await Promise.all(mudou.map(([x, k]) => db.patchEtapa(x.id, { ordem: k }))); }
+    catch (err) { fail(err, 'Não foi possível mover'); loadAll().then(renderAll).catch(() => {}); }
+  }
+  $('#j-up').addEventListener('click', () => moveEtapa(-1));
+  $('#j-down').addEventListener('click', () => moveEtapa(1));
+  $('#j-del').addEventListener('click', async () => {
+    const e = etapas.find(x => x.id === etapaId); if (!e) return;
+    if (!confirm(`Apagar a etapa "${e.titulo}"? Não dá para desfazer.`)) return;
+    try { await db.delEtapa(e.id); etapas = etapas.filter(x => x.id !== e.id); close(); renderJornada(); toast('Etapa apagada'); }
+    catch (err) { fail(err, 'Não foi possível apagar'); }
+  });
+
   /* ---------------- Atualizar ---------------- */
   $('#refresh').addEventListener('click', () => loadAll().then(() => { renderAll(); toast('Atualizado'); }).catch(e => fail(e, 'Não foi possível atualizar')));
   setInterval(() => {
     const typing = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName);
-    if ((session || DEMO) && !document.hidden && !openId && !ideaId && !memId && !typing && !$('#app').hidden) loadAll().then(renderAll).catch(() => {});
+    if ((session || DEMO) && !document.hidden && !openId && !ideaId && !memId && !etapaId && !typing && !$('#app').hidden) loadAll().then(renderAll).catch(() => {});
   }, 60000);
 
   /* ---------------- Prévia (só no computador, com ?demo) ---------------- */
@@ -1265,6 +1482,7 @@
     ].map(([texto, status, d], n) => ({ id: 'i' + n, created_at: ago(d), updated_at: ago(Math.max(0, d - 2)), texto, status, nota: null }));
     const wait = v => new Promise(r => setTimeout(() => r(v), 120));
     let k = 100, M = [], C = [], cofre = null;
+    const J = [{"fase": "antes", "ordem": 1, "titulo": "Aplicação", "descricao": "Quiz em aplicar.ogrupo.com.br. Recusa faturamento abaixo de 6 dígitos. O lead entra no painel.", "responsavel": "Automático", "ferramentas": "Quiz, Painel", "status": "ok", "contador": "apl_nova"}, {"fase": "antes", "ordem": 2, "titulo": "Curadoria", "descricao": "O Kayoan avalia o perfil e confirma com membros que a pessoa é confiável. Para entrar, precisa conhecer alguém lá dentro.", "responsavel": "Kayoan", "ferramentas": "Painel, WhatsApp", "status": "aberto", "contador": "apl_conversa"}, {"fase": "antes", "ordem": 3, "titulo": "Convite", "descricao": "Arte do convite e link da página de apresentação pelo WhatsApp. A página mostra tudo o que o grupo entrega e o valor: contrato anual de R$ 30 mil (R$ 2.500 por mês) ou R$ 25.500 à vista.", "responsavel": "Kayoan", "ferramentas": "WhatsApp, Página de apresentação", "status": "fazendo", "contador": null}, {"fase": "antes", "ordem": 4, "titulo": "Call", "descricao": "A pessoa marca 30 minutos no Cal.com pela própria página. A call serve para validar.", "responsavel": "Kayoan", "ferramentas": "Cal.com", "status": "ok", "contador": "apl_call"}, {"fase": "antes", "ordem": 5, "titulo": "Contrato e pagamento", "descricao": "Contrato e checkout da Lastlink (assinatura mensal) pelo WhatsApp. Arrependimento em 7 dias.", "responsavel": "Kayoan", "ferramentas": "WhatsApp, Lastlink", "status": "aberto", "contador": "apl_aprovado"}, {"fase": "durante", "ordem": 6, "titulo": "Primeiro dia", "descricao": "Acesso ao app, apresentação no grupo e divulgação no Instagram do Kayoan e do The Group.", "responsavel": "Kayoan", "ferramentas": "App, Instagram", "status": "aberto", "contador": null}, {"fase": "durante", "ordem": 7, "titulo": "Primeiro mês", "descricao": "Um encontro com quem faz sentido para o novo membro.", "responsavel": "Kayoan", "ferramentas": "App, WhatsApp", "status": "aberto", "contador": null}, {"fase": "durante", "ordem": 8, "titulo": "Rotina", "descricao": "Encontros mensais regionais (mesa de até 6 pessoas), The House 2 vezes por ano, podcast, acompanhamento leve a cada 30 dias e profundo a cada 90. No primeiro ano os encontros são all inclusive, menos a passagem.", "responsavel": "Kayoan e Amanda", "ferramentas": "App, WhatsApp", "status": "aberto", "contador": "membros_ativos"}, {"fase": "durante", "ordem": 9, "titulo": "Cobrança", "descricao": "Mensal pela Lastlink. A Amanda acompanha quem atrasa.", "responsavel": "Amanda", "ferramentas": "Lastlink, Central", "status": "aberto", "contador": "membros_mensal"}, {"fase": "depois", "ordem": 10, "titulo": "Seu ano no The Group", "descricao": "Envio 60 dias antes do fim do contrato. Formato em aberto.", "responsavel": "Kayoan", "ferramentas": "WhatsApp", "status": "aberto", "contador": "vence_60"}, {"fase": "depois", "ordem": 11, "titulo": "Renovação", "descricao": "R$ 15 mil por ano, sem o all inclusive. O formato mensal ainda está em aberto. Aviso de saída 30 dias antes.", "responsavel": "Kayoan e Amanda", "ferramentas": "WhatsApp, Lastlink", "status": "aberto", "contador": "renovar"}, {"fase": "depois", "ordem": 12, "titulo": "Saída", "descricao": "Vira ex-membro na central e é desativado no app.", "responsavel": "Kayoan", "ferramentas": "Central, App", "status": "ok", "contador": "ex_membros"}].map((e, n) => ({ id: 'j' + n, created_at: ago(30), updated_at: ago(30), ajustar: null, atualizado_por: null, ...e }));
     const carregaCofre = () => cofre || (cofre = fetch('/membros.json').then(r => r.ok ? r.json() : { membros: [] }).catch(() => ({ membros: [] })).then(d => {
       M = d.membros.map(({ conexoes, ...m }) => m);
       const ids = Object.fromEntries(M.map(m => [m.nome, m.id]));
@@ -1284,6 +1502,10 @@
       delMembro: id => { M.splice(M.findIndex(x => x.id === id), 1); C = C.filter(c => c.de !== id && c.para !== id); return wait(null); },
       addConexao: b => { const c = { id: 'c' + k++, ...b }; C.push(c); return wait({ ...c }); },
       delConexao: id => { C = C.filter(c => c.id !== id); return wait(null); },
+      etapas: () => wait(J.map(x => ({ ...x }))),
+      addEtapa: b => { const e = { id: 'j' + k++, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), status: 'aberto', atualizado_por: 'Kayoan Felipe', descricao: null, responsavel: null, ferramentas: null, ajustar: null, contador: null, ...b }; J.push(e); return wait({ ...e }); },
+      patchEtapa: (id, b) => { const e = J.find(x => x.id === id); Object.assign(e || {}, b, { updated_at: new Date().toISOString(), atualizado_por: 'Kayoan Felipe' }); return wait(e ? [{ ...e }] : null); },
+      delEtapa: id => { J.splice(J.findIndex(x => x.id === id), 1); return wait(null); },
       addIdeia: texto => { const i = { id: 'i' + k++, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), texto, status: 'fazer', nota: null }; I.unshift(i); return wait({ ...i }); },
       patchIdeia: (id, b) => { Object.assign(I.find(x => x.id === id) || {}, b, { updated_at: new Date().toISOString() }); return wait(null); },
       delIdeia: id => { I.splice(I.findIndex(x => x.id === id), 1); return wait(null); },
