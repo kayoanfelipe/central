@@ -238,6 +238,18 @@
   .fld input { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 14px; background: transparent; color: var(--ink); outline: 0; min-width: 0; width: 100%; }
   .fld input:focus { border-color: var(--ink); }
   .fld input[readonly] { color: var(--ink-2); background: var(--col); }
+  .knote { font-size: 11.5px; color: var(--gold); margin-top: 3px; line-height: 1.4; }
+  .fld input.kflag { border-color: var(--gold); }
+  .kwarn { border: 1px solid var(--gold); border-radius: 12px; padding: 10px 12px; font-size: 12.5px; line-height: 1.5; margin-top: 8px; }
+  .kconf { border: 1px solid var(--line); border-radius: 16px; padding: 14px 15px; margin-top: 14px; }
+  .kconf h4 { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
+  .kconf .row { display: flex; justify-content: space-between; gap: 14px; padding: 7px 0; border-top: 1px solid var(--line); font-size: 13px; }
+  .kconf .row:first-of-type { border-top: 0; }
+  .kconf .row > span { color: var(--muted); flex: none; }
+  .kconf .row b { font-weight: 500; text-align: right; word-break: break-word; }
+  .kconf .row.hl b { color: var(--gold); }
+  .kconf .acts { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .kconf .acts .btn { margin: 0; flex: 1; padding: 13px 16px; font-size: 14px; }
   .ksame { display: flex; gap: 8px; align-items: center; font-size: 12.5px; color: var(--ink-2); cursor: pointer; margin: 2px 0 4px; }
   .ksame input { width: 15px; height: 15px; accent-color: var(--gold); margin: 0; }
   .venc { font-size: 12.5px; color: var(--ink-2); margin-top: 8px; min-height: 16px; }
@@ -648,9 +660,10 @@
         <div class="fields" style="margin-top:12px"><label class="fld"><span>Nome do membro</span><input name="mnome" maxlength="120"></label><label class="fld"><span>WhatsApp</span><input name="mtel" inputmode="tel" maxlength="40"></label></div>
         <div class="venc">Ele recebe um link, preenche os próprios dados, escolhe a forma de pagamento e já vê o contrato. A central avisa você no e-mail contato@ quando ele terminar.</div>
       </div>
-      <div class="sec">Valores deste contrato</div>
-      <div class="fields"><label class="fld"><span>Valor anual (R$)</span><input name="anual" type="number" value="30000" min="1"></label><label class="fld"><span>Desconto à vista (%)</span><input name="desconto" type="number" value="15" min="0" max="99"></label><label class="fld"><span>Renovação anual (R$)</span><input name="renovacao" type="number" value="15000" min="0"></label></div>
-      <div class="venc">Já vêm com os valores atuais. Só mude se este contrato tiver uma condição diferente.</div>
+      <div class="sec row"><span>Valores deste contrato</span><button class="link" type="button" id="k-mudar">Mudar valores</button></div>
+      <div class="fields"><label class="fld"><span>Valor anual (R$)</span><input name="anual" type="number" value="30000" min="1" readonly></label><label class="fld"><span>Desconto à vista (%)</span><input name="desconto" type="number" value="15" min="0" max="99" readonly></label><label class="fld"><span>Renovação anual (R$)</span><input name="renovacao" type="number" value="15000" min="0" readonly></label></div>
+      <div class="venc" id="k-valtxt">Valores padrão. Para uma condição diferente, toque em Mudar valores.</div>
+      <div class="kwarn" id="k-valaviso" hidden></div>
       <div id="k-dados" hidden>
         <div class="sec">Dados pessoais</div>
         <div class="fields">
@@ -688,6 +701,7 @@
       </div>
       <div class="msg" id="k-erro" style="margin-top:14px"></div>
       <button class="btn" id="k-gerar" style="width:100%;margin-top:8px">Gerar link do formulário</button>
+      <div class="kconf" id="k-conf" hidden></div>
     </form>
     <div id="k-res" style="margin-top:14px"></div>
   </div>
@@ -1954,8 +1968,61 @@
     f.modo.value = 'membro'; f.mnome.value = m ? m.nome : ''; f.mtel.value = m ? (m.telefone || '') : ''; f.nome.value = m ? m.nome : ''; f.email.value = m ? (m.email || '') : ''; f.tel.value = m ? (m.telefone || '') : '';
     $('#k-para').textContent = kFicha ? `Fica ligado à ficha de ${m.nome}.` : apl ? `Para ${apl.nome}, da aplicação. Depois do aceite, dá para criar a ficha com um toque.` : 'Depois do aceite, dá para criar a ficha do membro com um toque.';
     { const am = new Date(); am.setDate(am.getDate() + 1); f.prox.min = kIso(am); const h = new Date(); f.prox.value = kIso(new Date(h.getFullYear(), h.getMonth() + 1, Math.min(h.getDate(), 28))); }
+    kApl = apl || null; K_APL.forEach(k => { delete f[k].dataset.ok; }); kMarcaApl(); kTrava(true); kConfFecha();
     kSyncEnd(); kModo(); sheetOn($('#ksheet')); $('#ksheet .body').scrollTop = 0;
   }
+  /* E-mail e WhatsApp que vieram da aplicação: marcados até serem conferidos. */
+  let kApl = null;
+  const K_APL = ['email', 'tel', 'mtel'];
+  function kNota(k, txt) { const inp = $('#kform')[k], fld = inp.closest('.fld'); let n = fld.querySelector('.knote'); if (!txt) { inp.classList.remove('kflag'); if (n) n.remove(); return; } if (!n) { n = document.createElement('div'); n.className = 'knote'; fld.appendChild(n); } n.textContent = txt; inp.classList.add('kflag'); }
+  function kMarcaApl() {
+    const f = $('#kform');
+    K_APL.forEach(k => { const vazio = !String(f[k].value).trim(); const mudouNome = kApl && [f.nome.value, f.mnome.value].some(n => n.trim() && n.trim() !== kApl.nome);
+      kNota(k, !kApl || vazio || f[k].dataset.ok ? '' : mudouNome ? `O nome mudou. Este dado ainda é da aplicação de ${kApl.nome}: confira.` : `Veio da aplicação de ${kApl.nome}. Confira.`); });
+  }
+  K_APL.forEach(k => $('#kform')[k].addEventListener('input', e => { e.target.dataset.ok = '1'; kNota(k, ''); }));
+  ['nome', 'mnome'].forEach(k => $('#kform')[k].addEventListener('input', kMarcaApl));
+  /* Valores travados no padrão; Mudar valores libera. */
+  const K_PADRAO = { anual: 30000, desconto: 15, renovacao: 15000 };
+  const rs2 = v => 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function kTrava(on) {
+    const f = $('#kform'); if (on) Object.entries(K_PADRAO).forEach(([k, v]) => { f[k].value = v; });
+    Object.keys(K_PADRAO).forEach(k => { f[k].readOnly = on; }); $('#k-mudar').textContent = on ? 'Mudar valores' : 'Voltar ao padrão'; kValAviso();
+  }
+  function kValAviso() {
+    const f = $('#kform'), dif = Object.keys(K_PADRAO).filter(k => Number(f[k].value) !== K_PADRAO[k]);
+    $('#k-valaviso').hidden = !dif.length; $('#k-valtxt').hidden = !!dif.length;
+    if (dif.length) $('#k-valaviso').innerHTML = `<b>Valores diferentes do padrão.</b> ${dif.map(k => k === 'anual' ? `Valor anual ${rs2(f.anual.value)} (padrão R$ 30.000,00), parcela de ${rs2(f.anual.value / 12)}` : k === 'desconto' ? `Desconto à vista de ${esc(f.desconto.value)}% (padrão 15%)` : `Renovação de ${rs2(f.renovacao.value)} (padrão R$ 15.000,00)`).join('. ')}.`;
+  }
+  $('#k-mudar').addEventListener('click', () => { const f = $('#kform'); if (f.anual.readOnly) { kTrava(false); f.anual.focus(); } else kTrava(true); kConfFecha(); });
+  ['anual', 'desconto', 'renovacao'].forEach(k => $('#kform')[k].addEventListener('input', kValAviso));
+  /* Confirmação antes de gerar o link. Qualquer mudança no formulário fecha o resumo. */
+  let kPend = null;
+  function kConfFecha() { kPend = null; $('#k-conf').hidden = true; $('#k-conf').innerHTML = ''; $('#k-gerar').hidden = false; }
+  $('#kform').addEventListener('input', e => { if (kPend && !e.target.closest('#k-conf')) kConfFecha(); });
+  $('#kform').addEventListener('change', e => { if (kPend && !e.target.closest('#k-conf')) kConfFecha(); });
+  const kDataBr = iso => { const [y, m, d] = String(iso || '').split('-'); return d ? `${d}/${m}/${y}` : ''; };
+  function kResumo(p) {
+    const f = $('#kform'), d = p.dados, anual = Number(p.anual), desc = Number(p.desconto), renov = Number(p.renovacao);
+    const daApl = k => kApl && !f[k].dataset.ok && String(f[k].value).trim();
+    const row = (k, v, hl) => `<div class="row${hl ? ' hl' : ''}"><span>${k}</span><b>${v}</b></div>`;
+    const nota = k => daApl(k) ? ` <small style="color:var(--gold)">(da aplicação)</small>` : '';
+    let r = '';
+    if (!d) {
+      r += row('Nome', esc(p.nome)) + row('WhatsApp', esc(p.telefone) + nota('mtel'), daApl('mtel'));
+      r += row('Quem preenche', 'O membro preenche o resto');
+    } else {
+      r += row('Nome', esc(d.nome)) + row('CPF', esc(d.cpf)) + row('E-mail', esc(d.email) + nota('email'), daApl('email')) + row('WhatsApp', esc(d.tel) + nota('tel'), daApl('tel'));
+      r += row('Quem paga', d.pagador === 'cpf' ? 'O membro, no CPF' : `${d.pagador === 'patrocinio' ? 'Patrocinador' : 'Empresa'}: ${esc(d.rs)} · CNPJ ${esc(d.cnpj)}`);
+      if (d.pagador !== 'cpf') r += row('Assina pela empresa', `${esc(d.rep_nome)} · CPF ${esc(d.rep_cpf)}`);
+    }
+    r += row('Valor anual', rs2(anual), anual !== K_PADRAO.anual);
+    if (d) r += row('Forma', d.forma === 'vista' ? `À vista: ${rs2(anual * (1 - desc / 100))} (${desc}% de desconto)` : `12x de ${rs2(anual / 12)}: 1ª no fechamento, depois todo dia ${esc(d.dia)} a partir de ${kDataBr(d.prox)}`, d.forma === 'vista' ? desc !== K_PADRAO.desconto : anual !== K_PADRAO.anual);
+    else r += row('Opções', `12x de ${rs2(anual / 12)} ou à vista ${rs2(anual * (1 - desc / 100))}`, anual !== K_PADRAO.anual || desc !== K_PADRAO.desconto);
+    r += row('Renovação', rs2(renov), renov !== K_PADRAO.renovacao);
+    return `<h4>Confira antes de gerar</h4>${r}<div class="acts"><button class="btn ghost-b" type="button" id="k-voltar">Voltar e corrigir</button><button class="btn" type="button" id="k-ok">Está certo, gerar link</button></div>`;
+  }
+  $('#k-conf').addEventListener('click', e => { if (e.target.closest('#k-voltar')) { kConfFecha(); $('#k-gerar').scrollIntoView({ behavior: 'smooth', block: 'center' }); } else if (e.target.closest('#k-ok') && kPend) kCriar(kPend); });
   const kIso = dt => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
   const kProxErro = iso => { if (!iso) return 'Escolha a data do próximo pagamento.'; const [y, m, d] = iso.split('-').map(Number), h = new Date(); h.setHours(0, 0, 0, 0);
     if (!(new Date(y, m - 1, d) > h)) return 'A data do próximo pagamento precisa ser a partir de amanhã.'; if (d > 28) return 'Escolha um dia de 1 a 28 para o próximo pagamento.'; return ''; };
@@ -2012,7 +2079,11 @@
       else { d.rep_nome = d.rep_nome.trim(); d.rep = `${d.rep_nome}, CPF ${d.rep_cpf}`; }
       p.dados = d;
     } else { p.nome = f.mnome.value.trim(); p.telefone = f.mtel.value.trim(); }
-    b.disabled = true;
+    kPend = p; $('#k-conf').innerHTML = kResumo(p); $('#k-conf').hidden = false; b.hidden = true;
+    $('#k-conf').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+  async function kCriar(p) {
+    const adm = p.modo === 'admin', b = $('#k-ok'); b.disabled = true; $('#k-erro').textContent = '';
     try {
       const r = await db.criarContrato(p);
       contratos = await db.contratos();
@@ -2020,10 +2091,10 @@
       $('#k-res').innerHTML = `<div class="lk-msg"><div class="lk-k">Mensagem para ${esc(String(k.nome).split(' ')[0])} (contrato ${esc(r.numero)})</div><div class="lk-txt">${esc(msgContrato(k))}</div>
         <button class="lk-btn lk-btn2" type="button" data-kmsg="${k.id}">Copiar mensagem</button> <a class="abtn" style="margin-left:6px" href="${CONTRATO_URL + r.token}" target="_blank" rel="noopener">Abrir como o membro vê</a></div>`;
       $('#k-res').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      kConfFecha(); $('#k-gerar').hidden = true;
       renderMembros(); if (kFicha) renderContratoFicha(kFicha); toast('Contrato criado');
-    } catch (err) { $('#k-erro').textContent = err.message === 'auth' ? 'Entre de novo.' : err.message; }
-    b.disabled = false;
-  });
+    } catch (err) { $('#k-erro').textContent = err.message === 'auth' ? 'Entre de novo.' : err.message; b.disabled = false; }
+  }
   $('#k-res').addEventListener('click', e => { const t = e.target.closest('[data-kmsg]'); if (t) { const k = contratos.find(x => x.id === t.dataset.kmsg); if (k) copia(msgContrato(k), 'Mensagem copiada'); } });
   $('#k-novo').addEventListener('click', () => abrirNovoContrato());
 
