@@ -137,6 +137,8 @@
   .card .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
   .tag { display: inline-block; font-size: 11px; font-weight: 500; color: var(--ink-2); background: var(--tag); border-radius: 20px; padding: 2px 9px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tag.none { background: transparent; border: 1px dashed var(--line); color: var(--muted); }
+  .tag.convite { color: var(--ink); background: transparent; border: 1px solid var(--line); }
+  .tag.convite.muito { border-color: var(--ink); font-weight: 600; }
   .card .line { font-size: 12.5px; color: var(--ink-2); line-height: 1.65; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   /* Membros */
@@ -649,7 +651,8 @@
   // Camada de dados: Supabase de verdade, ou memória na prévia (?demo, só no computador).
   const db = DEMO ? demoDb() : {
     acesso: () => api('rpc/central_acesso', { method: 'POST', body: '{}' }),
-    apls: () => api('aplicacoes?select=*&order=created_at.desc'),
+    apls: () => api('aplicacoes?select=*,convites(token,criado_em,expira_em,aberto_em,ultima_abertura,aberturas)&order=created_at.desc&convites.order=criado_em.desc'),
+    criarConvite: id => api('rpc/criar_convite', { method: 'POST', body: JSON.stringify({ p_aplicacao: id }) }),
     patchApl: (id, b) => api(`aplicacoes?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
     delApl: id => api(`aplicacoes?id=eq.${id}`, { method: 'DELETE' }),
     ideias: () => api('ideias?select=*&order=created_at.desc'),
@@ -849,7 +852,7 @@
             <div class="name"><span>${esc(r.nome)}</span><span class="when">${when(r.created_at)}</span></div>
             <div class="line">${esc(r.email)}</div>
             <div class="line">${esc(phone(r.whatsapp))}</div>
-            <div class="tags">${r.origem_lead ? `<span class="tag">${ORIGEM[r.origem_lead]}${r.origem_lead === 'indicacao' && r.indicado_por ? ' de ' + esc(r.indicado_por) : ''}</span>` : '<span class="tag none">Sem origem</span>'}</div>
+            <div class="tags">${r.origem_lead ? `<span class="tag">${ORIGEM[r.origem_lead]}${r.origem_lead === 'indicacao' && r.indicado_por ? ' de ' + esc(r.indicado_por) : ''}</span>` : '<span class="tag none">Sem origem</span>'}${seloConvite(r) ? `<span class="tag convite">${esc(seloConvite(r))}</span>` : ''}${(conviteDe(r)?.aberturas || 0) > 1 ? `<span class="tag convite${conviteDe(r).aberturas > 2 ? ' muito' : ''}">Abriu ${conviteDe(r).aberturas} vezes</span>` : ''}</div>
           </button>`).join('') : '<div class="empty">Nada por aqui</div>'}</div>
       </section>`;
     }).join('');
@@ -866,6 +869,18 @@
   board.addEventListener('click', e => { const c = e.target.closest('.card'); if (c) openApl(c.dataset.id); });
 
   const fail = (e, t) => { toast(e.message === 'auth' ? 'Entre de novo' : t); if (e.message === 'auth') showLogin(); };
+
+  // Convite (mesmo comportamento do painel do quiz): o mais recente da pessoa e o texto do selo.
+  const CONVITE_URL = 'https://convite.ogrupo.com.br/?c=';
+  const conviteDe = r => (r.convites && r.convites[0]) || null;
+  const dataHora = iso => { const d = new Date(iso); return `${d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} às ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`; };
+  const seloConvite = r => {
+    const c = conviteDe(r);
+    if (!c) return '';
+    if (c.aberto_em) return `Abriu em ${dataHora(c.aberto_em)}`;
+    if (new Date(c.expira_em) <= new Date()) return 'Convite vencido';
+    return 'Convite enviado';
+  };
 
   async function move(id, status) {
     const r = apls.find(x => x.id === id);
@@ -906,9 +921,11 @@
     cal.searchParams.set('email', r.email);
     cal.searchParams.set('attendeePhoneNumber', r.whatsapp);
     cal.searchParams.set('instagram', '@' + r.instagram);
-    const convite = `Oi, ${r.nome.split(' ')[0]}. Aqui é o Kayoan, do The Group. Vi a sua aplicação e quero conversar com você. Escolha o melhor horário por aqui: ${cal.toString()}`;
+    const chamada = `Oi, ${r.nome.split(' ')[0]}. Aqui é o Kayoan, do The Group. Escolha o melhor horário para a nossa conversa por aqui: ${cal.toString()}`;
+    const cv = conviteDe(r), vale = cv && new Date(cv.expira_em) > new Date();
     $('#d-quick').innerHTML = `
-      <a class="primary" href="https://wa.me/${wa}?text=${encodeURIComponent(convite)}" target="_blank" rel="noopener">Chamar para a call</a>
+      <a class="primary" href="#" id="d-convite">${vale ? 'Reenviar convite' : 'Enviar convite'}</a>
+      <a href="https://wa.me/${wa}?text=${encodeURIComponent(chamada)}" target="_blank" rel="noopener">Link do Cal</a>
       <a href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>
       <a href="https://instagram.com/${encodeURIComponent(r.instagram)}" target="_blank" rel="noopener">Instagram</a>
       <a href="mailto:${esc(r.email)}">E-mail</a>`;
@@ -922,6 +939,7 @@
       ['WhatsApp', `<a href="https://wa.me/${wa}" target="_blank" rel="noopener">${esc(phone(r.whatsapp))}</a>`, true],
       ['E-mail', `<a href="mailto:${esc(r.email)}">${esc(r.email)}</a>`, true],
       ['Veio pelo', r.origem === 'app' ? 'App' : r.origem === 'site' ? 'Site' : 'Outro'],
+      ['Convite', !cv ? 'Não enviado' : (seloConvite(r) + (cv.aberturas > 1 ? ` · ${cv.aberturas} vezes` : '') + (vale ? ` · vale até ${new Date(cv.expira_em).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}` : ''))],
     ];
     $('#d-list').innerHTML = items.map(([k, v, html]) => `<div class="row"><dt>${k}</dt><dd>${html ? v : esc(v)}</dd></div>`).join('');
     $('#d-origem').innerHTML = Object.entries(ORIGEM).map(([k, l]) => `<button class="move${r.origem_lead === k ? ' cur' : ''}" data-o="${k}">${l}</button>`).join('');
@@ -929,6 +947,24 @@
     if (document.activeElement !== $('#d-nota')) $('#d-nota').value = r.nota || '';
   }
   $('#d-moves').addEventListener('click', e => { const b = e.target.closest('.move'); if (b && openId) move(openId, b.dataset.to); });
+  // Enviar convite: abre a janela antes (senão o celular bloqueia), cria ou reaproveita o token e manda pelo WhatsApp.
+  $('#d-quick').addEventListener('click', async e => {
+    if (!e.target.closest('#d-convite')) return;
+    e.preventDefault();
+    const r = apls.find(x => x.id === openId); if (!r) return;
+    const w = window.open('', '_blank');
+    try {
+      const j = await db.criarConvite(r.id);
+      const msg = `Oi, ${r.nome.split(' ')[0]}. Aqui é o Kayoan, do The Group. Seu convite está aqui: ${CONVITE_URL + j.token}`;
+      const url = `https://wa.me/${r.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`;
+      if (w) w.location.href = url; else location.href = url;
+      toast(j.reaproveitado ? 'Mesmo convite, reenviado' : 'Convite criado');
+      await loadAll(); renderAll();
+    } catch (err) {
+      if (w) w.close();
+      fail(err, 'Não foi possível criar o convite');
+    }
+  });
   $('#d-origem').addEventListener('click', e => { const b = e.target.closest('.move'); if (b && openId) setOrigem(openId, b.dataset.o); });
 
   // Anotação salva sozinha. Se a folha fechar antes, salva na hora.
@@ -1472,6 +1508,10 @@
       ['Felipe Dias', 'felipedias', '+5585996789012', 'felipe@exemplo.com', 'copywriter', 'info', '6', 'instagram', null, 'recusado', 'conteudo', 15],
     ].map(([nome, instagram, whatsapp, email, funcao, nicho, faturamento, canal, indicado_por, status, origem_lead, d], n) => ({
       id: 'a' + n, created_at: ago(d, n), nome, instagram, whatsapp, email, funcao, funcao_outra: null, nicho, faturamento, canal, indicado_por, origem: n % 3 ? 'site' : 'app', status, origem_lead, nota: null,
+      convites: n === 3 ? [{ token: 'p1', criado_em: ago(3), expira_em: ago(-4), aberto_em: ago(2, 5), ultima_abertura: ago(1), aberturas: 3 }]
+        : n === 4 ? [{ token: 'p2', criado_em: ago(5), expira_em: ago(-2), aberto_em: null, ultima_abertura: null, aberturas: 0 }]
+        : n === 5 ? [{ token: 'p3', criado_em: ago(12), expira_em: ago(5), aberto_em: null, ultima_abertura: null, aberturas: 0 }] : [],
+
     }));
     const I = [
       ['Jantar só com os membros 8 dígitos antes da The House', 'fazendo', 3],
@@ -1490,7 +1530,14 @@
     }));
     return {
       acesso: () => wait(true),
-      apls: () => wait(A.map(x => ({ ...x }))),
+      apls: () => wait(A.map(x => ({ ...x, convites: (x.convites || []).map(c => ({ ...c })) }))),
+      // Na prévia não cria token de verdade: só simula para ver os selos.
+      criarConvite: id => {
+        const a = A.find(x => x.id === id), atual = a.convites && a.convites[0], vale = atual && new Date(atual.expira_em) > new Date();
+        if (!vale) { a.convites = [{ token: 'previa' + k++, criado_em: new Date().toISOString(), expira_em: new Date(Date.now() + 7 * 864e5).toISOString(), aberto_em: null, ultima_abertura: null, aberturas: 0 }, ...(a.convites || [])]; }
+        if (a.status === 'nova') a.status = 'conversa';
+        return wait({ token: a.convites[0].token, expira_em: a.convites[0].expira_em, reaproveitado: !!vale });
+      },
       patchApl: (id, b) => { Object.assign(A.find(x => x.id === id) || {}, b); return wait(null); },
       delApl: id => { A.splice(A.findIndex(x => x.id === id), 1); return wait(null); },
       ideias: () => wait(I.map(x => ({ ...x }))),
