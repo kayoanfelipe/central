@@ -125,8 +125,8 @@
   .chip:hover { border-color: var(--hover); }
   .chip.cur { background: var(--dark); border-color: var(--dark); color: var(--on-dark); }
   @media (max-width: 700px) { .bar { flex-wrap: nowrap; overflow-x: auto; margin: -8px -16px 16px; padding: 0 16px; scrollbar-width: none; } .bar::-webkit-scrollbar { display: none; } .bar .chip, .bar .lbl { flex: none; } }
-  .board { display: grid; grid-template-columns: repeat(5, minmax(220px, 1fr)); gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; height: calc(100dvh - 230px); min-height: 420px; margin: 0 -24px; padding: 0 24px 8px; scroll-padding: 24px; }
-  @media (max-width: 700px) { .board { grid-template-columns: repeat(5, 84%); margin: 0 -16px; padding: 0 16px 8px; scroll-padding: 16px; gap: 10px; height: calc(100dvh - 250px); } }
+  .board { display: grid; grid-template-columns: repeat(6, minmax(220px, 1fr)); gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; height: calc(100dvh - 230px); min-height: 420px; margin: 0 -24px; padding: 0 24px 8px; scroll-padding: 24px; }
+  @media (max-width: 700px) { .board { grid-template-columns: repeat(6, 84%); margin: 0 -16px; padding: 0 16px 8px; scroll-padding: 16px; gap: 10px; height: calc(100dvh - 250px); } }
   .col { background: var(--col); border-radius: 20px; display: flex; flex-direction: column; min-height: 0; scroll-snap-align: start; transition: box-shadow .15s; }
   .col.drop { box-shadow: inset 0 0 0 2px var(--ink); }
   .col header { display: flex; justify-content: space-between; align-items: baseline; padding: 16px 16px 10px; }
@@ -224,11 +224,12 @@
   .mcard { appearance: none; text-align: left; cursor: pointer; background: var(--col); border: 1px solid transparent; border-radius: 16px; padding: 14px 15px 12px; color: var(--ink); display: flex; flex-direction: column; min-width: 0; transition: border-color .15s; }
   .mcard:hover { border-color: var(--hover); }
   .kst { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 500; color: var(--ink-2); margin-top: 6px; }
-  .kst i { width: 8px; height: 8px; border-radius: 50%; background: var(--error); flex: none; }
+  .kst i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--error); flex: none; }
   .kst.ok i { background: #2f9e5f; }
   .kst.ok { color: #2f9e5f; }
-  #m-kst { display: block; }
-  #m-kst:empty { display: none; }
+  #m-kst, #d-kst { display: flex; width: fit-content; }
+  #m-kst:empty, #d-kst:empty { display: none; }
+  .card .kst { margin-top: 8px; }
   .mcard .name { font-size: 14.5px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   .mcard .name span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .mcard .line { font-size: 12.5px; color: var(--ink-2); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-height: 18px; }
@@ -596,7 +597,7 @@
 
 <aside class="sheet" id="sheet" aria-hidden="true">
   <div class="head">
-    <div><h3 id="d-name"></h3><div class="since" id="d-since"></div></div>
+    <div><h3 id="d-name"></h3><div class="since" id="d-since"></div><div class="kst" id="d-kst"></div></div>
     <button class="x close" aria-label="Fechar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
   </div>
   <div class="body">
@@ -828,6 +829,7 @@
     ['conversa', 'Em conversa'],
     ['call', 'Call marcada'],
     ['aprovado', 'Selecionado'],
+    ['entrou', 'Entrou no grupo'],
     ['recusado', 'Não selecionado'],
   ];
   const ORIGEM = { indicacao: 'Indicação', mesa: 'Mesa', podcast: 'Podcast', evento: 'Evento', conteudo: 'Conteúdo' };
@@ -1164,8 +1166,9 @@
             <div class="name"><span>${esc(r.nome)}</span><span class="when">${when(r.created_at)}</span></div>
             <div class="line">${esc(r.email)}</div>
             <div class="line">${esc(phone(r.whatsapp))}</div>
+            ${kStApl(r) ? `<div class="kst${kStApl(r).ok ? ' ok' : ''}"><i></i>${kStApl(r).txt}</div>` : ''}
             ${linkDe(r) ? `<span class="clink" title="${esc(linkDe(r))}"><span class="cl-url">Link do convite</span><span class="cl-copy" role="button" tabindex="0" data-copy="${esc(linkDe(r))}">Copiar</span></span>` : ''}
-            <div class="tags">${r.origem_lead ? `<span class="tag">${ORIGEM[r.origem_lead]}${r.origem_lead === 'indicacao' && r.indicado_por ? ' de ' + esc(r.indicado_por) : ''}</span>` : '<span class="tag none">Sem origem</span>'}${seloConvite(r) ? `<span class="tag convite">${esc(seloConvite(r))}</span>` : ''}${(conviteDe(r)?.aberturas || 0) > 1 ? `<span class="tag convite${conviteDe(r).aberturas > 2 ? ' muito' : ''}">Abriu ${conviteDe(r).aberturas} vezes</span>` : ''}</div>
+            <div class="tags">${r.origem_lead ? `<span class="tag">${ORIGEM[r.origem_lead]}${r.origem_lead === 'indicacao' && r.indicado_por ? ' de ' + esc(r.indicado_por) : ''}</span>` : '<span class="tag none">Sem origem</span>'}${seloConvite(r) ? `<span class="tag convite">${esc(seloConvite(r))}</span>` : ''}${r.membro_id && byId(r.membro_id) ? '<span class="tag">Ficha de membro</span>' : ''}${(conviteDe(r)?.aberturas || 0) > 1 ? `<span class="tag convite${conviteDe(r).aberturas > 2 ? ' muito' : ''}">Abriu ${conviteDe(r).aberturas} vezes</span>` : ''}</div>
           </button>`).join('') : '<div class="empty">Nada por aqui</div>'}</div>
       </section>`;
     }).join('');
@@ -1222,7 +1225,8 @@
     const r = apls.find(x => x.id === id);
     if (!r || r.status === status) return;
     const before = r.status; r.status = status; renderAll();
-    try { await db.patchApl(id, { status }); toast(`Movido para ${COLS.find(c => c[0] === status)[1]}`); }
+    try { await db.patchApl(id, { status }); toast(`Movido para ${COLS.find(c => c[0] === status)[1]}`);
+      if (status === 'entrou' && !(r.membro_id && byId(r.membro_id)) && confirm(`${r.nome} entrou no grupo. Cadastrar como membro agora? A ficha já sai com os dados da aplicação e do contrato.`)) cadastrarMembroDaApl(r); }
     catch (e) { r.status = before; renderAll(); fail(e, 'Não foi possível mover'); }
   }
   async function setOrigem(id, origem_lead) {
@@ -1249,6 +1253,7 @@
   function fillApl(r) {
     if (!r) { close(); return; }
     $('#d-name').textContent = r.nome;
+    { const s = kStApl(r); $('#d-kst').className = 'kst' + (s && s.ok ? ' ok' : ''); $('#d-kst').innerHTML = s ? `<i></i>${s.txt}` : ''; }
     const d = new Date(r.created_at);
     $('#d-since').textContent = `Aplicou em ${d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })} às ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
     const wa = r.whatsapp.replace(/\D/g, '');
@@ -1266,13 +1271,16 @@
            <div class="lk-msg"><div class="lk-k">Mensagem${indicadoPor(r) ? ' (indicação)' : ''}</div><div class="lk-txt">${esc(mensagemConvite(r, linkDe(r)))}</div><button class="lk-btn lk-btn2" data-copymsg="1">Copiar mensagem</button></div>
            <div class="lk-tip">Mande a arte do convite antes da mensagem.</div>`
         : `<div class="lk-k">Link do convite</div><div class="lk-row"><span class="lk-url muted">Ainda não foi criado</span><button class="lk-btn" id="d-criar">Criar link</button></div>`;
+    const fichaApl = r.membro_id ? byId(r.membro_id) : null, destaque = !fichaApl && ['aprovado', 'entrou'].includes(r.status);
     $('#d-quick').innerHTML = r.status === 'recusado' ? '' : `
-      <a class="primary" href="#" id="d-convite">${vale ? 'Reenviar pelo WhatsApp' : 'Enviar pelo WhatsApp'}</a>
+      ${destaque ? '<a class="primary" href="#" id="d-membro">Cadastrar como membro</a>' : ''}
+      <a${destaque ? '' : ' class="primary"'} href="#" id="d-convite">${vale ? 'Reenviar pelo WhatsApp' : 'Enviar pelo WhatsApp'}</a>
       <a href="https://wa.me/${wa}?text=${encodeURIComponent(chamada)}" target="_blank" rel="noopener">Link do Cal</a>
       <a href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>
       <a href="${igUrl(r.instagram)}" target="_blank" rel="noopener">Instagram</a>
       <a href="mailto:${esc(r.email)}">E-mail</a>
-      <a href="#" id="d-contrato">Novo contrato</a>`;
+      <a href="#" id="d-contrato">Novo contrato</a>
+      ${destaque ? '' : `<a href="#" id="d-membro">${fichaApl ? 'Abrir ficha do membro' : 'Cadastrar como membro'}</a>`}`;
     const items = [
       ['Atua com resposta direta', 'Sim'],
       ['Função', funcao(r)],
@@ -1303,6 +1311,7 @@
     catch (err) { b.disabled = false; fail(err, 'Não foi possível criar o link'); }
   });
   $('#d-quick').addEventListener('click', async e => {
+    if (e.target.closest('#d-membro')) { e.preventDefault(); const r = apls.find(x => x.id === openId); if (!r) return; const f = r.membro_id ? byId(r.membro_id) : null; if (f) openMembro(f.id); else cadastrarMembroDaApl(r); return; }
     if (e.target.closest('#d-contrato')) { e.preventDefault(); const r = apls.find(x => x.id === openId); if (r) abrirNovoContrato(null, r); return; }
     if (!e.target.closest('#d-convite')) return;
     e.preventDefault();
@@ -1582,6 +1591,13 @@
 
   /* Bolinha do contrato: o mais recente ligado à ficha (ou, sem ficha ligada, com o mesmo nome), sem os cancelados.
      Verde: assinado (aceito ou pago). Vermelha: ainda não assinado. Sem contrato: sem bolinha. */
+  /* Mesma bolinha no cartão da aplicação: contrato da ficha ligada ou, sem ficha, o contrato com o mesmo nome, e-mail ou WhatsApp. */
+  function kStApl(r) {
+    const f = r.membro_id ? byId(r.membro_id) : null;
+    if (f) return kSt(f);
+    const k = contratoDaApl(r); if (!k) return null;
+    return k.status === 'pago' ? { ok: true, txt: 'Contrato assinado e pago' } : k.status === 'aceito' ? { ok: true, txt: 'Contrato assinado' } : { ok: false, txt: 'Contrato não assinado' };
+  }
   function kSt(m) {
     const nm = norm(m.nome).replace(/\s+/g, ' ').trim();
     const k = contratos.filter(x => x.status !== 'cancelado' && (x.membro_id === m.id || (!x.membro_id && norm(x.nome).replace(/\s+/g, ' ').trim() === nm)))
@@ -2125,12 +2141,48 @@
       if (t.dataset.kcancel) { if (!confirm(`Cancelar o contrato de ${k.nome}? O link para de abrir.`)) return true; await db.patchContrato(k.id, { status: 'cancelado' }); k.status = 'cancelado'; toast('Contrato cancelado'); }
       if (t.dataset.kficha) await criarFichaDoContrato(k);
     } catch (err) { fail(err, 'Não foi possível concluir'); }
-    renderMembros(); if (memId) renderContratoFicha(byId(memId)); renderHoje();
+    renderMembros(); renderBoard(); if (memId) renderContratoFicha(byId(memId)); renderHoje();
     return true;
   }
   $('#mgrid').addEventListener('click', e => { kAcao(e); }, true);
   $('#m-contrato').addEventListener('click', e => { const o = e.target.closest('[data-open]'); if (o) { e.preventDefault(); openMembro(o.dataset.open); return; } kAcao(e); });
 
+  /* Aplicação -> ficha de membro, com os dados da aplicação e, se houver, do contrato dela. */
+  function contratoDaApl(r) {
+    const nm = norm(r.nome).replace(/\s+/g, ' ').trim(), em = String(r.email || '').toLowerCase().trim(), tel = kDig(r.whatsapp).slice(-8);
+    const l = contratos.filter(k => k.status !== 'cancelado' && (norm(k.nome).replace(/\s+/g, ' ').trim() === nm || (em && String(k.dados?.email || '').toLowerCase() === em) || (tel.length === 8 && kDig(k.telefone || k.dados?.tel).slice(-8) === tel)));
+    const ok = l.filter(k => ['aceito', 'pago'].includes(k.status));
+    return (ok.length ? ok : l).sort((a, b) => new Date(b.criado_em) - new Date(a.criado_em))[0] || null;
+  }
+  async function cadastrarMembroDaApl(r) {
+    const em = String(r.email || '').toLowerCase().trim(), nm = norm(r.nome).replace(/\s+/g, ' ').trim();
+    const k = contratoDaApl(r), d = (k && k.dados) || {};
+    const existe = membros.find(m => (em && String(m.email || '').toLowerCase() === em) || norm(m.nome).replace(/\s+/g, ' ').trim() === nm || (k && norm(m.nome).replace(/\s+/g, ' ').trim() === norm(k.nome).replace(/\s+/g, ' ').trim()));
+    try {
+      if (existe) {
+        if (!confirm(`Já existe a ficha de ${existe.nome}. Ligar esta aplicação a ela em vez de criar outra?`)) return;
+        await db.patchApl(r.id, { status: 'entrou', membro_id: existe.id }); Object.assign(r, { status: 'entrou', membro_id: existe.id });
+        if (k && !k.membro_id) { await db.patchContrato(k.id, { membro_id: existe.id }); k.membro_id = existe.id; }
+        renderAll(); toast('Aplicação ligada à ficha'); openMembro(existe.id); return;
+      }
+      const hoje = new Date().toLocaleDateString('pt-BR');
+      const info = [`Aplicação de ${new Date(r.created_at).toLocaleDateString('pt-BR')}: ${funcao(r)} · ${NICHO[r.nicho] || r.nicho || ''} · faturamento ${FAT_CURTO[r.faturamento] || r.faturamento || ''} · Instagram @${igUser(r.instagram)}`,
+        r.canal === 'indicacao' && r.indicado_por ? `Indicação de ${r.indicado_por}` : r.origem_lead ? `Origem: ${ORIGEM[r.origem_lead] || r.origem_lead}` : '',
+        r.nota ? `Anotações da aplicação: ${r.nota}` : ''].filter(Boolean).join('\n');
+      const b = { nome: k ? k.nome : r.nome, status: 'ativo', email: (d.email || r.email || '').toLowerCase() || null, telefone: d.tel || (k && k.telefone) || phone(r.whatsapp) || null,
+        cidade: d.cidade ? `${d.cidade}/${d.uf}` : null, entrada: hojeISO(), informacoes: info.slice(0, 8000) };
+      if (k) {
+        const vista = d.forma === 'vista', anual = Number(k.anual), valorVista = anual * (1 - Number(k.desconto) / 100), venc = new Date(); venc.setFullYear(venc.getFullYear() + 1);
+        Object.assign(b, { plano: vista ? `${rs(valorVista)} à vista (contrato ${k.numero})` : `${rs(anual)} Anual · 12x ${rs(anual / 12)} (contrato ${k.numero})`,
+          mensalidade: vista ? null : anual / 12, valor_renovacao: Number(k.renovacao), vencimento: venc.toISOString().slice(0, 10),
+          pagamentos: `- ${hoje} · contrato ${k.numero} ${['aceito', 'pago'].includes(k.status) ? 'aceito' : 'enviado, aguardando aceite'} · ${vista ? 'à vista ' + rs(valorVista) : '12x ' + rs(anual / 12)}${k.status === 'pago' ? ' · pago' : ''}` });
+      }
+      const m = await db.addMembro(b); membros.push(m);
+      await db.patchApl(r.id, { status: 'entrou', membro_id: m.id }); Object.assign(r, { status: 'entrou', membro_id: m.id });
+      if (k && !k.membro_id) { await db.patchContrato(k.id, { membro_id: m.id }); k.membro_id = m.id; }
+      renderAll(); toast(k ? `Membro cadastrado com o contrato ${k.numero}` : 'Membro cadastrado'); openMembro(m.id);
+    } catch (e) { fail(e, 'Não foi possível cadastrar'); }
+  }
   async function criarFichaDoContrato(k) {
     const d = k.dados || {}, venc = new Date(); venc.setFullYear(venc.getFullYear() + 1);
     const vista = d.forma === 'vista', anual = Number(k.anual), valorVista = anual * (1 - Number(k.desconto) / 100);
@@ -2288,7 +2340,7 @@
         <button class="lk-btn lk-btn2" type="button" data-kmsg="${k.id}">Copiar mensagem</button> <a class="abtn" style="margin-left:6px" href="${CONTRATO_URL + r.token}" target="_blank" rel="noopener">Abrir como o membro vê</a></div>`;
       $('#k-res').scrollIntoView({ behavior: 'smooth', block: 'center' });
       kConfFecha(); $('#k-gerar').hidden = true;
-      renderMembros(); if (kFicha) renderContratoFicha(kFicha); toast(ant.length ? `Contrato criado. ${ant.length === 1 ? 'O anterior foi cancelado' : ant.length + ' anteriores foram cancelados'}.` : 'Contrato criado');
+      renderAll(); if (kFicha) renderContratoFicha(kFicha); toast(ant.length ? `Contrato criado. ${ant.length === 1 ? 'O anterior foi cancelado' : ant.length + ' anteriores foram cancelados'}.` : 'Contrato criado');
     } catch (err) { $('#k-erro').textContent = err.message === 'auth' ? 'Entre de novo.' : err.message; b.disabled = false; }
   }
   $('#k-res').addEventListener('click', e => { const t = e.target.closest('[data-kmsg]'); if (t) { const k = contratos.find(x => x.id === t.dataset.kmsg); if (k) copia(msgContrato(k), 'Mensagem copiada'); } });
