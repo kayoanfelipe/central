@@ -670,7 +670,6 @@
           <label class="fld" style="grid-column:1/-1"><span>Nome completo</span><input name="nome" maxlength="120"></label>
           <label class="fld"><span>CPF</span><input name="cpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00"></label>
           <label class="fld"><span>Nascimento</span><input name="nasc" type="date"></label>
-          <label class="fld"><span>Estado civil</span><select name="civil" class="sel"><option value="">Selecione</option><option>solteiro(a)</option><option>casado(a)</option><option>em união estável</option><option>divorciado(a)</option><option>viúvo(a)</option></select></label>
           <label class="fld"><span>Nacionalidade</span><input name="nac" value="brasileiro(a)"></label>
           <label class="fld" style="grid-column:1/-1"><span>Profissão</span><input name="prof"></label>
         </div>
@@ -2062,7 +2061,7 @@
     const f = $('#kform'), adm = f.modo.value === 'admin', b = $('#k-gerar'); $('#k-erro').textContent = '';
     document.querySelectorAll('#kform .bad').forEach(x => x.classList.remove('bad'));
     const pj = f.pagador.value !== 'cpf', mensal = f.forma.value === 'mensal';
-    const precisa = adm ? ['nome', 'cpf', 'nasc', 'civil', 'nac', 'prof', 'cep', 'rua', 'numero', 'bairro', 'cidade', 'uf', 'email', 'tel', ...(pj ? ['cnpj', 'rs', 'endpj', 'rep_nome', 'rep_cpf', 'emailnf'] : [])] : ['mnome', 'mtel'];
+    const precisa = adm ? ['nome', 'cpf', 'nasc', 'nac', 'prof', 'cep', 'rua', 'numero', 'bairro', 'cidade', 'uf', 'email', 'tel', ...(pj ? ['cnpj', 'rs', 'endpj', 'rep_nome', 'rep_cpf', 'emailnf'] : [])] : ['mnome', 'mtel'];
     const falta = precisa.filter(k => !String(f[k].value).trim());
     let msg = '';
     if (adm && f.cpf.value && !kCpfOk(f.cpf.value)) { falta.push('cpf'); msg = 'Confira o CPF do membro.'; }
