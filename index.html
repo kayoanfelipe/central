@@ -111,6 +111,12 @@
   .links span { color: var(--muted); font-size: 12px; display: block; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .links div { min-width: 0; }
   .links svg { flex: none; color: var(--muted); }
+  .links button { appearance: none; font: inherit; text-align: left; cursor: pointer; background: transparent; border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--ink); width: 100%; }
+  .links button:hover { border-color: var(--ink); }
+  .links .novo { border-style: dashed; color: var(--muted); justify-content: center; }
+  .links .novo:hover { color: var(--ink); }
+  .sec.row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .sec.row .link { margin: 0; font-size: 12px; }
 
   /* Aplicações */
   .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: -8px 0 18px; }
@@ -482,7 +488,7 @@
       <div class="date" id="today"></div>
       <h1 class="page">Hoje</h1>
       <div class="stats" id="stats"></div>
-      <div class="sec">Atalhos</div>
+      <div class="sec row"><span>Atalhos</span><button class="link" id="a-edit">Editar</button></div>
       <div class="links" id="links"></div>
     </section>
 
@@ -699,6 +705,29 @@
   </div>
 </aside>
 
+<aside class="sheet" id="asheet" aria-hidden="true">
+  <div class="head">
+    <div><h3 id="a-tit">Novo atalho</h3></div>
+    <button class="x close" aria-label="Fechar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="body">
+    <form id="aform" novalidate autocomplete="off">
+      <div class="fields" style="grid-template-columns:1fr;margin-top:8px">
+        <label class="fld"><span>Nome</span><input name="titulo" maxlength="80" placeholder="Ex.: Planilha de eventos"></label>
+        <label class="fld"><span>Descrição (opcional)</span><input name="sub" maxlength="120" placeholder="Aparece embaixo do nome"></label>
+        <label class="fld"><span>Link</span><input name="url" inputmode="url" autocapitalize="off" spellcheck="false" maxlength="2000" placeholder="https://"></label>
+      </div>
+      <div class="msg" id="a-erro"></div>
+      <button class="btn" id="a-salvar" style="width:100%;margin-top:4px">Salvar atalho</button>
+    </form>
+    <div id="a-mais" hidden>
+      <div class="sec">Posição</div>
+      <div class="moves"><button class="move" data-mv="-1">Mover para antes</button><button class="move" data-mv="1">Mover para depois</button></div>
+      <button class="link del" id="a-del">Apagar atalho</button>
+    </div>
+  </div>
+</aside>
+
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -743,7 +772,7 @@
   const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   const DEMO = LOCAL && new URLSearchParams(location.search).has('demo');
 
-  let session = null, apls = [], ideias = [], membros = [], conexoes = [], etapas = [], contatos = [], contratos = [], vagas = null, openId = null, ideaId = null, filtro = '';
+  let session = null, apls = [], ideias = [], membros = [], conexoes = [], etapas = [], contatos = [], contratos = [], atalhos = [], atalhoId = null, editAt = false, vagas = null, openId = null, ideaId = null, filtro = '';
   if (!DEMO) { try { session = JSON.parse(localStorage.getItem(STORE)); } catch {} }
   const save = s => { session = s; try { s ? localStorage.setItem(STORE, JSON.stringify(s)) : localStorage.removeItem(STORE); } catch {} };
 
@@ -786,6 +815,10 @@
     addIdeia: texto => api('ideias', { method: 'POST', body: JSON.stringify({ texto }) }).then(r => r[0]),
     patchIdeia: (id, b) => api(`ideias?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
     delIdeia: id => api(`ideias?id=eq.${id}`, { method: 'DELETE' }),
+    atalhos: () => api('atalhos?select=*&order=ordem.asc,created_at.asc'),
+    addAtalho: b => api('atalhos', { method: 'POST', body: JSON.stringify(b) }).then(r => r[0]),
+    patchAtalho: (id, b) => api(`atalhos?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
+    delAtalho: id => api(`atalhos?id=eq.${id}`, { method: 'DELETE' }),
     membros: () => api('membros?select=*&order=nome'),
     conexoes: () => api('membro_conexoes?select=*'),
     addMembro: b => api('membros', { method: 'POST', body: JSON.stringify(b) }).then(r => r[0]),
@@ -852,8 +885,10 @@
   }
 
   async function loadAll() {
-    const [a, i, m, c, j, ct, k] = await Promise.all([db.apls(), db.ideias(), db.membros(), db.conexoes(), db.etapas(), db.contatos(), db.contratos().catch(() => [])]);
+    const [a, i, m, c, j, ct, k, at] = await Promise.all([db.apls(), db.ideias(), db.membros(), db.conexoes(), db.etapas(), db.contatos(), db.contratos().catch(() => []), db.atalhos().catch(() => null)]);
     apls = a; ideias = i; membros = m; conexoes = c; etapas = j; contatos = ct; contratos = k;
+    // Sem a tabela (migração 37 não rodada), mostra os atalhos fixos, sem edição.
+    atalhos = at || ATALHOS.map(([titulo, sub, url], n) => ({ id: null, titulo, sub, url, ordem: n + 1 }));
     loadVagas();
   }
 
@@ -947,8 +982,57 @@
         <div class="v">${fazendo.length}</div>
         ${list(fazendo, i => `<li><button data-ideia="${i.id}"><span class="nm">${esc(i.texto)}</span></button></li>`, `${ideias.filter(i => i.status === 'fazer').length} pra fazer.`)}</div>`;
 
-    $('#links').innerHTML = ATALHOS.map(([t, s, u]) => `<a href="${u}" target="_blank" rel="noopener"><div><b>${esc(t)}</b><span>${esc(s)}</span></div>${SETA}</a>`).join('');
+    renderLinks();
   }
+  const LAPIS = '<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+  const podeEditarAt = () => atalhos.every(a => a.id);
+  function renderLinks() {
+    $('#a-edit').hidden = !podeEditarAt(); $('#a-edit').textContent = editAt ? 'Pronto' : 'Editar';
+    const sub = a => esc(a.sub || a.url.replace(/^https?:\/\//, '').replace(/\/$/, ''));
+    $('#links').innerHTML = editAt
+      ? atalhos.map(a => `<button data-at="${a.id}"><div><b>${esc(a.titulo)}</b><span>${sub(a)}</span></div>${LAPIS}</button>`).join('') + '<button class="novo" data-at="">+ Novo atalho</button>'
+      : atalhos.map(a => `<a href="${esc(a.url)}" target="_blank" rel="noopener"><div><b>${esc(a.titulo)}</b><span>${sub(a)}</span></div>${SETA}</a>`).join('')
+        || '<button class="novo" data-at="">+ Novo atalho</button>';
+  }
+  $('#a-edit').addEventListener('click', () => { editAt = !editAt; renderLinks(); });
+  $('#links').addEventListener('click', e => { const b = e.target.closest('[data-at]'); if (b) openAtalho(b.dataset.at || null); });
+  function openAtalho(id) {
+    close(); atalhoId = id; const a = atalhos.find(x => x.id === id), f = $('#aform');
+    f.titulo.value = a ? a.titulo : ''; f.sub.value = a ? a.sub || '' : ''; f.url.value = a ? a.url : '';
+    $('#a-tit').textContent = a ? 'Editar atalho' : 'Novo atalho'; $('#a-erro').textContent = ''; $('#a-mais').hidden = !a;
+    sheetOn($('#asheet')); setTimeout(() => f.titulo.focus(), 250);
+  }
+  $('#aform').addEventListener('submit', async e => {
+    e.preventDefault(); const f = e.target, err = $('#a-erro'), btn = $('#a-salvar');
+    const titulo = f.titulo.value.trim(), sub = f.sub.value.trim(); let url = f.url.value.trim();
+    if (!titulo) { err.textContent = 'Dê um nome ao atalho.'; return f.titulo.focus(); }
+    if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
+    let ok = false; try { const u = new URL(url); ok = /^https?:$/.test(u.protocol) && u.hostname.includes('.'); } catch {}
+    if (!ok) { err.textContent = 'Confira o link. Ex.: https://site.com'; return f.url.focus(); }
+    const b = { titulo, sub: sub || null, url }; btn.disabled = true; err.textContent = '';
+    try {
+      if (atalhoId) { await db.patchAtalho(atalhoId, b); Object.assign(atalhos.find(x => x.id === atalhoId), b); toast('Atalho salvo'); }
+      else { const n = await db.addAtalho({ ...b, ordem: atalhos.reduce((m, x) => Math.max(m, x.ordem), 0) + 1 }); atalhos.push(n); toast('Atalho criado'); }
+      close(); renderLinks();
+    } catch (e2) { err.textContent = 'Não foi possível salvar. Tente de novo.'; }
+    finally { btn.disabled = false; }
+  });
+  $('#a-mais').addEventListener('click', async e => {
+    const b = e.target.closest('[data-mv]'); if (!b || !atalhoId) return;
+    const i = atalhos.findIndex(x => x.id === atalhoId), j = i + Number(b.dataset.mv); if (j < 0 || j >= atalhos.length) return;
+    const antes = atalhos.map(x => x.ordem);
+    [atalhos[i], atalhos[j]] = [atalhos[j], atalhos[i]];
+    const mudou = atalhos.map((x, n) => [x, n + 1]).filter(([x, n]) => x.ordem !== n);
+    mudou.forEach(([x, n]) => { x.ordem = n; }); renderLinks();
+    try { await Promise.all(mudou.map(([x, n]) => db.patchAtalho(x.id, { ordem: n }))); toast('Posição salva'); }
+    catch (e2) { fail(e2, 'Não foi possível mudar a posição'); }
+  });
+  $('#a-del').addEventListener('click', async () => {
+    const a = atalhos.find(x => x.id === atalhoId); if (!a) return;
+    if (!confirm(`Apagar o atalho "${a.titulo}"?`)) return;
+    try { await db.delAtalho(a.id); atalhos = atalhos.filter(x => x.id !== a.id); close(); renderLinks(); toast('Atalho apagado'); }
+    catch (e2) { fail(e2, 'Não foi possível apagar'); }
+  });
   $('#stats').addEventListener('click', e => {
     const a = e.target.closest('[data-apl]'); if (a) return openApl(a.dataset.apl);
     const i = e.target.closest('[data-ideia]'); if (i) return openIdeia(i.dataset.ideia);
@@ -1064,7 +1148,7 @@
     el.classList.add('on'); el.setAttribute('aria-hidden', 'false'); $('#scrim').classList.add('on');
   }
   function close() {
-    openId = null; ideaId = null; memId = null; etapaId = null;
+    openId = null; ideaId = null; memId = null; etapaId = null; atalhoId = null;
     document.querySelectorAll('.sheet').forEach(s => { s.classList.remove('on'); s.setAttribute('aria-hidden', 'true'); });
     $('#scrim').classList.remove('on');
   }
@@ -1928,6 +2012,7 @@
         : n === 7 ? [{ token: 'h4j6tb0sx9ke', criado_em: ago(12), expira_em: '2099-12-31T23:59:59-03:00', aberto_em: null, ultima_abertura: null, aberturas: 0 }] : [],
 
     }));
+    const AT = ATALHOS.map(([titulo, sub, url], n) => ({ id: 'at' + n, created_at: ago(30), titulo, sub, url, ordem: n + 1 }));
     const I = [
       ['Jantar só com os membros 8 dígitos antes da The House', 'fazendo', 3],
       ['Episódio do podcast com um parceiro principal', 'fazendo', 5],
@@ -1964,6 +2049,10 @@
       patchApl: (id, b) => { Object.assign(A.find(x => x.id === id) || {}, b); return wait(null); },
       delApl: id => { A.splice(A.findIndex(x => x.id === id), 1); return wait(null); },
       ideias: () => wait(I.map(x => ({ ...x }))),
+      atalhos: () => wait(AT.map(x => ({ ...x }))),
+      addAtalho: b => { const x = { id: 'at' + k++, created_at: new Date().toISOString(), ...b }; AT.push(x); return wait({ ...x }); },
+      patchAtalho: (id, b) => { Object.assign(AT.find(x => x.id === id) || {}, b); return wait(null); },
+      delAtalho: id => { AT.splice(AT.findIndex(x => x.id === id), 1); return wait(null); },
       // Membros da prévia: a cópia local do cofre (membros.json fora da pasta publicar), nunca publicada.
       membros: async () => { await carregaCofre(); return M.map(x => ({ ...x })); },
       conexoes: async () => { await carregaCofre(); return C.map(x => ({ ...x })); },
