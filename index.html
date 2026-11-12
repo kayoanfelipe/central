@@ -223,6 +223,11 @@
   .mgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
   .mcard { appearance: none; text-align: left; cursor: pointer; background: var(--col); border: 1px solid transparent; border-radius: 16px; padding: 14px 15px 12px; color: var(--ink); display: flex; flex-direction: column; min-width: 0; transition: border-color .15s; }
   .mcard:hover { border-color: var(--hover); }
+  .mmais { margin-top: 12px; }
+  .mmais summary { cursor: pointer; font-size: 12.5px; color: var(--muted); list-style: none; }
+  .mmais summary::-webkit-details-marker { display: none; }
+  .mmais summary::before { content: '+ '; }
+  .mmais[open] summary::before { content: '− '; }
   .kst { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 500; color: var(--ink-2); margin-top: 6px; }
   .kst i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--error); flex: none; }
   .kst.ok i { background: #2f9e5f; }
@@ -626,19 +631,17 @@
     <div class="moves" id="m-status"></div>
     <div class="sec">Contrato</div>
     <div id="m-contrato"></div>
+    <div class="sec">Anel</div>
+    <div class="moves" id="m-anel"></div>
+    <div id="m-anel-tam" style="margin-top:10px"></div>
+    <div class="venc" id="m-anel-desde"></div>
+    <div class="sec">Acompanhamento</div>
+    <div id="m-acomp"></div>
     <div class="sec">Tarefas</div>
     <div id="m-tarefas"></div>
     <form class="tadd" id="m-tadd"><input id="m-tnova" maxlength="280" placeholder="Nova tarefa para este membro" autocomplete="off"><button class="btn">Anotar</button></form>
-    <div class="sec">Acompanhamento</div>
-    <div id="m-acomp"></div>
-    <div class="sec">Dados</div>
-    <div class="fields" id="m-campos"></div>
-    <div class="venc" id="m-venc"></div>
-    <div class="sec">Renovação</div>
-    <div class="moves" id="m-renov"></div>
-    <div class="sec">Anel</div>
-    <div class="moves" id="m-anel"></div>
-    <div class="venc" id="m-anel-desde"></div>
+    <div id="m-renov-box"><div class="sec">Renovação</div>
+    <div class="moves" id="m-renov"></div></div>
     <div class="sec">Conexões</div>
     <ul class="cxl" id="m-conex"></ul>
     <form class="cxf" id="f-cx">
@@ -650,6 +653,10 @@
     <div id="m-sug"></div>
     <div class="sec">Informações</div>
     <textarea id="m-info" style="min-height:140px" maxlength="8000" placeholder="O que a pessoa faz, nicho, plataformas, números…"></textarea>
+    <div class="sec">Dados</div>
+    <div class="fields" id="m-campos"></div>
+    <div class="venc" id="m-venc"></div>
+    <details class="mmais"><summary>Mais dados</summary><div class="fields" id="m-mais" style="margin-top:10px"></div></details>
     <div class="sec">Pagamentos</div>
     <textarea id="m-pag" maxlength="4000" placeholder="- 28/10/2026 · R$ 6.000 · renovação"></textarea>
     <div class="saved" id="m-saved"></div>
@@ -1636,10 +1643,12 @@
 
   const CAMPOS = [
     ['email', 'E-mail', 'email'], ['telefone', 'Telefone', 'tel'], ['cidade', 'Cidade', 'text'], ['plano', 'Plano', 'text'],
-    ['vencimento', 'Vencimento', 'date'], ['entrada', 'Entrou no grupo', 'date'], ['anel_tamanho', 'Tamanho do anel', 'text'],
-    ['valor_renovacao', 'Renovação (R$)', 'number'], ['mensalidade', 'Mensalidade (R$)', 'number'],
-    ['receita_gerada', 'Receita gerada (R$)', 'number'], ['ltv', 'Já pagou no total (R$)', 'number'],
+    ['mensalidade', 'Mensalidade (R$)', 'number'], ['valor_renovacao', 'Renovação (R$)', 'number'],
+    ['vencimento', 'Vencimento', 'date'], ['entrada', 'Entrou no grupo', 'date'],
   ];
+  // Pouco usados: ficam fechados em "Mais dados".
+  const CAMPOS_MAIS = [['receita_gerada', 'Receita gerada (R$)', 'number'], ['ltv', 'Já pagou no total (R$)', 'number']];
+  const campoHtml = m => ([k, l, t]) => `<label class="fld"><span>${l}</span><input data-k="${k}" type="${t}" ${t === 'number' ? 'inputmode="decimal" step="any" min="0"' : ''} value="${esc(m[k] ?? '')}"></label>`;
   function fillMembro(m, force) {
     if (!m) { close(); return; }
     const foco = document.activeElement, dentro = $('#msheet').contains(foco) && ['INPUT', 'TEXTAREA'].includes(foco.tagName);
@@ -1650,7 +1659,11 @@
     const wa = waLink(m.telefone);
     $('#m-quick').innerHTML = [wa && `<a class="primary" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>`, m.email && `<a href="mailto:${esc(m.email)}">E-mail</a>`].filter(Boolean).join('');
     $('#m-status').innerHTML = Object.entries(STATUS).map(([k, l]) => `<button class="move${m.status === k ? ' cur' : ''}" data-k="status" data-v="${k}">${l}</button>`).join('');
-    $('#m-campos').innerHTML = CAMPOS.map(([k, l, t]) => `<label class="fld"><span>${l}</span><input data-k="${k}" type="${t}" ${t === 'number' ? 'inputmode="decimal" step="any" min="0"' : ''} value="${esc(m[k] ?? '')}"></label>`).join('');
+    $('#m-campos').innerHTML = CAMPOS.map(campoHtml(m)).join('');
+    $('#m-mais').innerHTML = CAMPOS_MAIS.map(campoHtml(m)).join('');
+    $('#m-anel-tam').innerHTML = `<label class="fld" style="max-width:220px"><span>Tamanho do anel</span><input data-k="anel_tamanho" type="text" value="${esc(m.anel_tamanho ?? '')}" placeholder="Ex.: 22"></label>`;
+    // Renovação só aparece quando importa: vence em até 60 dias, já venceu ou já tem uma marcação.
+    $('#m-renov-box').hidden = !(m.renovacao || (atual(m) && diasAte(m.vencimento) !== null && diasAte(m.vencimento) <= 60));
     $('#m-venc').textContent = atual(m) ? venceTxt(m) : '';
     $('#m-renov').innerHTML = Object.entries(RENOV).map(([k, l]) => `<button class="move${m.renovacao === k ? ' cur' : ''}" data-k="renovacao" data-v="${k}">${l}</button>`).join('');
     $('#m-anel').innerHTML = Object.entries(ANEL).map(([k, l]) => `<button class="move${m.anel === k ? ' cur' : ''}" data-k="anel" data-v="${k}">${l}</button>`).join('');
@@ -1683,7 +1696,9 @@
     if (m[campo] === valor) return;
     if (campo === 'anel') m.anel_desde = hojeISO();
     const antes = m[campo]; m[campo] = valor; m.ultima_atualizacao = hojeISO();
-    try { await db.patchMembro(id, { [campo]: valor }); $('#m-saved').textContent = 'Salvo'; renderMembros(); renderReceber(); renderHoje(); }
+    try { await db.patchMembro(id, { [campo]: valor }); $('#m-saved').textContent = 'Salvo'; renderMembros(); renderReceber(); renderHoje();
+      // Com a medida em mãos, o anel vai para produção.
+      if (campo === 'anel_tamanho' && valor && (!m.anel || m.anel === 'falta medida')) { await salvaMembro(id, 'anel', 'em produção'); if (memId === id) fillMembro(m, true); toast('Medida anotada. Anel em produção.'); } }
     catch (e) { m[campo] = antes; fillMembro(m, true); fail(e, 'Não foi possível salvar'); }
   }
   $('#msheet').addEventListener('change', e => { const k = e.target.dataset?.k; if (k && memId) salvaMembro(memId, k, e.target.value); });
@@ -2027,7 +2042,9 @@
     const fase = dias < 0 ? 'atrasado' : dias <= 7 ? 'semana' : dias <= ult - fimMes.getDate() ? 'mes' : 'proximo';
     return { tipo, data, dias, fase, ultimo };
   }
-  const anelPendente = m => m.status === 'ativo' && m.anel !== 'entregue' && m.entrada && -diasAte(m.entrada) >= ANEL_PRAZO;
+  // Pendente: todo membro ativo cujo anel ainda não foi entregue (falta medida ou em produção), não importa há quanto tempo entrou.
+  const anelPendente = m => m.status === 'ativo' && m.anel !== 'entregue';
+  const ANEL_ORDEM = { 'falta medida': 0, 'em produção': 1 };
   const contaFase = f => membros.filter(m => proximoContato(m)?.fase === f).length;
   const prazoTxt = p => p.dias < 0 ? `atrasado há ${-p.dias} ${-p.dias === 1 ? 'dia' : 'dias'}` : p.dias === 0 ? 'vence hoje' : `até ${dataCurta(p.data)}`;
   const ultimoTxt = p => p.ultimo ? `último contato em ${dataCurta(p.ultimo.data)}${p.ultimo.por ? ' por ' + esc(p.ultimo.por.split(' ')[0]) : ''}` : 'nenhum contato registrado';
@@ -2046,8 +2063,9 @@
       }).join('')}</section>`).join('') : '<div class="empty" style="grid-column:1/-1">Ninguém para chamar</div>';
       return;
     }
-    const l = membros.filter(m => anelPendente(m) && bate(m)).sort((a, b) => (a.anel_desde || a.entrada) < (b.anel_desde || b.entrada) ? -1 : 1);
-    $('#mcount').textContent = `${l.length} ${l.length === 1 ? 'membro' : 'membros'} há mais de ${ANEL_PRAZO} dias no grupo sem anel entregue`;
+    const l = membros.filter(m => anelPendente(m) && bate(m)).sort((a, b) => (ANEL_ORDEM[a.anel] ?? 0) - (ANEL_ORDEM[b.anel] ?? 0) || ((a.anel_desde || a.entrada || '9') < (b.anel_desde || b.entrada || '9') ? -1 : 1));
+    const fm = l.filter(m => m.anel !== 'em produção').length;
+    $('#mcount').textContent = `${l.length} ${l.length === 1 ? 'membro ativo' : 'membros ativos'} sem anel entregue · ${fm} sem medida · ${l.length - fm} em produção`;
     $('#mgrid').innerHTML = l.length ? `<section class="agrp"><h3>Anéis pendentes <span>${l.length}</span></h3>${l.map(m => {
       const wa = waLink(m.telefone), parado = m.anel_desde && m.anel_desde !== m.entrada ? -diasAte(m.anel_desde) : null, prox = m.anel === 'falta medida' ? 'em produção' : 'entregue';
       return `<div class="arow"><button class="anm" data-open="${m.id}"><b>${esc(m.nome)}</b><span><span class="atp anel">${ANEL[m.anel] || 'Sem status'}</span>${parado !== null ? ` <span class="${parado >= 60 ? 'late' : ''}">${parado === 0 ? 'desde hoje' : `há ${parado} ${parado === 1 ? 'dia' : 'dias'}`}</span>` : ''} · no grupo há ${-diasAte(m.entrada)} dias${m.anel_tamanho ? ' · tamanho ' + esc(m.anel_tamanho) : ''}</span></button>
