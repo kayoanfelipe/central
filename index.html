@@ -72,7 +72,7 @@
     .top { padding-left: 16px; padding-right: 16px; }
     .top .nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--bg); border-top: 1px solid var(--line); justify-content: space-around; padding: 8px 10px max(10px, env(safe-area-inset-bottom)); z-index: 6; }
     .top .nav { gap: 2px; padding-left: 6px; padding-right: 6px; }
-    .nav a { flex: 1 1 0; min-width: 0; text-align: center; padding: 6px 0 4px; font-size: 10.5px; letter-spacing: 0; white-space: nowrap; position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; border-radius: 12px; }
+    .nav a { flex: 1 1 0; min-width: 0; text-align: center; padding: 6px 0 4px; font-size: 9.5px; letter-spacing: -0.1px; white-space: nowrap; position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; border-radius: 12px; }
     .nav a .ni { display: block; width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
     .nav a.cur { background: transparent; color: var(--ink); font-weight: 600; }
     .nav a.cur .ni { stroke-width: 1.9; }
@@ -413,6 +413,21 @@
   .add { display: flex; gap: 10px; max-width: 720px; }
   .add .input { flex: 1; }
   .add .btn { margin: 0; padding: 0 24px; }
+  .tmeta { display: flex; gap: 8px; margin-top: 10px; max-width: 720px; flex-wrap: wrap; }
+  .tmeta input { border: 1px solid var(--line); border-radius: 14px; padding: 11px 14px; font-size: 14px; background: transparent; color: var(--ink); flex: 1 1 220px; min-width: 0; outline: 0; font-family: inherit; }
+  .tmeta input:focus { border-color: var(--ink); }
+  .tmeta input[type=date] { flex: 0 1 190px; }
+  .tchip { appearance: none; display: inline-flex; align-items: center; font: inherit; font-size: 11.5px; border: 1px solid var(--line); border-radius: 20px; padding: 2px 9px; margin-top: 7px; color: var(--ink-2); background: transparent; cursor: pointer; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tchip:hover { border-color: var(--ink); }
+  .tprazo { font-size: 11.5px; color: var(--muted); }
+  .tprazo.late { color: var(--error); font-weight: 500; }
+  .tprazo.today { color: var(--gold); font-weight: 500; }
+  .tlist { list-style: none; margin: 0 0 8px; padding: 0; }
+  .tlist li button { appearance: none; border: 0; background: none; width: 100%; text-align: left; font: inherit; color: var(--ink); padding: 8px 0; border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 10px; cursor: pointer; font-size: 13.5px; }
+  .tlist li:first-child button { border-top: 0; }
+  .tadd { display: flex; gap: 8px; }
+  .tadd input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 12px; padding: 9px 12px; font-size: 13.5px; background: transparent; color: var(--ink); outline: 0; font-family: inherit; }
+  .tadd .btn { margin: 0; padding: 0 16px; font-size: 13px; }
   .ideas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 26px; align-items: start; }
   @media (max-width: 860px) { .ideas { grid-template-columns: 1fr; } }
   .ideas .col { min-height: 0; }
@@ -488,6 +503,7 @@
       <a href="#hoje" data-v="hoje"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 9.5 10 4l6.5 5.5V16a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1z"/><path d="M8 17v-4.5h4V17"/></svg><span class="nl">Hoje</span></a>
       <a href="#aplicacoes" data-v="aplicacoes"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="4" height="12" rx="1.2"/><rect x="8.5" y="4" width="4" height="8" rx="1.2"/><rect x="14" y="4" width="3" height="10" rx="1.2"/></svg><span class="nl">Aplicações</span><span class="dot" hidden></span></a>
       <a href="#membros" data-v="membros"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><circle cx="7.5" cy="7.5" r="2.6"/><path d="M2.8 16c.6-2.6 2.4-4 4.7-4s4.1 1.4 4.7 4"/><circle cx="14" cy="8" r="2"/><path d="M13 12.2c2.1-.2 3.6 1.1 4.2 3.8"/></svg><span class="nl">Membros</span></a>
+      <a href="#tarefas" data-v="tarefas"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><rect x="3.5" y="3.5" width="13" height="13" rx="2.5"/><path d="M6.8 10.2l2.2 2.2 4.4-4.6"/></svg><span class="nl">Tarefas</span><span class="dot" hidden></span></a>
       <a href="#receber" data-v="receber"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 16.5h13"/><path d="M5.5 13.5v-3M9 13.5V7.5M12.5 13.5v-5M16 13.5V5"/></svg><span class="nl">Receber</span></a>
       <a href="#jornada" data-v="jornada"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><circle cx="4.5" cy="15" r="1.8"/><circle cx="15.5" cy="5" r="1.8"/><path d="M6.3 15H12a2.5 2.5 0 0 0 0-5H8a2.5 2.5 0 0 1 0-5h5.7"/></svg><span class="nl">Jornada</span></a>
       <a href="#ideias" data-v="ideias"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 14.5h5M8.3 17h3.4"/><path d="M10 3a5 5 0 0 0-3 9c.4.4.5.9.5 1.5h5c0-.6.1-1.1.5-1.5A5 5 0 0 0 10 3z"/></svg><span class="nl">Ideias</span></a>
@@ -548,6 +564,17 @@
       <div class="jmap" id="jmap"></div>
     </section>
 
+    <section id="v-tarefas" hidden>
+      <h1 class="page">Tarefas</h1>
+      <form class="add" id="f-tarefa">
+        <div class="input"><input id="tarefa" maxlength="280" placeholder="O que precisa fazer? Ex.: achar um copywriter júnior" autocomplete="off"></div>
+        <button class="btn">Anotar</button>
+      </form>
+      <div class="tmeta"><input id="t-membro" list="t-membros" placeholder="Para qual membro? (opcional)" autocomplete="off"><input id="t-prazo" type="date" title="Prazo (opcional)" aria-label="Prazo (opcional)"></div>
+      <datalist id="t-membros"></datalist>
+      <div class="ideas" id="tarefas"></div>
+    </section>
+
     <section id="v-ideias" hidden>
       <h1 class="page">Ideias</h1>
       <form class="add" id="f-idea">
@@ -592,6 +619,9 @@
     <div class="moves" id="m-status"></div>
     <div class="sec">Contrato</div>
     <div id="m-contrato"></div>
+    <div class="sec">Tarefas</div>
+    <div id="m-tarefas"></div>
+    <form class="tadd" id="m-tadd"><input id="m-tnova" maxlength="280" placeholder="Nova tarefa para este membro" autocomplete="off"><button class="btn">Anotar</button></form>
     <div class="sec">Acompanhamento</div>
     <div id="m-acomp"></div>
     <div class="sec">Dados</div>
@@ -706,6 +736,27 @@
   </div>
 </aside>
 
+<aside class="sheet" id="tsheet" aria-hidden="true">
+  <div class="head">
+    <div><div class="since" id="t-since" style="margin:0"></div></div>
+    <button class="x close" aria-label="Fechar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="body">
+    <textarea class="title" id="t-texto" rows="2" maxlength="280"></textarea>
+    <div class="sec">Status</div>
+    <div class="moves" id="t-status"></div>
+    <div class="fields" style="margin-top:16px">
+      <label class="fld"><span>Membro (opcional)</span><input id="t-smembro" list="t-membros" placeholder="Nome do membro" autocomplete="off"></label>
+      <label class="fld"><span>Prazo (opcional)</span><input id="t-sprazo" type="date"></label>
+    </div>
+    <div class="venc" id="t-mlink"></div>
+    <div class="sec">Detalhes</div>
+    <textarea id="t-nota" placeholder="Contexto, contatos, o que já foi tentado…" maxlength="4000"></textarea>
+    <div class="saved" id="t-saved"></div>
+    <button class="link del" id="t-del">Apagar tarefa</button>
+  </div>
+</aside>
+
 <aside class="sheet" id="isheet" aria-hidden="true">
   <div class="head">
     <div><div class="since" id="i-since" style="margin:0"></div></div>
@@ -789,7 +840,7 @@
   const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   const DEMO = LOCAL && new URLSearchParams(location.search).has('demo');
 
-  let session = null, apls = [], ideias = [], membros = [], conexoes = [], etapas = [], contatos = [], contratos = [], atalhos = [], atalhoId = null, editAt = false, vagas = null, openId = null, ideaId = null, filtro = '';
+  let session = null, apls = [], ideias = [], membros = [], conexoes = [], etapas = [], contatos = [], contratos = [], tarefas = [], tarefaId = null, atalhos = [], atalhoId = null, editAt = false, vagas = null, openId = null, ideaId = null, filtro = '';
   if (!DEMO) { try { session = JSON.parse(localStorage.getItem(STORE)); } catch {} }
   const save = s => { session = s; try { s ? localStorage.setItem(STORE, JSON.stringify(s)) : localStorage.removeItem(STORE); } catch {} };
 
@@ -829,6 +880,10 @@
     patchApl: (id, b) => api(`aplicacoes?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
     delApl: id => api(`aplicacoes?id=eq.${id}`, { method: 'DELETE' }),
     ideias: () => api('ideias?select=*&order=created_at.desc'),
+    tarefas: () => api('tarefas?select=*&order=created_at.desc'),
+    addTarefa: b => api('tarefas', { method: 'POST', body: JSON.stringify(b) }).then(r => r[0]),
+    patchTarefa: (id, b) => api(`tarefas?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
+    delTarefa: id => api(`tarefas?id=eq.${id}`, { method: 'DELETE' }),
     addIdeia: texto => api('ideias', { method: 'POST', body: JSON.stringify({ texto }) }).then(r => r[0]),
     patchIdeia: (id, b) => api(`ideias?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
     delIdeia: id => api(`ideias?id=eq.${id}`, { method: 'DELETE' }),
@@ -902,16 +957,16 @@
   }
 
   async function loadAll() {
-    const [a, i, m, c, j, ct, k, at] = await Promise.all([db.apls(), db.ideias(), db.membros(), db.conexoes(), db.etapas(), db.contatos(), db.contratos().catch(() => []), db.atalhos().catch(() => null)]);
-    apls = a; ideias = i; membros = m; conexoes = c; etapas = j; contatos = ct; contratos = k;
+    const [a, i, m, c, j, ct, k, at, tf] = await Promise.all([db.apls(), db.ideias(), db.membros(), db.conexoes(), db.etapas(), db.contatos(), db.contratos().catch(() => []), db.atalhos().catch(() => null), db.tarefas().catch(() => [])]);
+    apls = a; ideias = i; membros = m; conexoes = c; etapas = j; contatos = ct; contratos = k; tarefas = tf;
     // Sem a tabela (migração 37 não rodada), mostra os atalhos fixos, sem edição.
     atalhos = at || ATALHOS.map(([titulo, sub, url], n) => ({ id: null, titulo, sub, url, ordem: n + 1 }));
     loadVagas();
   }
 
   /* ---------------- Navegação ---------------- */
-  const VIEWS = ['hoje', 'aplicacoes', 'membros', 'receber', 'jornada', 'ideias'];
-  const TITULO = { hoje: 'Central', aplicacoes: 'Aplicações', membros: 'Membros', receber: 'Receber', jornada: 'Jornada do membro', ideias: 'Ideias' };
+  const VIEWS = ['hoje', 'aplicacoes', 'membros', 'tarefas', 'receber', 'jornada', 'ideias'];
+  const TITULO = { hoje: 'Central', aplicacoes: 'Aplicações', membros: 'Membros', tarefas: 'Tarefas', receber: 'Receber', jornada: 'Jornada do membro', ideias: 'Ideias' };
   function route() {
     const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'hoje';
     VIEWS.forEach(k => { $('#v-' + k).hidden = k !== v; });
@@ -921,11 +976,13 @@
   }
   window.addEventListener('hashchange', () => { close(); route(); window.scrollTo(0, 0); });
 
-  function renderAll() { renderHoje(); renderBoard(); renderMembros(); renderReceber(); renderJornada(); renderIdeias(); renderNav(); }
+  function renderAll() { renderHoje(); renderBoard(); renderMembros(); renderReceber(); renderJornada(); renderIdeias(); renderTarefas(); renderNav(); }
   function renderNav() {
     const n = apls.filter(r => r.status === 'nova').length;
     const a = document.querySelector('#nav a[data-v="aplicacoes"]');
     a.querySelector('.dot').hidden = !n; a.title = n ? `${n} aplicações novas` : '';
+    const late = tarefas.filter(t => t.status !== 'feito' && t.prazo && diasAte(t.prazo) <= 0).length, ta = document.querySelector('#nav a[data-v="tarefas"]');
+    ta.querySelector('.dot').hidden = !late; ta.title = late ? `${late} tarefas para hoje ou atrasadas` : '';
   }
 
   /* ---------------- Helpers ---------------- */
@@ -949,6 +1006,7 @@
     const novas = apls.filter(r => r.status === 'nova');
     const calls = apls.filter(r => r.status === 'call');
     const fazendo = ideias.filter(i => i.status === 'fazendo');
+    const abertas = tarefas.filter(t => t.status !== 'feito');
     const vencer = membros.filter(m => atual(m) && diasAte(m.vencimento) !== null && diasAte(m.vencimento) >= 0 && diasAte(m.vencimento) <= 30).sort((a, b) => a.vencimento < b.vencimento ? -1 : 1);
     const m0 = mes(0), m12 = Array.from({ length: 12 }, (_, k) => mes(k)).reduce((s, x) => s + x.total + x.metaValor, 0);
     const vencidos = membros.filter(m => atual(m) && diasAte(m.vencimento) !== null && diasAte(m.vencimento) < 0);
@@ -995,6 +1053,9 @@
           <li><span class="cash"><span>Precisa renovar</span><b>${rs(m0.renovar)}</b></span></li>
           <li><span class="cash"><span>Próximos 12 meses</span><b>${rs(m12)}</b></span></li>
         </ul></div>
+      <div class="stat"><div class="k">Tarefas <a href="#tarefas">Ver todas</a></div>
+        <div class="v${abertas.some(t => t.prazo && diasAte(t.prazo) < 0) ? ' hl' : ''}">${abertas.length}<small>${abertas.some(t => t.status === 'fazendo') ? abertas.filter(t => t.status === 'fazendo').length + ' em andamento' : 'pra fazer'}</small></div>
+        ${list(tOrdena(abertas), t => `<li><button class="two" data-tarefa="${t.id}"><span class="nm" style="max-width:100%">${esc(t.texto)}</span><span class="meta">${[t.membro_id && byId(t.membro_id) ? esc(byId(t.membro_id).nome) : '', tPrazoTxt(t)].filter(Boolean).join(' · ')}</span></button></li>`, 'Nada pendente.', 4, 'href="#tarefas"')}</div>
       <div class="stat"><div class="k">Ideias em andamento <a href="#ideias">Ver todas</a></div>
         <div class="v">${fazendo.length}</div>
         ${list(fazendo, i => `<li><button data-ideia="${i.id}"><span class="nm">${esc(i.texto)}</span></button></li>`, `${ideias.filter(i => i.status === 'fazer').length} pra fazer.`)}</div>`;
@@ -1056,6 +1117,7 @@
   $('#stats').addEventListener('click', e => {
     const a = e.target.closest('[data-apl]'); if (a) return openApl(a.dataset.apl);
     const i = e.target.closest('[data-ideia]'); if (i) return openIdeia(i.dataset.ideia);
+    const tf = e.target.closest('[data-tarefa]'); if (tf) return openTarefa(tf.dataset.tarefa);
     const m = e.target.closest('[data-mem]'); if (m) return openMembro(m.dataset.mem);
     const f = e.target.closest('[data-mf]'); if (f) { mfiltro = f.dataset.mf; mbusca = ''; $('#mbusca').value = ''; }
   });
@@ -1168,7 +1230,7 @@
     el.classList.add('on'); el.setAttribute('aria-hidden', 'false'); $('#scrim').classList.add('on');
   }
   function close() {
-    openId = null; ideaId = null; memId = null; etapaId = null; atalhoId = null;
+    openId = null; ideaId = null; memId = null; etapaId = null; atalhoId = null; tarefaId = null;
     document.querySelectorAll('.sheet').forEach(s => { s.classList.remove('on'); s.setAttribute('aria-hidden', 'true'); });
     $('#scrim').classList.remove('on');
   }
@@ -1342,6 +1404,113 @@
     catch (e) { fail(e, 'Não foi possível apagar'); }
   });
 
+  /* ---------------- Tarefas ---------------- */
+  const tMembroPorNome = nome => { const n = norm(nome).trim(); return n ? membros.find(m => norm(m.nome).trim() === n) || null : null; };
+  const tPrazoTxt = t => { if (!t.prazo) return ''; const d = diasAte(t.prazo); if (t.status === 'feito') return 'prazo ' + dataBR(t.prazo);
+    return d < 0 ? `atrasada ${-d === 1 ? '1 dia' : -d + ' dias'}` : d === 0 ? 'para hoje' : d === 1 ? 'para amanhã' : 'até ' + dataBR(t.prazo); };
+  const tPrazoCls = t => !t.prazo || t.status === 'feito' ? '' : diasAte(t.prazo) < 0 ? ' late' : diasAte(t.prazo) === 0 ? ' today' : '';
+  const tOrdena = l => [...l].sort((a, b) => (a.prazo ? diasAte(a.prazo) : 9999) - (b.prazo ? diasAte(b.prazo) : 9999) || new Date(b.created_at) - new Date(a.created_at));
+  function renderTarefas() {
+    $('#t-membros').innerHTML = membros.filter(atual).map(m => `<option value="${esc(m.nome)}">`).join('');
+    $('#tarefas').innerHTML = IDEIA.map(([k, label]) => {
+      let l = tarefas.filter(t => t.status === k);
+      l = k === 'feito' ? l.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)) : tOrdena(l);
+      return `<section class="col">
+        <header><h2>${label}</h2><span class="n">${l.length}</span></header>
+        <div class="cards">${l.length ? l.map(t => { const m = t.membro_id ? byId(t.membro_id) : null; return `
+          <div class="idea${k === 'feito' ? ' done' : ''}" data-id="${t.id}" tabindex="0" role="button">
+            <div class="t">${esc(t.texto)}</div>
+            ${m ? `<button class="tchip" data-tm="${m.id}" title="Abrir a ficha">${esc(m.nome)}</button>` : ''}
+            ${t.nota ? `<div class="has-note">${esc(t.nota.split('\n')[0])}</div>` : ''}
+            <div class="f"><span class="d"><span class="tprazo${tPrazoCls(t)}">${tPrazoTxt(t) || when(k === 'feito' ? t.updated_at : t.created_at)}</span></span>
+            ${NEXT[k] ? `<button class="go" data-to="${NEXT[k][0]}">${NEXT[k][1]}</button>` : ''}</div>
+          </div>`; }).join('') : `<div class="empty">${k === 'fazer' ? 'Anote a primeira tarefa acima' : 'Nada por aqui'}</div>`}</div>
+      </section>`;
+    }).join('');
+    if (tarefaId) fillTarefa(tarefas.find(t => t.id === tarefaId));
+    if (memId) renderTarefasFicha(byId(memId));
+  }
+  async function novaTarefa(texto, membro_id, prazo) {
+    const t = await db.addTarefa({ texto, membro_id: membro_id || null, prazo: prazo || null });
+    tarefas.unshift(t); renderAll(); toast('Tarefa anotada'); return t;
+  }
+  $('#f-tarefa').addEventListener('submit', async e => {
+    e.preventDefault();
+    const texto = $('#tarefa').value.trim(); if (!texto) return $('#tarefa').focus();
+    const nm = $('#t-membro').value.trim(), m = tMembroPorNome(nm);
+    if (nm && !m) { toast('Não achei esse membro. Escolha um nome da lista ou deixe em branco.'); return $('#t-membro').focus(); }
+    const b = e.submitter; b.disabled = true;
+    try { await novaTarefa(texto, m && m.id, $('#t-prazo').value); $('#tarefa').value = ''; $('#t-membro').value = ''; $('#t-prazo').value = ''; }
+    catch (err) { fail(err, 'Não foi possível anotar'); }
+    b.disabled = false; $('#tarefa').focus();
+  });
+  async function setTarefa(id, status) {
+    const t = tarefas.find(x => x.id === id); if (!t || t.status === status) return;
+    const antes = [t.status, t.updated_at]; t.status = status; t.updated_at = new Date().toISOString(); renderAll();
+    try { await db.patchTarefa(id, { status }); toast(status === 'feito' ? 'Feito' : status === 'fazendo' ? 'Em andamento' : 'De volta para pra fazer'); }
+    catch (e) { [t.status, t.updated_at] = antes; renderAll(); fail(e, 'Não foi possível mudar'); }
+  }
+  $('#tarefas').addEventListener('click', e => {
+    const tm = e.target.closest('[data-tm]'); if (tm) { e.stopPropagation(); openMembro(tm.dataset.tm); return; }
+    const go = e.target.closest('.go'), card = e.target.closest('.idea'); if (!card) return;
+    if (go) { e.stopPropagation(); setTarefa(card.dataset.id, go.dataset.to); return; }
+    openTarefa(card.dataset.id);
+  });
+  $('#tarefas').addEventListener('keydown', e => { const c = e.target.closest('.idea'); if (c && e.target === c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openTarefa(c.dataset.id); } });
+  function openTarefa(id) { close(); tarefaId = id; $('#t-saved').textContent = ''; fillTarefa(tarefas.find(t => t.id === id), true); sheetOn($('#tsheet')); }
+  function fillTarefa(t, force) {
+    if (!t) { close(); return; }
+    const m = t.membro_id ? byId(t.membro_id) : null;
+    $('#t-since').textContent = `Anotada em ${new Date(t.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}`;
+    if (force || document.activeElement !== $('#t-texto')) $('#t-texto').value = t.texto;
+    if (force || document.activeElement !== $('#t-nota')) $('#t-nota').value = t.nota || '';
+    if (force || document.activeElement !== $('#t-smembro')) $('#t-smembro').value = m ? m.nome : '';
+    $('#t-sprazo').value = t.prazo || '';
+    $('#t-mlink').innerHTML = m ? `<a href="#" data-tm="${m.id}" style="color:var(--ink)">Abrir a ficha de ${esc(m.nome)}</a>` : '';
+    $('#t-status').innerHTML = IDEIA.map(([k, l]) => `<button class="move${t.status === k ? ' cur' : ''}" data-to="${k}">${l}</button>`).join('');
+  }
+  $('#t-status').addEventListener('click', e => { const b = e.target.closest('.move'); if (b && tarefaId) setTarefa(tarefaId, b.dataset.to); });
+  $('#t-mlink').addEventListener('click', e => { const a = e.target.closest('[data-tm]'); if (a) { e.preventDefault(); openMembro(a.dataset.tm); } });
+  autosave($('#t-nota'), $('#t-saved'), () => tarefaId, async (id, nota) => {
+    await db.patchTarefa(id, { nota: nota || null }); const t = tarefas.find(x => x.id === id); if (t) { t.nota = nota; renderTarefas(); renderHoje(); }
+  });
+  autosave($('#t-texto'), $('#t-saved'), () => tarefaId, async (id, texto) => {
+    texto = texto.trim(); if (!texto) throw new Error('vazio');
+    await db.patchTarefa(id, { texto }); const t = tarefas.find(x => x.id === id); if (t) { t.texto = texto; renderTarefas(); renderHoje(); }
+  });
+  $('#t-smembro').addEventListener('change', async () => {
+    const t = tarefas.find(x => x.id === tarefaId); if (!t) return;
+    const nm = $('#t-smembro').value.trim(), m = tMembroPorNome(nm);
+    if (nm && !m) { toast('Não achei esse membro. Escolha um nome da lista.'); return; }
+    try { await db.patchTarefa(t.id, { membro_id: m ? m.id : null }); t.membro_id = m ? m.id : null; $('#t-saved').textContent = 'Salvo'; renderAll(); }
+    catch (e) { fail(e, 'Não foi possível salvar'); }
+  });
+  $('#t-sprazo').addEventListener('change', async () => {
+    const t = tarefas.find(x => x.id === tarefaId); if (!t) return;
+    const prazo = $('#t-sprazo').value || null;
+    try { await db.patchTarefa(t.id, { prazo }); t.prazo = prazo; $('#t-saved').textContent = 'Salvo'; renderAll(); }
+    catch (e) { fail(e, 'Não foi possível salvar'); }
+  });
+  $('#t-del').addEventListener('click', async () => {
+    const t = tarefas.find(x => x.id === tarefaId); if (!t) return;
+    if (!confirm('Apagar esta tarefa? Não dá para desfazer.')) return;
+    try { await db.delTarefa(t.id); tarefas = tarefas.filter(x => x.id !== t.id); close(); renderAll(); toast('Tarefa apagada'); }
+    catch (e) { fail(e, 'Não foi possível apagar'); }
+  });
+  function renderTarefasFicha(m) {
+    if (!m) return;
+    const l = tOrdena(tarefas.filter(t => t.membro_id === m.id && t.status !== 'feito')), feitas = tarefas.filter(t => t.membro_id === m.id && t.status === 'feito').length;
+    $('#m-tarefas').innerHTML = (l.length ? `<ul class="tlist">${l.map(t => `<li><button data-tarefa="${t.id}"><span>${esc(t.texto)}</span><span class="tprazo${tPrazoCls(t)}">${tPrazoTxt(t) || (t.status === 'fazendo' ? 'fazendo' : '')}</span></button></li>`).join('')}</ul>` : '<div class="venc" style="margin:0 0 8px">Nenhuma tarefa aberta para este membro.</div>')
+      + (feitas ? `<div class="venc" style="margin:-2px 0 8px">${feitas} ${feitas === 1 ? 'feita' : 'feitas'}</div>` : '');
+  }
+  $('#m-tarefas').addEventListener('click', e => { const b = e.target.closest('[data-tarefa]'); if (b) openTarefa(b.dataset.tarefa); });
+  $('#m-tadd').addEventListener('submit', async e => {
+    e.preventDefault(); const texto = $('#m-tnova').value.trim(); if (!texto || !memId) return $('#m-tnova').focus();
+    const b = e.submitter; b.disabled = true;
+    try { await novaTarefa(texto, memId); $('#m-tnova').value = ''; } catch (err) { fail(err, 'Não foi possível anotar'); }
+    b.disabled = false;
+  });
+
   /* ---------------- Membros ---------------- */
   const STATUS = { ativo: 'Ativo', convidado: 'Convidado', fundador: 'Fundador', removido: 'Ex-membro' };
   const RENOV = { pendente: 'Pendente', pago: 'Pago', remover: 'Remover' };
@@ -1455,6 +1624,7 @@
     $('#m-pag').value = m.pagamentos || '';
     renderAcompFicha(m);
     renderContratoFicha(m);
+    renderTarefasFicha(m);
     renderConexoes(m);
   }
   function renderConexoes(m) {
@@ -2019,6 +2189,8 @@
     if (d) r += row('Forma', d.forma === 'vista' ? `À vista: ${rs2(anual * (1 - desc / 100))} (${desc}% de desconto)` : `12x de ${rs2(anual / 12)}: 1ª no fechamento, depois todo dia ${esc(d.dia)} a partir de ${kDataBr(d.prox)}`, d.forma === 'vista' ? desc !== K_PADRAO.desconto : anual !== K_PADRAO.anual);
     else r += row('Opções', `12x de ${rs2(anual / 12)} ou à vista ${rs2(anual * (1 - desc / 100))}`, anual !== K_PADRAO.anual || desc !== K_PADRAO.desconto);
     r += row('Renovação', rs2(renov), renov !== K_PADRAO.renovacao);
+    const ant = kAnteriores(p);
+    if (ant.length) r += row('Cancela os anteriores', `${ant.map(k => esc(k.numero)).join(', ')} (o link deles para de abrir)`, true);
     return `<h4>Confira antes de gerar</h4>${r}<div class="acts"><button class="btn ghost-b" type="button" id="k-voltar">Voltar e corrigir</button><button class="btn" type="button" id="k-ok">Está certo, gerar link</button></div>`;
   }
   $('#k-conf').addEventListener('click', e => { if (e.target.closest('#k-voltar')) { kConfFecha(); $('#k-gerar').scrollIntoView({ behavior: 'smooth', block: 'center' }); } else if (e.target.closest('#k-ok') && kPend) kCriar(kPend); });
@@ -2081,17 +2253,25 @@
     kPend = p; $('#k-conf').innerHTML = kResumo(p); $('#k-conf').hidden = false; b.hidden = true;
     $('#k-conf').scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
+  /* Contratos ainda abertos (não aceitos) da mesma pessoa: mesma ficha, mesmo CPF ou mesmo nome. Gerar um novo cancela esses. */
+  function kAnteriores(p) {
+    const nome = norm((p.dados ? p.dados.nome : p.nome) || '').replace(/\s+/g, ' ').trim(), cpf = kDig(p.dados && p.dados.cpf);
+    return contratos.filter(k => ['enviado', 'preenchido'].includes(k.status) && (
+      (p.membro_id && k.membro_id === p.membro_id) || (cpf.length === 11 && kDig(k.dados && k.dados.cpf) === cpf) || (nome && norm(k.nome).replace(/\s+/g, ' ').trim() === nome)));
+  }
   async function kCriar(p) {
     const adm = p.modo === 'admin', b = $('#k-ok'); b.disabled = true; $('#k-erro').textContent = '';
     try {
+      const ant = kAnteriores(p);
       const r = await db.criarContrato(p);
+      for (const a of ant) { try { await db.patchContrato(a.id, { status: 'cancelado' }); } catch (e2) { toast(`Não deu para cancelar o ${a.numero}. Cancele na lista.`); } }
       contratos = await db.contratos();
       const k = contratos.find(x => x.id === r.id) || { ...r, nome: adm ? p.dados.nome : p.nome, modo: p.modo };
       $('#k-res').innerHTML = `<div class="lk-msg"><div class="lk-k">Mensagem para ${esc(String(k.nome).split(' ')[0])} (contrato ${esc(r.numero)})</div><div class="lk-txt">${esc(msgContrato(k))}</div>
         <button class="lk-btn lk-btn2" type="button" data-kmsg="${k.id}">Copiar mensagem</button> <a class="abtn" style="margin-left:6px" href="${CONTRATO_URL + r.token}" target="_blank" rel="noopener">Abrir como o membro vê</a></div>`;
       $('#k-res').scrollIntoView({ behavior: 'smooth', block: 'center' });
       kConfFecha(); $('#k-gerar').hidden = true;
-      renderMembros(); if (kFicha) renderContratoFicha(kFicha); toast('Contrato criado');
+      renderMembros(); if (kFicha) renderContratoFicha(kFicha); toast(ant.length ? `Contrato criado. ${ant.length === 1 ? 'O anterior foi cancelado' : ant.length + ' anteriores foram cancelados'}.` : 'Contrato criado');
     } catch (err) { $('#k-erro').textContent = err.message === 'auth' ? 'Entre de novo.' : err.message; b.disabled = false; }
   }
   $('#k-res').addEventListener('click', e => { const t = e.target.closest('[data-kmsg]'); if (t) { const k = contratos.find(x => x.id === t.dataset.kmsg); if (k) copia(msgContrato(k), 'Mensagem copiada'); } });
@@ -2124,6 +2304,7 @@
 
     }));
     const AT = ATALHOS.map(([titulo, sub, url], n) => ({ id: 'at' + n, created_at: ago(30), titulo, sub, url, ordem: n + 1 }));
+    const TF = [];
     const I = [
       ['Jantar só com os membros 8 dígitos antes da The House', 'fazendo', 3],
       ['Episódio do podcast com um parceiro principal', 'fazendo', 5],
@@ -2160,6 +2341,10 @@
       patchApl: (id, b) => { Object.assign(A.find(x => x.id === id) || {}, b); return wait(null); },
       delApl: id => { A.splice(A.findIndex(x => x.id === id), 1); return wait(null); },
       ideias: () => wait(I.map(x => ({ ...x }))),
+      tarefas: () => wait(TF.map(x => ({ ...x }))),
+      addTarefa: b => { const x = { id: 't' + k++, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), status: 'fazer', nota: null, membro_id: null, prazo: null, ...b }; TF.unshift(x); return wait({ ...x }); },
+      patchTarefa: (id, b) => { Object.assign(TF.find(x => x.id === id) || {}, b, { updated_at: new Date().toISOString() }); return wait(null); },
+      delTarefa: id => { TF.splice(TF.findIndex(x => x.id === id), 1); return wait(null); },
       atalhos: () => wait(AT.map(x => ({ ...x }))),
       addAtalho: b => { const x = { id: 'at' + k++, created_at: new Date().toISOString(), ...b }; AT.push(x); return wait({ ...x }); },
       patchAtalho: (id, b) => { Object.assign(AT.find(x => x.id === id) || {}, b); return wait(null); },
