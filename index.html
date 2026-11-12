@@ -139,6 +139,32 @@
   .tag.none { background: transparent; border: 1px dashed var(--line); color: var(--muted); }
   .tag.convite { color: var(--ink); background: transparent; border: 1px solid var(--line); }
   .tag.convite.muito { border-color: var(--ink); font-weight: 600; }
+  .mgrid.alist { display: block; }
+  .agrp { background: var(--col); border-radius: 20px; padding: 14px 14px 8px; margin-bottom: 12px; }
+  .agrp h3 { margin: 2px 4px 10px; font-size: 13.5px; font-weight: 600; display: flex; gap: 8px; align-items: baseline; }
+  .agrp h3 span { color: var(--muted); font-weight: 400; font-size: 12px; }
+  .agrp.atrasado h3 { color: var(--error); }
+  .arow { display: flex; align-items: center; gap: 10px; background: var(--card); border-radius: 14px; padding: 10px 10px 10px 14px; margin-bottom: 6px; }
+  .anm { appearance: none; border: 0; background: none; padding: 0; text-align: left; cursor: pointer; flex: 1; min-width: 0; color: var(--ink); display: flex; flex-direction: column; gap: 3px; }
+  .anm b { font-size: 14px; font-weight: 600; }
+  .anm > span { font-size: 12px; color: var(--ink-2); line-height: 1.45; }
+  .anm .late { color: var(--error); font-weight: 500; }
+  .atp { font-size: 10.5px; font-weight: 600; border-radius: 20px; padding: 1px 7px; border: 1px solid var(--line); color: var(--ink); white-space: nowrap; }
+  .atp.trimestral { border-color: var(--gold); color: var(--gold); }
+  .aact { display: flex; gap: 6px; flex: none; }
+  .abtn { appearance: none; cursor: pointer; text-decoration: none; border: 1px solid var(--line); background: transparent; color: var(--ink); border-radius: 30px; padding: 8px 13px; font-size: 12.5px; font-weight: 500; white-space: nowrap; }
+  .abtn.pri { background: var(--dark); border-color: var(--dark); color: var(--on-dark); }
+  @media (max-width: 560px) { .arow { flex-direction: column; align-items: stretch; } .aact { justify-content: flex-end; } }
+  .aprox { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px; }
+  .aprox .late { color: var(--error); font-weight: 500; }
+  .areg { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; margin-top: 10px; }
+  .areg input { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 14px; background: transparent; color: var(--ink); outline: 0; min-width: 0; }
+  .areg .sel { width: auto; }
+  @media (max-width: 520px) { .areg { grid-template-columns: 1fr 1fr; } .areg input { grid-column: 1 / -1; } }
+  .ahist { list-style: none; margin: 12px 0 0; padding: 0; }
+  .ahist li { display: flex; justify-content: space-between; align-items: center; gap: 8px; border-top: 1px solid var(--line); padding: 8px 0; font-size: 13px; }
+  .ahist em { display: block; font-style: normal; color: var(--ink-2); font-size: 12.5px; margin-top: 2px; }
+
   .clink { display: flex; align-items: center; gap: 8px; margin-top: 8px; background: var(--col); border-radius: 10px; padding: 6px 6px 6px 9px; min-width: 0; }
   .cl-url { flex: 1; min-width: 0; font-size: 12px; font-weight: 500; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
   .cl-copy { flex: none; font-size: 11.5px; font-weight: 600; color: var(--on-dark); background: var(--dark); border-radius: 20px; padding: 4px 10px; cursor: pointer; }
@@ -528,6 +554,8 @@
     <div class="quick" id="m-quick" style="margin-top:8px"></div>
     <div class="sec">Status</div>
     <div class="moves" id="m-status"></div>
+    <div class="sec">Acompanhamento</div>
+    <div id="m-acomp"></div>
     <div class="sec">Dados</div>
     <div class="fields" id="m-campos"></div>
     <div class="venc" id="m-venc"></div>
@@ -535,6 +563,7 @@
     <div class="moves" id="m-renov"></div>
     <div class="sec">Anel</div>
     <div class="moves" id="m-anel"></div>
+    <div class="venc" id="m-anel-desde"></div>
     <div class="sec">Conexões</div>
     <ul class="cxl" id="m-conex"></ul>
     <form class="cxf" id="f-cx">
@@ -640,7 +669,7 @@
   const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   const DEMO = LOCAL && new URLSearchParams(location.search).has('demo');
 
-  let session = null, apls = [], ideias = [], membros = [], conexoes = [], etapas = [], vagas = null, openId = null, ideaId = null, filtro = '';
+  let session = null, apls = [], ideias = [], membros = [], conexoes = [], etapas = [], contatos = [], vagas = null, openId = null, ideaId = null, filtro = '';
   if (!DEMO) { try { session = JSON.parse(localStorage.getItem(STORE)); } catch {} }
   const save = s => { session = s; try { s ? localStorage.setItem(STORE, JSON.stringify(s)) : localStorage.removeItem(STORE); } catch {} };
 
@@ -694,6 +723,9 @@
     addEtapa: b => api('jornada_etapas', { method: 'POST', body: JSON.stringify(b) }).then(r => r[0]),
     patchEtapa: (id, b) => api(`jornada_etapas?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
     delEtapa: id => api(`jornada_etapas?id=eq.${id}`, { method: 'DELETE' }),
+    contatos: () => api('membro_contatos?select=*&order=data.desc'),
+    addContato: b => api('membro_contatos', { method: 'POST', body: JSON.stringify(b) }).then(r => r[0]),
+    delContato: id => api(`membro_contatos?id=eq.${id}`, { method: 'DELETE' }),
   };
 
   /* ---------------- Entrada ---------------- */
@@ -743,8 +775,8 @@
   }
 
   async function loadAll() {
-    const [a, i, m, c, j] = await Promise.all([db.apls(), db.ideias(), db.membros(), db.conexoes(), db.etapas()]);
-    apls = a; ideias = i; membros = m; conexoes = c; etapas = j;
+    const [a, i, m, c, j, ct] = await Promise.all([db.apls(), db.ideias(), db.membros(), db.conexoes(), db.etapas(), db.contatos()]);
+    apls = a; ideias = i; membros = m; conexoes = c; etapas = j; contatos = ct;
     loadVagas();
   }
 
@@ -815,6 +847,13 @@
         ${list(calls, aplItem, 'Nenhuma call marcada.')}
         <div class="foot">Quem está em Call marcada no quadro. A agenda do Cal.com entra numa próxima versão.</div></div>
       <div class="stat"><div class="k">Vagas de patrocínio <a href="${PARCEIROS}" target="_blank" rel="noopener">Site</a></div>${vagasHtml}</div>
+      <div class="stat"><div class="k">Acompanhamento <a href="#membros" data-mf="chamar">Ver lista</a></div>
+        <div class="v${contaFase('atrasado') ? ' hl' : ''}">${contaFase('atrasado')}<small>${contaFase('atrasado') === 1 ? 'atrasado' : 'atrasados'}</small></div>
+        <ul>
+          <li><a href="#membros" data-mf="chamar"><span class="nm">Chamar esta semana</span><span class="meta">${contaFase('semana')}</span></a></li>
+          <li><a href="#membros" data-mf="chamar"><span class="nm">Chamar este mês</span><span class="meta">${contaFase('mes')}</span></a></li>
+          <li><a href="#membros" data-mf="aneis"><span class="nm">Anéis pendentes</span><span class="meta">${membros.filter(anelPendente).length}</span></a></li>
+        </ul></div>
       <div class="stat"><div class="k">Renovações <a href="#membros" data-mf="vencer">Ver todas</a></div>
         <div class="v${vencer.length ? ' hl' : ''}">${vencer.length}<small>em 30 dias · ${rs(soma(vencer.filter(m => m.renovacao !== 'remover'), 'valor_renovacao'))}</small></div>
         ${list(vencer, m => `<li><button class="two" data-mem="${m.id}"><span class="nm" style="max-width:100%">${esc(m.nome)}</span><span class="meta">${venceTxt(m)}${m.valor_renovacao ? ' · ' + rs(m.valor_renovacao) : ''}${m.renovacao ? ' · ' + RENOV[m.renovacao] : ''}</span></button></li>`, 'Nenhuma nos próximos 30 dias.', 3, 'href="#membros" data-mf="vencer"')}
@@ -1124,7 +1163,7 @@
   const STATUS = { ativo: 'Ativo', convidado: 'Convidado', fundador: 'Fundador', removido: 'Ex-membro' };
   const RENOV = { pendente: 'Pendente', pago: 'Pago', remover: 'Remover' };
   const ANEL = { 'falta medida': 'Falta medida', 'em produção': 'Em produção', 'entregue': 'Entregue' };
-  const MFILTROS = [['atuais', 'Atuais'], ['vencer', 'Vencem em 30 dias'], ['vencidos', 'Vencidos'], ['convidado', 'Convidados'], ['ex', 'Ex-membros'], ['todos', 'Todos']];
+  const MFILTROS = [['atuais', 'Atuais'], ['chamar', 'Chamar'], ['aneis', 'Anéis pendentes'], ['vencer', 'Vencem em 30 dias'], ['vencidos', 'Vencidos'], ['convidado', 'Convidados'], ['ex', 'Ex-membros'], ['todos', 'Todos']];
   let mfiltro = 'atuais', mbusca = '', memId = null;
   const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   const byId = id => membros.find(m => m.id === id);
@@ -1176,11 +1215,16 @@
       return termos.every(x => t.includes(x));
     }).sort((a, b) => mfiltro === 'vencer' || mfiltro === 'vencidos' ? (a.vencimento < b.vencimento ? -1 : 1) : a.nome.localeCompare(b.nome, 'pt-BR'));
   }
-  function contaFiltro(k) { const s = mfiltro, b = mbusca; mfiltro = k; mbusca = ''; const n = filtrarMembros().length; mfiltro = s; mbusca = b; return n; }
+  function contaFiltro(k) {
+    if (k === 'chamar') return ['atrasado', 'semana', 'mes'].reduce((s, f) => s + contaFase(f), 0);
+    if (k === 'aneis') return membros.filter(anelPendente).length;
+    const s = mfiltro, b = mbusca; mfiltro = k; mbusca = ''; const n = filtrarMembros().length; mfiltro = s; mbusca = b; return n; }
 
   function renderMembros() {
     $('#mfilter').innerHTML = MFILTROS.map(([k, l]) => `<button class="chip${mfiltro === k ? ' cur' : ''}" data-f="${k}">${l} <span class="cnt">${contaFiltro(k)}</span></button>`).join('');
     const termos = norm(mbusca).split(/\s+/).filter(Boolean);
+    if (mfiltro === 'chamar' || mfiltro === 'aneis') { $('#mgrid').classList.add('alist'); renderAcompanhamento(termos); if (memId) fillMembro(byId(memId)); return; }
+    $('#mgrid').classList.remove('alist');
     const list = filtrarMembros();
     $('#mcount').textContent = termos.length ? `${list.length} ${list.length === 1 ? 'resultado' : 'resultados'} para "${mbusca.trim()}"${mfiltro === 'atuais' ? ' entre todos os membros' : ''}` : `${list.length} ${list.length === 1 ? 'membro' : 'membros'}`;
     $('#mgrid').innerHTML = list.length ? list.map(m => {
@@ -1204,7 +1248,7 @@
 
   const CAMPOS = [
     ['email', 'E-mail', 'email'], ['telefone', 'Telefone', 'tel'], ['cidade', 'Cidade', 'text'], ['plano', 'Plano', 'text'],
-    ['vencimento', 'Vencimento', 'date'], ['anel_tamanho', 'Tamanho do anel', 'text'],
+    ['vencimento', 'Vencimento', 'date'], ['entrada', 'Entrou no grupo', 'date'], ['anel_tamanho', 'Tamanho do anel', 'text'],
     ['valor_renovacao', 'Renovação (R$)', 'number'], ['mensalidade', 'Mensalidade (R$)', 'number'],
     ['receita_gerada', 'Receita gerada (R$)', 'number'], ['ltv', 'Já pagou no total (R$)', 'number'],
   ];
@@ -1223,6 +1267,7 @@
     $('#m-anel').innerHTML = Object.entries(ANEL).map(([k, l]) => `<button class="move${m.anel === k ? ' cur' : ''}" data-k="anel" data-v="${k}">${l}</button>`).join('');
     $('#m-info').value = m.informacoes || '';
     $('#m-pag').value = m.pagamentos || '';
+    renderAcompFicha(m);
     renderConexoes(m);
   }
   function renderConexoes(m) {
@@ -1245,6 +1290,7 @@
     else if (typeof valor === 'string') valor = valor.trim() || null;
     if (campo === 'email' && valor) valor = valor.toLowerCase();
     if (m[campo] === valor) return;
+    if (campo === 'anel') m.anel_desde = hojeISO();
     const antes = m[campo]; m[campo] = valor; m.ultima_atualizacao = hojeISO();
     try { await db.patchMembro(id, { [campo]: valor }); $('#m-saved').textContent = 'Salvo'; renderMembros(); renderReceber(); renderHoje(); }
     catch (e) { m[campo] = antes; fillMembro(m, true); fail(e, 'Não foi possível salvar'); }
@@ -1570,6 +1616,86 @@
     catch (err) { fail(err, 'Não foi possível apagar'); }
   });
 
+  /* ---------------- Acompanhamento: quem chamar e anéis ---------------- */
+  // Cada membro ativo é chamado a cada 30 dias (mensal) e a cada 90 (trimestral).
+  // O trimestral também conta como mensal. Sem registro, conta a partir de acompanhar_desde.
+  const CICLO = { mensal: 'Mensal', trimestral: 'Trimestral' };
+  const ANEL_PRAZO = 30; // a partir de quantos dias no grupo o anel pendente vira cobrança
+  const FASE = { atrasado: 'Atrasados', semana: 'Chamar esta semana', mes: 'Chamar este mês', proximo: 'Próximo mês' };
+  const maisDias = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+  const dataCurta = iso => new Date(iso + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  const contatosDe = id => contatos.filter(c => c.membro_id === id).sort((a, b) => (a.data < b.data ? 1 : a.data > b.data ? -1 : a.created_at < b.created_at ? 1 : -1));
+  function proximoContato(m) {
+    if (m.status !== 'ativo') return null;
+    const cs = contatosDe(m.id), base = m.acompanhar_desde || m.entrada || hojeISO();
+    const ultimo = cs[0] || null, ultTri = cs.find(c => c.tipo === 'trimestral');
+    const dMes = maisDias(ultimo ? ultimo.data : base, 30), dTri = maisDias(ultTri ? ultTri.data : base, 90);
+    const tipo = dTri <= dMes ? 'trimestral' : 'mensal', data = tipo === 'trimestral' ? dTri : dMes, dias = diasAte(data);
+    const fimMes = new Date(); const ult = new Date(fimMes.getFullYear(), fimMes.getMonth() + 1, 0).getDate();
+    const fase = dias < 0 ? 'atrasado' : dias <= 7 ? 'semana' : dias <= ult - fimMes.getDate() ? 'mes' : 'proximo';
+    return { tipo, data, dias, fase, ultimo };
+  }
+  const anelPendente = m => m.status === 'ativo' && m.anel !== 'entregue' && m.entrada && -diasAte(m.entrada) >= ANEL_PRAZO;
+  const contaFase = f => membros.filter(m => proximoContato(m)?.fase === f).length;
+  const prazoTxt = p => p.dias < 0 ? `atrasado há ${-p.dias} ${-p.dias === 1 ? 'dia' : 'dias'}` : p.dias === 0 ? 'vence hoje' : `até ${dataCurta(p.data)}`;
+  const ultimoTxt = p => p.ultimo ? `último contato em ${dataCurta(p.ultimo.data)}${p.ultimo.por ? ' por ' + esc(p.ultimo.por.split(' ')[0]) : ''}` : 'nenhum contato registrado';
+
+  function renderAcompanhamento(termos) {
+    const bate = m => !termos.length || termos.every(t => norm(m.nome).includes(t));
+    if (mfiltro === 'chamar') {
+      const itens = membros.filter(bate).map(m => ({ m, p: proximoContato(m) })).filter(x => x.p).sort((a, b) => a.p.data < b.p.data ? -1 : 1);
+      const emDia = itens.filter(x => x.p.fase === 'proximo').length;
+      const grupos = ['atrasado', 'semana', 'mes'].map(f => [f, itens.filter(x => x.p.fase === f)]).filter(([, l]) => l.length);
+      $('#mcount').textContent = `${itens.length - emDia} para chamar até o fim do mês · ${emDia} em dia · mensal a cada 30 dias, trimestral a cada 90`;
+      $('#mgrid').innerHTML = grupos.length ? grupos.map(([f, l]) => `<section class="agrp ${f}"><h3>${FASE[f]} <span>${l.length}</span></h3>${l.map(({ m, p }) => {
+        const wa = waLink(m.telefone);
+        return `<div class="arow"><button class="anm" data-open="${m.id}"><b>${esc(m.nome)}</b><span><span class="atp ${p.tipo}">${CICLO[p.tipo]}</span> <span class="${p.dias < 0 ? 'late' : ''}">${prazoTxt(p)}</span> · ${ultimoTxt(p)}</span></button>
+          <span class="aact">${wa ? `<a class="abtn" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ''}<button class="abtn pri" data-chamei="${m.id}">Já chamei</button></span></div>`;
+      }).join('')}</section>`).join('') : '<div class="empty" style="grid-column:1/-1">Ninguém para chamar</div>';
+      return;
+    }
+    const l = membros.filter(m => anelPendente(m) && bate(m)).sort((a, b) => (a.anel_desde || a.entrada) < (b.anel_desde || b.entrada) ? -1 : 1);
+    $('#mcount').textContent = `${l.length} ${l.length === 1 ? 'membro' : 'membros'} há mais de ${ANEL_PRAZO} dias no grupo sem anel entregue`;
+    $('#mgrid').innerHTML = l.length ? `<section class="agrp"><h3>Anéis pendentes <span>${l.length}</span></h3>${l.map(m => {
+      const wa = waLink(m.telefone), parado = m.anel_desde && m.anel_desde !== m.entrada ? -diasAte(m.anel_desde) : null, prox = m.anel === 'falta medida' ? 'em produção' : 'entregue';
+      return `<div class="arow"><button class="anm" data-open="${m.id}"><b>${esc(m.nome)}</b><span><span class="atp anel">${ANEL[m.anel] || 'Sem status'}</span>${parado !== null ? ` <span class="${parado >= 60 ? 'late' : ''}">${parado === 0 ? 'desde hoje' : `há ${parado} ${parado === 1 ? 'dia' : 'dias'}`}</span>` : ''} · no grupo há ${-diasAte(m.entrada)} dias${m.anel_tamanho ? ' · tamanho ' + esc(m.anel_tamanho) : ''}</span></button>
+        <span class="aact">${wa ? `<a class="abtn" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ''}<button class="abtn pri" data-anel="${m.id}" data-v="${prox}">${prox === 'em produção' ? 'Foi para produção' : 'Entregue'}</button></span></div>`;
+    }).join('')}</section>` : '<div class="empty" style="grid-column:1/-1">Nenhum anel pendente</div>';
+  }
+
+  async function registraContato(id, tipo, nota) {
+    const m = byId(id); if (!m) return;
+    try {
+      const c = await db.addContato({ membro_id: id, tipo, nota: nota || null });
+      contatos.push(c); renderMembros(); renderHoje();
+      const p = proximoContato(m); toast(`Registrado. Próximo: ${CICLO[p.tipo].toLowerCase()} até ${dataCurta(p.data)}`);
+    } catch (e) { fail(e, 'Não foi possível registrar'); }
+  }
+  $('#mgrid').addEventListener('click', e => {
+    const ch = e.target.closest('[data-chamei]'); if (ch) { e.stopPropagation(); const p = proximoContato(byId(ch.dataset.chamei)); registraContato(ch.dataset.chamei, p ? p.tipo : 'mensal'); return; }
+    const an = e.target.closest('[data-anel]'); if (an) { e.stopPropagation(); salvaMembro(an.dataset.anel, 'anel', an.dataset.v).then(() => toast(`Anel: ${ANEL[an.dataset.v].toLowerCase()}`)); return; }
+    const op = e.target.closest('[data-open]'); if (op) { e.stopPropagation(); openMembro(op.dataset.open); }
+  }, true);
+
+  // Bloco na ficha: próximo contato, registrar e histórico.
+  function renderAcompFicha(m) {
+    const p = proximoContato(m), cs = contatosDe(m.id);
+    const parado = m.anel_desde && m.anel_desde !== m.entrada ? -diasAte(m.anel_desde) : null;
+    const anelTxt = m.anel && m.anel !== 'entregue' ? (parado !== null ? `${ANEL[m.anel]} ${parado === 0 ? 'desde hoje' : `há ${parado} ${parado === 1 ? 'dia' : 'dias'}`}` : m.entrada ? `No grupo há ${-diasAte(m.entrada)} dias, sem anel entregue` : '') : '';
+    $('#m-anel-desde').textContent = anelTxt;
+    $('#m-acomp').innerHTML = (p ? `<div class="aprox"><div><div class="lk-k">Próximo contato</div><b>${CICLO[p.tipo]}</b> <span class="${p.dias < 0 ? 'late' : ''}">${prazoTxt(p)}</span></div></div>
+      <div class="areg"><input id="m-cnota" maxlength="1000" placeholder="Anotação do contato (opcional)"><select id="m-ctipo" class="sel"><option value="mensal"${p.tipo === 'mensal' ? ' selected' : ''}>Mensal</option><option value="trimestral"${p.tipo === 'trimestral' ? ' selected' : ''}>Trimestral</option></select><button class="lk-btn" id="m-chamei">Já chamei</button></div>`
+      : '<div class="lk-off">O acompanhamento é só para membros ativos.</div>') +
+      (cs.length ? `<ul class="ahist">${cs.map(c => `<li><span><b>${dataCurta(c.data)}</b> · ${CICLO[c.tipo]}${c.por ? ' · ' + esc(c.por.split(' ')[0]) : ''}${c.nota ? `<em>${esc(c.nota)}</em>` : ''}</span><button class="cx-del" data-delc="${c.id}" aria-label="Apagar registro">×</button></li>`).join('')}</ul>` : '');
+  }
+  $('#m-acomp').addEventListener('click', async e => {
+    if (e.target.closest('#m-chamei')) { await registraContato(memId, $('#m-ctipo').value, $('#m-cnota').value.trim()); renderAcompFicha(byId(memId)); return; }
+    const d = e.target.closest('[data-delc]'); if (!d) return;
+    if (!confirm('Apagar este registro de contato?')) return;
+    try { await db.delContato(d.dataset.delc); contatos = contatos.filter(c => c.id !== d.dataset.delc); renderAcompFicha(byId(memId)); renderMembros(); renderHoje(); }
+    catch (err) { fail(err, 'Não foi possível apagar'); }
+  });
+
   /* ---------------- Atualizar ---------------- */
   $('#refresh').addEventListener('click', () => loadAll().then(() => { renderAll(); toast('Atualizado'); }).catch(e => fail(e, 'Não foi possível atualizar')));
   setInterval(() => {
@@ -1604,10 +1730,17 @@
       ['Lista de convidados da The House', 'feito', 20],
     ].map(([texto, status, d], n) => ({ id: 'i' + n, created_at: ago(d), updated_at: ago(Math.max(0, d - 2)), texto, status, nota: null }));
     const wait = v => new Promise(r => setTimeout(() => r(v), 120));
-    let k = 100, M = [], C = [], cofre = null;
+    let k = 100, M = [], C = [], CT = [], cofre = null;
     const J = [{"fase": "antes", "ordem": 1, "titulo": "Aplicação", "descricao": "Quiz em aplicar.ogrupo.com.br. Recusa faturamento abaixo de 6 dígitos. O lead entra no painel.", "responsavel": "Automático", "ferramentas": "Quiz, Painel", "status": "ok", "contador": "apl_nova"}, {"fase": "antes", "ordem": 2, "titulo": "Curadoria", "descricao": "O Kayoan avalia o perfil e confirma com membros que a pessoa é confiável. Para entrar, precisa conhecer alguém lá dentro.", "responsavel": "Kayoan", "ferramentas": "Painel, WhatsApp", "status": "aberto", "contador": "apl_conversa"}, {"fase": "antes", "ordem": 3, "titulo": "Convite", "descricao": "Arte do convite e link da página de apresentação pelo WhatsApp. A página mostra tudo o que o grupo entrega e o valor: contrato anual de R$ 30 mil (R$ 2.500 por mês) ou R$ 25.500 à vista.", "responsavel": "Kayoan", "ferramentas": "WhatsApp, Página de apresentação", "status": "fazendo", "contador": null}, {"fase": "antes", "ordem": 4, "titulo": "Call", "descricao": "A pessoa marca 30 minutos no Cal.com pela própria página. A call serve para validar.", "responsavel": "Kayoan", "ferramentas": "Cal.com", "status": "ok", "contador": "apl_call"}, {"fase": "antes", "ordem": 5, "titulo": "Contrato e pagamento", "descricao": "Contrato e checkout da Lastlink (assinatura mensal) pelo WhatsApp. Arrependimento em 7 dias.", "responsavel": "Kayoan", "ferramentas": "WhatsApp, Lastlink", "status": "aberto", "contador": "apl_aprovado"}, {"fase": "durante", "ordem": 6, "titulo": "Primeiro dia", "descricao": "Acesso ao app, apresentação no grupo e divulgação no Instagram do Kayoan e do The Group.", "responsavel": "Kayoan", "ferramentas": "App, Instagram", "status": "aberto", "contador": null}, {"fase": "durante", "ordem": 7, "titulo": "Primeiro mês", "descricao": "Um encontro com quem faz sentido para o novo membro.", "responsavel": "Kayoan", "ferramentas": "App, WhatsApp", "status": "aberto", "contador": null}, {"fase": "durante", "ordem": 8, "titulo": "Rotina", "descricao": "Encontros mensais regionais (mesa de até 6 pessoas), The House 2 vezes por ano, podcast, acompanhamento leve a cada 30 dias e profundo a cada 90. No primeiro ano os encontros são all inclusive, menos a passagem.", "responsavel": "Kayoan e Amanda", "ferramentas": "App, WhatsApp", "status": "aberto", "contador": "membros_ativos"}, {"fase": "durante", "ordem": 9, "titulo": "Cobrança", "descricao": "Mensal pela Lastlink. A Amanda acompanha quem atrasa.", "responsavel": "Amanda", "ferramentas": "Lastlink, Central", "status": "aberto", "contador": "membros_mensal"}, {"fase": "depois", "ordem": 10, "titulo": "Seu ano no The Group", "descricao": "Envio 60 dias antes do fim do contrato. Formato em aberto.", "responsavel": "Kayoan", "ferramentas": "WhatsApp", "status": "aberto", "contador": "vence_60"}, {"fase": "depois", "ordem": 11, "titulo": "Renovação", "descricao": "R$ 15 mil por ano, sem o all inclusive. O formato mensal ainda está em aberto. Aviso de saída 30 dias antes.", "responsavel": "Kayoan e Amanda", "ferramentas": "WhatsApp, Lastlink", "status": "aberto", "contador": "renovar"}, {"fase": "depois", "ordem": 12, "titulo": "Saída", "descricao": "Vira ex-membro na central e é desativado no app.", "responsavel": "Kayoan", "ferramentas": "Central, App", "status": "ok", "contador": "ex_membros"}].map((e, n) => ({ id: 'j' + n, created_at: ago(30), updated_at: ago(30), ajustar: null, atualizado_por: null, ...e }));
     const carregaCofre = () => cofre || (cofre = fetch('/membros.json').then(r => r.ok ? r.json() : { membros: [] }).catch(() => ({ membros: [] })).then(d => {
       M = d.membros.map(({ conexoes, ...m }) => m);
+      // Na prévia: mesmas regras da migração 35 (entrada tirada dos pagamentos e começo espalhado em 30 dias).
+      const br = s => { const x = /(\d{2})\/(\d{2})\/(\d{4})/.exec(s || ''); return x ? `${x[3]}-${x[2]}-${x[1]}` : null; };
+      M.forEach(m => { m.entrada = br((/(\d{2}\/\d{2}\/\d{4})[^\n]*entrada/.exec(m.pagamentos || '') || [])[1]) || br((/[Ee]ntrou no grupo em (\d{2}\/\d{2}\/\d{4})/.exec(m.informacoes || '') || [])[1]) || br(m.pagamentos); m.anel_desde = m.entrada || hojeISO(); });
+      const fila = M.filter(m => m.status === 'ativo').sort((a, b) => (a.entrada || '9') < (b.entrada || '9') ? -1 : (a.entrada || '9') > (b.entrada || '9') ? 1 : a.nome.localeCompare(b.nome));
+      fila.forEach((m, n) => { m.acompanhar_desde = maisDias(hojeISO(), -30 + Math.floor(n * 30 / fila.length)); });
+      const quem = ['Kayoan Felipe', 'Amanda França'];
+      fila.slice(0, 6).forEach((m, n) => { CT.push({ id: 'ct' + n, membro_id: m.id, created_at: new Date().toISOString(), data: maisDias(hojeISO(), -(3 + n)), tipo: 'mensal', nota: n === 0 ? 'Falou da The House, quer ir em maio' : null, por: quem[n % 2] }); });
       const ids = Object.fromEntries(M.map(m => [m.nome, m.id]));
       C = d.membros.flatMap(m => m.conexoes.filter(c => ids[c.para]).map((c, n) => ({ id: m.id + n, de: m.id, para: ids[c.para], motivo: c.motivo || null })));
     }));
@@ -1634,6 +1767,9 @@
       addConexao: b => { const c = { id: 'c' + k++, ...b }; C.push(c); return wait({ ...c }); },
       delConexao: id => { C = C.filter(c => c.id !== id); return wait(null); },
       etapas: () => wait(J.map(x => ({ ...x }))),
+      contatos: async () => { await carregaCofre(); return CT.map(x => ({ ...x })); },
+      addContato: b => { const c = { id: 'ct' + k++, created_at: new Date().toISOString(), data: hojeISO(), por: 'Kayoan Felipe', ...b }; CT.push(c); return wait({ ...c }); },
+      delContato: id => { CT = CT.filter(c => c.id !== id); return wait(null); },
       addEtapa: b => { const e = { id: 'j' + k++, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), status: 'aberto', atualizado_por: 'Kayoan Felipe', descricao: null, responsavel: null, ferramentas: null, ajustar: null, contador: null, ...b }; J.push(e); return wait({ ...e }); },
       patchEtapa: (id, b) => { const e = J.find(x => x.id === id); Object.assign(e || {}, b, { updated_at: new Date().toISOString(), atualizado_por: 'Kayoan Felipe' }); return wait(e ? [{ ...e }] : null); },
       delEtapa: id => { J.splice(J.findIndex(x => x.id === id), 1); return wait(null); },
