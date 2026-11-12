@@ -139,6 +139,19 @@
   .tag.none { background: transparent; border: 1px dashed var(--line); color: var(--muted); }
   .tag.convite { color: var(--ink); background: transparent; border: 1px solid var(--line); }
   .tag.convite.muito { border-color: var(--ink); font-weight: 600; }
+  .clink { display: flex; align-items: center; gap: 8px; margin-top: 8px; background: var(--col); border-radius: 10px; padding: 6px 6px 6px 9px; min-width: 0; }
+  .cl-url { flex: 1; min-width: 0; font-size: 12px; font-weight: 500; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .cl-copy { flex: none; font-size: 11.5px; font-weight: 600; color: var(--on-dark); background: var(--dark); border-radius: 20px; padding: 4px 10px; cursor: pointer; }
+  .cl-copy:hover { opacity: .85; }
+  .lk { margin-top: 18px; }
+  .lk:empty { display: none; }
+  .lk-k { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .lk-row { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 14px; padding: 8px 8px 8px 13px; }
+  .lk-url { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 500; word-break: break-all; line-height: 1.4; }
+  .lk-url.muted { color: var(--muted); font-weight: 400; }
+  .lk-btn { appearance: none; border: 0; cursor: pointer; flex: none; background: var(--dark); color: var(--on-dark); border-radius: 30px; padding: 9px 16px; font-size: 13px; font-weight: 500; }
+  .lk-btn:disabled { opacity: .5; }
+  .lk-off { font-size: 13px; line-height: 1.5; color: var(--ink-2); background: var(--col); border-radius: 14px; padding: 12px 14px; }
   .card .line { font-size: 12.5px; color: var(--ink-2); line-height: 1.65; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   /* Membros */
@@ -482,6 +495,7 @@
     <button class="x close" aria-label="Fechar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
   </div>
   <div class="body">
+    <div class="lk" id="d-link"></div>
     <div class="quick" id="d-quick"></div>
     <dl id="d-list"></dl>
     <div class="sec">Origem do lead</div>
@@ -852,6 +866,7 @@
             <div class="name"><span>${esc(r.nome)}</span><span class="when">${when(r.created_at)}</span></div>
             <div class="line">${esc(r.email)}</div>
             <div class="line">${esc(phone(r.whatsapp))}</div>
+            ${linkDe(r) ? `<span class="clink" title="${esc(linkDe(r))}"><span class="cl-url">Link do convite</span><span class="cl-copy" role="button" tabindex="0" data-copy="${esc(linkDe(r))}">Copiar</span></span>` : ''}
             <div class="tags">${r.origem_lead ? `<span class="tag">${ORIGEM[r.origem_lead]}${r.origem_lead === 'indicacao' && r.indicado_por ? ' de ' + esc(r.indicado_por) : ''}</span>` : '<span class="tag none">Sem origem</span>'}${seloConvite(r) ? `<span class="tag convite">${esc(seloConvite(r))}</span>` : ''}${(conviteDe(r)?.aberturas || 0) > 1 ? `<span class="tag convite${conviteDe(r).aberturas > 2 ? ' muito' : ''}">Abriu ${conviteDe(r).aberturas} vezes</span>` : ''}</div>
           </button>`).join('') : '<div class="empty">Nada por aqui</div>'}</div>
       </section>`;
@@ -866,7 +881,11 @@
   board.addEventListener('dragend', e => { e.target.closest('.card')?.classList.remove('dragging'); document.querySelectorAll('.col.drop').forEach(c => c.classList.remove('drop')); });
   board.addEventListener('dragover', e => { const col = e.target.closest('.col'); if (!col || !dragId) return; e.preventDefault(); document.querySelectorAll('.col.drop').forEach(c => c !== col && c.classList.remove('drop')); col.classList.add('drop'); });
   board.addEventListener('drop', e => { const col = e.target.closest('.col'); if (!col || !dragId) return; e.preventDefault(); col.classList.remove('drop'); move(dragId, col.dataset.col); dragId = null; });
-  board.addEventListener('click', e => { const c = e.target.closest('.card'); if (c) openApl(c.dataset.id); });
+  board.addEventListener('click', e => {
+    const cp = e.target.closest('.cl-copy'); if (cp) { e.stopPropagation(); copia(cp.dataset.copy); return; }
+    const c = e.target.closest('.card'); if (c) openApl(c.dataset.id);
+  });
+  board.addEventListener('keydown', e => { const cp = e.target.closest('.cl-copy'); if (cp && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.stopPropagation(); copia(cp.dataset.copy); } });
 
   const fail = (e, t) => { toast(e.message === 'auth' ? 'Entre de novo' : t); if (e.message === 'auth') showLogin(); };
 
@@ -877,10 +896,21 @@
   const seloConvite = r => {
     const c = conviteDe(r);
     if (!c) return '';
+    // Sem prazo: o link só deixa de abrir quando o cartão vai para Não selecionado.
+    if (r.status === 'recusado') return 'Link desativado';
     if (c.aberto_em) return `Abriu em ${dataHora(c.aberto_em)}`;
-    if (new Date(c.expira_em) <= new Date()) return 'Convite vencido';
     return 'Convite enviado';
   };
+  const linkDe = r => { const c = conviteDe(r); return c && r.status !== 'recusado' ? CONVITE_URL + c.token : ''; };
+  async function copia(texto) {
+    try { await navigator.clipboard.writeText(texto); }
+    catch {
+      const t = document.createElement('textarea'); t.value = texto; t.setAttribute('readonly', ''); t.style.position = 'fixed'; t.style.opacity = '0';
+      document.body.appendChild(t); t.select(); t.setSelectionRange(0, texto.length);
+      try { document.execCommand('copy'); } finally { t.remove(); }
+    }
+    toast('Link copiado');
+  }
 
   async function move(id, status) {
     const r = apls.find(x => x.id === id);
@@ -922,9 +952,14 @@
     cal.searchParams.set('attendeePhoneNumber', r.whatsapp);
     cal.searchParams.set('instagram', '@' + r.instagram);
     const chamada = `Oi, ${r.nome.split(' ')[0]}. Aqui é o Kayoan, do The Group. Escolha o melhor horário para a nossa conversa por aqui: ${cal.toString()}`;
-    const cv = conviteDe(r), vale = cv && new Date(cv.expira_em) > new Date();
-    $('#d-quick').innerHTML = `
-      <a class="primary" href="#" id="d-convite">${vale ? 'Reenviar convite' : 'Enviar convite'}</a>
+    const cv = conviteDe(r), vale = !!linkDe(r);
+    $('#d-link').innerHTML = r.status === 'recusado'
+      ? `<div class="lk-off">${cv ? 'O link do convite está desativado porque a aplicação está em Não selecionado. Se mover o cartão de volta, ele volta a abrir.' : 'Aplicação em Não selecionado.'}</div>`
+      : vale
+        ? `<div class="lk-k">Link do convite</div><div class="lk-row"><span class="lk-url">${esc(linkDe(r))}</span><button class="lk-btn" data-copy="${esc(linkDe(r))}">Copiar</button></div>`
+        : `<div class="lk-k">Link do convite</div><div class="lk-row"><span class="lk-url muted">Ainda não foi criado</span><button class="lk-btn" id="d-criar">Criar link</button></div>`;
+    $('#d-quick').innerHTML = r.status === 'recusado' ? '' : `
+      <a class="primary" href="#" id="d-convite">${vale ? 'Reenviar pelo WhatsApp' : 'Enviar pelo WhatsApp'}</a>
       <a href="https://wa.me/${wa}?text=${encodeURIComponent(chamada)}" target="_blank" rel="noopener">Link do Cal</a>
       <a href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>
       <a href="https://instagram.com/${encodeURIComponent(r.instagram)}" target="_blank" rel="noopener">Instagram</a>
@@ -939,7 +974,7 @@
       ['WhatsApp', `<a href="https://wa.me/${wa}" target="_blank" rel="noopener">${esc(phone(r.whatsapp))}</a>`, true],
       ['E-mail', `<a href="mailto:${esc(r.email)}">${esc(r.email)}</a>`, true],
       ['Veio pelo', r.origem === 'app' ? 'App' : r.origem === 'site' ? 'Site' : 'Outro'],
-      ['Convite', !cv ? 'Não enviado' : (seloConvite(r) + (cv.aberturas > 1 ? ` · ${cv.aberturas} vezes` : '') + (vale ? ` · vale até ${new Date(cv.expira_em).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}` : ''))],
+      ['Convite', !cv ? 'Não criado' : (seloConvite(r) + (cv.aberturas > 1 ? ` · ${cv.aberturas} vezes` : ''))],
     ];
     $('#d-list').innerHTML = items.map(([k, v, html]) => `<div class="row"><dt>${k}</dt><dd>${html ? v : esc(v)}</dd></div>`).join('');
     $('#d-origem').innerHTML = Object.entries(ORIGEM).map(([k, l]) => `<button class="move${r.origem_lead === k ? ' cur' : ''}" data-o="${k}">${l}</button>`).join('');
@@ -948,6 +983,15 @@
   }
   $('#d-moves').addEventListener('click', e => { const b = e.target.closest('.move'); if (b && openId) move(openId, b.dataset.to); });
   // Enviar convite: abre a janela antes (senão o celular bloqueia), cria ou reaproveita o token e manda pelo WhatsApp.
+  // Link visível: copiar (no cartão e na ficha) e criar sem abrir o WhatsApp.
+  $('#d-link').addEventListener('click', async e => {
+    const cp = e.target.closest('[data-copy]'); if (cp) { copia(cp.dataset.copy); return; }
+    if (!e.target.closest('#d-criar')) return;
+    const r = apls.find(x => x.id === openId); if (!r) return;
+    const b = e.target.closest('#d-criar'); b.disabled = true;
+    try { await db.criarConvite(r.id); await loadAll(); renderAll(); toast('Link criado. Toque em Copiar.'); }
+    catch (err) { b.disabled = false; fail(err, 'Não foi possível criar o link'); }
+  });
   $('#d-quick').addEventListener('click', async e => {
     if (!e.target.closest('#d-convite')) return;
     e.preventDefault();
@@ -1508,9 +1552,9 @@
       ['Felipe Dias', 'felipedias', '+5585996789012', 'felipe@exemplo.com', 'copywriter', 'info', '6', 'instagram', null, 'recusado', 'conteudo', 15],
     ].map(([nome, instagram, whatsapp, email, funcao, nicho, faturamento, canal, indicado_por, status, origem_lead, d], n) => ({
       id: 'a' + n, created_at: ago(d, n), nome, instagram, whatsapp, email, funcao, funcao_outra: null, nicho, faturamento, canal, indicado_por, origem: n % 3 ? 'site' : 'app', status, origem_lead, nota: null,
-      convites: n === 3 ? [{ token: 'p1', criado_em: ago(3), expira_em: ago(-4), aberto_em: ago(2, 5), ultima_abertura: ago(1), aberturas: 3 }]
-        : n === 4 ? [{ token: 'p2', criado_em: ago(5), expira_em: ago(-2), aberto_em: null, ultima_abertura: null, aberturas: 0 }]
-        : n === 5 ? [{ token: 'p3', criado_em: ago(12), expira_em: ago(5), aberto_em: null, ultima_abertura: null, aberturas: 0 }] : [],
+      convites: n === 3 ? [{ token: 'k3m9xq2v7tpa', criado_em: ago(3), expira_em: '2099-12-31T23:59:59-03:00', aberto_em: ago(2, 5), ultima_abertura: ago(1), aberturas: 3 }]
+        : n === 4 ? [{ token: 'r8w2nd5yq1zc', criado_em: ago(5), expira_em: '2099-12-31T23:59:59-03:00', aberto_em: null, ultima_abertura: null, aberturas: 0 }]
+        : n === 7 ? [{ token: 'h4j6tb0sx9ke', criado_em: ago(12), expira_em: '2099-12-31T23:59:59-03:00', aberto_em: null, ultima_abertura: null, aberturas: 0 }] : [],
 
     }));
     const I = [
@@ -1534,7 +1578,8 @@
       // Na prévia não cria token de verdade: só simula para ver os selos.
       criarConvite: id => {
         const a = A.find(x => x.id === id), atual = a.convites && a.convites[0], vale = atual && new Date(atual.expira_em) > new Date();
-        if (!vale) { a.convites = [{ token: 'previa' + k++, criado_em: new Date().toISOString(), expira_em: new Date(Date.now() + 7 * 864e5).toISOString(), aberto_em: null, ultima_abertura: null, aberturas: 0 }, ...(a.convites || [])]; }
+        if (!vale) { a.convites = [{ token: 'previa' + String(k++).padStart(6, '0'), criado_em: new Date().toISOString(), expira_em: '2099-12-31T23:59:59-03:00', aberto_em: null, ultima_abertura: null, aberturas: 0 }, ...(a.convites || [])]; }
+
         if (a.status === 'nova') a.status = 'conversa';
         return wait({ token: a.convites[0].token, expira_em: a.convites[0].expira_em, reaproveitado: !!vale });
       },
