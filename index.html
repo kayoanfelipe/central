@@ -237,6 +237,9 @@
   .fld span { font-size: 11.5px; color: var(--muted); }
   .fld input { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 14px; background: transparent; color: var(--ink); outline: 0; min-width: 0; width: 100%; }
   .fld input:focus { border-color: var(--ink); }
+  .fld input[readonly] { color: var(--ink-2); background: var(--col); }
+  .ksame { display: flex; gap: 8px; align-items: center; font-size: 12.5px; color: var(--ink-2); cursor: pointer; margin: 2px 0 4px; }
+  .ksame input { width: 15px; height: 15px; accent-color: var(--gold); margin: 0; }
   .venc { font-size: 12.5px; color: var(--ink-2); margin-top: 8px; min-height: 16px; }
   .cxl { list-style: none; margin: 0; padding: 0; }
   .cxl li { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--line); }
@@ -652,7 +655,7 @@
         <div class="sec">Dados pessoais</div>
         <div class="fields">
           <label class="fld" style="grid-column:1/-1"><span>Nome completo</span><input name="nome" maxlength="120"></label>
-          <label class="fld"><span>CPF</span><input name="cpf" inputmode="numeric" maxlength="14"></label>
+          <label class="fld"><span>CPF</span><input name="cpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00"></label>
           <label class="fld"><span>Nascimento</span><input name="nasc" type="date"></label>
           <label class="fld"><span>Estado civil</span><select name="civil" class="sel"><option value="">Selecione</option><option>solteiro(a)</option><option>casado(a)</option><option>em união estável</option><option>divorciado(a)</option><option>viúvo(a)</option></select></label>
           <label class="fld"><span>Nacionalidade</span><input name="nac" value="brasileiro(a)"></label>
@@ -673,14 +676,15 @@
         <div class="sec">Quem paga</div>
         <div class="kseg"><label><input type="radio" name="pagador" value="cpf" checked> No CPF</label><label><input type="radio" name="pagador" value="cnpj"> Empresa (CNPJ)</label><label><input type="radio" name="pagador" value="patrocinio"> Patrocinador</label></div>
         <div class="fields" id="k-pj" hidden style="margin-top:10px">
-          <label class="fld"><span>CNPJ</span><input name="cnpj" inputmode="numeric"></label><label class="fld"><span>E-mail da nota fiscal</span><input name="emailnf" type="email"></label>
+          <label class="fld"><span>CNPJ</span><input name="cnpj" inputmode="numeric" maxlength="18" placeholder="00.000.000/0000-00"></label><label class="fld"><span>E-mail da nota fiscal</span><input name="emailnf" type="email"></label>
           <label class="fld" style="grid-column:1/-1"><span>Razão social</span><input name="rs"></label>
-          <label class="fld" style="grid-column:1/-1"><span>Endereço da empresa</span><input name="endpj"></label>
-          <label class="fld" style="grid-column:1/-1"><span>Quem assina pela empresa (nome e CPF)</span><input name="rep"></label>
+          <div class="fld" style="grid-column:1/-1"><span>Endereço da empresa</span><label class="ksame"><input type="checkbox" name="endpj_igual" value="sim"> Mesmo endereço do membro</label><input name="endpj"></div>
+          <label class="fld"><span>Quem assina pela empresa</span><input name="rep_nome" placeholder="Nome completo"></label>
+          <label class="fld"><span>CPF de quem assina</span><input name="rep_cpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00"></label>
         </div>
         <div class="sec">Forma de pagamento</div>
         <div class="kseg"><label><input type="radio" name="forma" value="mensal" checked> 12x por mês</label><label><input type="radio" name="forma" value="vista"> À vista</label></div>
-        <div class="kseg" id="k-dia" style="margin-top:8px"><span class="venc" style="margin:0 6px 0 0">Dia</span><label><input type="radio" name="dia" value="5"> 5</label><label><input type="radio" name="dia" value="10" checked> 10</label><label><input type="radio" name="dia" value="15"> 15</label><label><input type="radio" name="dia" value="20"> 20</label><label><input type="radio" name="dia" value="25"> 25</label></div>
+        <div id="k-dia" style="margin-top:8px"><label class="fld" style="max-width:240px"><span>Data do próximo pagamento (2ª parcela)</span><input name="prox" type="date"></label><div class="venc">A 1ª parcela é paga no fechamento. O dia desta data vira o vencimento de todo mês (de 1 a 28).</div></div>
       </div>
       <div class="msg" id="k-erro" style="margin-top:14px"></div>
       <button class="btn" id="k-gerar" style="width:100%;margin-top:8px">Gerar link do formulário</button>
@@ -1949,8 +1953,32 @@
     const f = $('#kform'); f.reset(); document.querySelectorAll('#kform .bad').forEach(x => x.classList.remove('bad')); $('#k-erro').textContent = ''; $('#k-res').innerHTML = '';
     f.modo.value = 'membro'; f.mnome.value = m ? m.nome : ''; f.mtel.value = m ? (m.telefone || '') : ''; f.nome.value = m ? m.nome : ''; f.email.value = m ? (m.email || '') : ''; f.tel.value = m ? (m.telefone || '') : '';
     $('#k-para').textContent = kFicha ? `Fica ligado à ficha de ${m.nome}.` : apl ? `Para ${apl.nome}, da aplicação. Depois do aceite, dá para criar a ficha com um toque.` : 'Depois do aceite, dá para criar a ficha do membro com um toque.';
-    kModo(); sheetOn($('#ksheet')); $('#ksheet .body').scrollTop = 0;
+    { const am = new Date(); am.setDate(am.getDate() + 1); f.prox.min = kIso(am); const h = new Date(); f.prox.value = kIso(new Date(h.getFullYear(), h.getMonth() + 1, Math.min(h.getDate(), 28))); }
+    kSyncEnd(); kModo(); sheetOn($('#ksheet')); $('#ksheet .body').scrollTop = 0;
   }
+  const kIso = dt => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+  const kProxErro = iso => { if (!iso) return 'Escolha a data do próximo pagamento.'; const [y, m, d] = iso.split('-').map(Number), h = new Date(); h.setHours(0, 0, 0, 0);
+    if (!(new Date(y, m - 1, d) > h)) return 'A data do próximo pagamento precisa ser a partir de amanhã.'; if (d > 28) return 'Escolha um dia de 1 a 28 para o próximo pagamento.'; return ''; };
+  const kDig = s => String(s || '').replace(/\D/g, '');
+  const kMask = {
+    cpf: s => kDig(s).slice(0, 11).replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2'),
+    cnpj: s => kDig(s).slice(0, 14).replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2'),
+    cep: s => kDig(s).slice(0, 8).replace(/(\d{5})(\d)/, '$1-$2'),
+  };
+  const kCnpjOk = c => { c = kDig(c); if (c.length !== 14 || /^(\d)\1+$/.test(c)) return false; const calc = n => { let s = 0, p = n - 7; for (let i = 0; i < n; i++) { s += +c[i] * p--; if (p < 2) p = 9; } const r = s % 11; return r < 2 ? 0 : 11 - r; }; return calc(12) === +c[12] && calc(13) === +c[13]; };
+  const kEndMembro = () => { const f = $('#kform'); return f.rua.value && f.numero.value ? `${f.rua.value}, ${f.numero.value}${f.compl.value ? ', ' + f.compl.value : ''}, ${f.bairro.value}, ${f.cidade.value}/${(f.uf.value || '').toUpperCase()}, CEP ${f.cep.value}` : ''; };
+  function kSyncEnd() { const f = $('#kform'), on = f.endpj_igual.checked; f.endpj.readOnly = on; if (on) f.endpj.value = kEndMembro(); }
+  ['cpf', 'rep_cpf'].forEach(k => $('#kform')[k].addEventListener('input', e => { e.target.value = kMask.cpf(e.target.value); }));
+  $('#kform').cep.addEventListener('input', e => { e.target.value = kMask.cep(e.target.value); });
+  ['cep', 'rua', 'numero', 'compl', 'bairro', 'cidade', 'uf'].forEach(k => $('#kform')[k].addEventListener('input', () => { if ($('#kform').endpj_igual.checked) $('#kform').endpj.value = kEndMembro(); }));
+  $('#kform').endpj_igual.addEventListener('change', kSyncEnd);
+  $('#kform').cnpj.addEventListener('input', async e => {
+    e.target.value = kMask.cnpj(e.target.value); const c = kDig(e.target.value); if (!kCnpjOk(c)) return;
+    try { const j = await (await fetch(`https://brasilapi.com.br/api/cnpj/v1/${c}`)).json(); const f = $('#kform'); if (!j.razao_social) return;
+      if (!f.rs.value) f.rs.value = j.razao_social;
+      if (!f.endpj_igual.checked && !f.endpj.value) f.endpj.value = [[j.descricao_tipo_de_logradouro, j.logradouro].filter(Boolean).join(' '), j.numero, j.complemento, j.bairro, `${j.municipio || ''}/${j.uf || ''}`, j.cep ? 'CEP ' + kMask.cep(j.cep) : ''].filter(x => x && String(x).trim() && x !== '/').join(', ');
+    } catch {}
+  });
   function kModo() {
     const f = $('#kform'), adm = f.modo.value === 'admin';
     $('#k-membro').hidden = adm; $('#k-dados').hidden = !adm; $('#k-pj').hidden = !adm || f.pagador.value === 'cpf'; $('#k-dia').hidden = !adm || f.forma.value === 'vista';
@@ -1966,15 +1994,22 @@
     e.preventDefault();
     const f = $('#kform'), adm = f.modo.value === 'admin', b = $('#k-gerar'); $('#k-erro').textContent = '';
     document.querySelectorAll('#kform .bad').forEach(x => x.classList.remove('bad'));
-    const precisa = adm ? ['nome', 'cpf', 'nasc', 'civil', 'nac', 'prof', 'cep', 'rua', 'numero', 'bairro', 'cidade', 'uf', 'email', 'tel', ...(f.pagador.value !== 'cpf' ? ['cnpj', 'rs', 'endpj', 'rep', 'emailnf'] : [])] : ['mnome', 'mtel'];
+    const pj = f.pagador.value !== 'cpf', mensal = f.forma.value === 'mensal';
+    const precisa = adm ? ['nome', 'cpf', 'nasc', 'civil', 'nac', 'prof', 'cep', 'rua', 'numero', 'bairro', 'cidade', 'uf', 'email', 'tel', ...(pj ? ['cnpj', 'rs', 'endpj', 'rep_nome', 'rep_cpf', 'emailnf'] : [])] : ['mnome', 'mtel'];
     const falta = precisa.filter(k => !String(f[k].value).trim());
-    if (adm && f.cpf.value && !kCpfOk(f.cpf.value)) falta.push('cpf');
-    if (falta.length) { falta.forEach(k => f[k].classList.add('bad')); f[falta[0]].focus(); $('#k-erro').textContent = falta.includes('cpf') && f.cpf.value ? 'Confira o CPF.' : 'Preencha os campos marcados.'; return; }
+    let msg = '';
+    if (adm && f.cpf.value && !kCpfOk(f.cpf.value)) { falta.push('cpf'); msg = 'Confira o CPF do membro.'; }
+    if (adm && pj && f.rep_cpf.value && !kCpfOk(f.rep_cpf.value)) { falta.push('rep_cpf'); msg = msg || 'Confira o CPF de quem assina pela empresa.'; }
+    if (adm && pj && f.cnpj.value && !kCnpjOk(f.cnpj.value)) { falta.push('cnpj'); msg = msg || 'Confira o CNPJ.'; }
+    if (adm && mensal) { const pe = kProxErro(f.prox.value); if (pe) { falta.push('prox'); msg = msg || pe; } }
+    if (falta.length) { falta.forEach(k => f[k].classList.add('bad')); f[falta[0]].focus(); $('#k-erro').textContent = precisa.some(k => falta.includes(k) && !String(f[k].value).trim()) ? 'Preencha os campos marcados.' : msg; return; }
     const p = { modo: adm ? 'admin' : 'membro', anual: f.anual.value, desconto: f.desconto.value, renovacao: f.renovacao.value, membro_id: kFicha ? kFicha.id : '' };
     if (adm) {
       const d = Object.fromEntries(new FormData(f)); ['modo', 'mnome', 'mtel', 'anual', 'desconto', 'renovacao'].forEach(k => delete d[k]);
       d.uf = (d.uf || '').toUpperCase(); d.end = `${d.rua}, ${d.numero}${d.compl ? ', ' + d.compl : ''}, ${d.bairro}, ${d.cidade}/${d.uf}, CEP ${d.cep}`;
-      if (d.forma !== 'mensal') d.dia = ''; if (d.pagador === 'cpf') ['cnpj', 'rs', 'endpj', 'rep', 'emailnf'].forEach(k => delete d[k]);
+      if (d.forma === 'mensal') d.dia = String(+String(d.prox).slice(8)); else { d.dia = ''; delete d.prox; }
+      if (d.pagador === 'cpf') ['cnpj', 'rs', 'endpj', 'rep', 'rep_nome', 'rep_cpf', 'emailnf', 'endpj_igual'].forEach(k => delete d[k]);
+      else { d.rep_nome = d.rep_nome.trim(); d.rep = `${d.rep_nome}, CPF ${d.rep_cpf}`; }
       p.dados = d;
     } else { p.nome = f.mnome.value.trim(); p.telefone = f.mtel.value.trim(); }
     b.disabled = true;
