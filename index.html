@@ -984,6 +984,9 @@
 
     renderLinks();
   }
+  // instagram.com sem www trava (não responde); sempre www e só o @ limpo.
+  const igUser = v => String(v || '').trim().replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/^@/, '').split(/[/?#\s]/)[0];
+  const igUrl = v => `https://www.instagram.com/${encodeURIComponent(igUser(v))}/`;
   const LAPIS = '<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
   const podeEditarAt = () => atalhos.every(a => a.id);
   function renderLinks() {
@@ -1182,15 +1185,16 @@
       <a class="primary" href="#" id="d-convite">${vale ? 'Reenviar pelo WhatsApp' : 'Enviar pelo WhatsApp'}</a>
       <a href="https://wa.me/${wa}?text=${encodeURIComponent(chamada)}" target="_blank" rel="noopener">Link do Cal</a>
       <a href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>
-      <a href="https://instagram.com/${encodeURIComponent(r.instagram)}" target="_blank" rel="noopener">Instagram</a>
-      <a href="mailto:${esc(r.email)}">E-mail</a>`;
+      <a href="${igUrl(r.instagram)}" target="_blank" rel="noopener">Instagram</a>
+      <a href="mailto:${esc(r.email)}">E-mail</a>
+      <a href="#" id="d-contrato">Novo contrato</a>`;
     const items = [
       ['Atua com resposta direta', 'Sim'],
       ['Função', funcao(r)],
       ['Mercado', NICHO[r.nicho] || r.nicho || '-'],
       ['Faturamento por mês', FAT[r.faturamento] || r.faturamento],
       ['Respondeu no quiz', r.canal === 'indicacao' && r.indicado_por ? `Indicação de ${r.indicado_por}` : (CANAL[r.canal] || r.canal || '-')],
-      ['Instagram', `<a href="https://instagram.com/${encodeURIComponent(r.instagram)}" target="_blank" rel="noopener">@${esc(r.instagram)}</a>`, true],
+      ['Instagram', `<a href="${igUrl(r.instagram)}" target="_blank" rel="noopener">@${esc(r.instagram)}</a>`, true],
       ['WhatsApp', `<a href="https://wa.me/${wa}" target="_blank" rel="noopener">${esc(phone(r.whatsapp))}</a>`, true],
       ['E-mail', `<a href="mailto:${esc(r.email)}">${esc(r.email)}</a>`, true],
       ['Veio pelo', r.origem === 'app' ? 'App' : r.origem === 'site' ? 'Site' : 'Outro'],
@@ -1214,6 +1218,7 @@
     catch (err) { b.disabled = false; fail(err, 'Não foi possível criar o link'); }
   });
   $('#d-quick').addEventListener('click', async e => {
+    if (e.target.closest('#d-contrato')) { e.preventDefault(); const r = apls.find(x => x.id === openId); if (r) abrirNovoContrato(null, r); return; }
     if (!e.target.closest('#d-convite')) return;
     e.preventDefault();
     const r = apls.find(x => x.id === openId); if (!r) return;
@@ -1938,11 +1943,12 @@
 
   // Novo contrato: o admin preenche tudo, ou só nome e WhatsApp para o membro preencher.
   let kFicha = null;
-  function abrirNovoContrato(m) {
+  function abrirNovoContrato(m, apl) {
     close(); kFicha = m || null;
+    if (!m && apl) m = { nome: apl.nome, telefone: phone(apl.whatsapp), email: apl.email };
     const f = $('#kform'); f.reset(); document.querySelectorAll('#kform .bad').forEach(x => x.classList.remove('bad')); $('#k-erro').textContent = ''; $('#k-res').innerHTML = '';
     f.modo.value = 'membro'; f.mnome.value = m ? m.nome : ''; f.mtel.value = m ? (m.telefone || '') : ''; f.nome.value = m ? m.nome : ''; f.email.value = m ? (m.email || '') : ''; f.tel.value = m ? (m.telefone || '') : '';
-    $('#k-para').textContent = m ? `Fica ligado à ficha de ${m.nome}.` : 'Depois do aceite, dá para criar a ficha do membro com um toque.';
+    $('#k-para').textContent = kFicha ? `Fica ligado à ficha de ${m.nome}.` : apl ? `Para ${apl.nome}, da aplicação. Depois do aceite, dá para criar a ficha com um toque.` : 'Depois do aceite, dá para criar a ficha do membro com um toque.';
     kModo(); sheetOn($('#ksheet')); $('#ksheet .body').scrollTop = 0;
   }
   function kModo() {
