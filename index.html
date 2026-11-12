@@ -1158,7 +1158,8 @@
     $('#filter').innerHTML = '<span class="lbl">Origem</span>' + chips.map(([k, l]) => `<button class="chip${filtro === k ? ' cur' : ''}" data-f="${k}">${l}</button>`).join('');
     const vis = apls.filter(r => !filtro || (filtro === 'sem' ? !r.origem_lead : r.origem_lead === filtro));
     $('#board').innerHTML = COLS.map(([k, label]) => {
-      const list = vis.filter(r => r.status === k);
+      // Quem acabou de ser movido fica no topo da coluna (updated_at muda a cada mudança no cartão).
+      const list = vis.filter(r => r.status === k).sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
       return `<section class="col" data-col="${k}">
         <header><h2>${label}</h2><span class="n">${list.length}</span></header>
         <div class="cards">${list.length ? list.map(r => `
@@ -1224,10 +1225,10 @@
   async function move(id, status) {
     const r = apls.find(x => x.id === id);
     if (!r || r.status === status) return;
-    const before = r.status; r.status = status; renderAll();
+    const before = r.status, antes = r.updated_at; r.status = status; r.updated_at = new Date().toISOString(); renderAll();
     try { await db.patchApl(id, { status }); toast(`Movido para ${COLS.find(c => c[0] === status)[1]}`);
       if (status === 'entrou' && !(r.membro_id && byId(r.membro_id)) && confirm(`${r.nome} entrou no grupo. Cadastrar como membro agora? A ficha já sai com os dados da aplicação e do contrato.`)) cadastrarMembroDaApl(r); }
-    catch (e) { r.status = before; renderAll(); fail(e, 'Não foi possível mover'); }
+    catch (e) { r.status = before; r.updated_at = antes; renderAll(); fail(e, 'Não foi possível mover'); }
   }
   async function setOrigem(id, origem_lead) {
     const r = apls.find(x => x.id === id); if (!r) return;
@@ -2161,7 +2162,7 @@
     try {
       if (existe) {
         if (!confirm(`Já existe a ficha de ${existe.nome}. Ligar esta aplicação a ela em vez de criar outra?`)) return;
-        await db.patchApl(r.id, { status: 'entrou', membro_id: existe.id }); Object.assign(r, { status: 'entrou', membro_id: existe.id });
+        await db.patchApl(r.id, { status: 'entrou', membro_id: existe.id }); Object.assign(r, { status: 'entrou', membro_id: existe.id, updated_at: new Date().toISOString() });
         if (k && !k.membro_id) { await db.patchContrato(k.id, { membro_id: existe.id }); k.membro_id = existe.id; }
         renderAll(); toast('Aplicação ligada à ficha'); openMembro(existe.id); return;
       }
@@ -2178,7 +2179,7 @@
           pagamentos: `- ${hoje} · contrato ${k.numero} ${['aceito', 'pago'].includes(k.status) ? 'aceito' : 'enviado, aguardando aceite'} · ${vista ? 'à vista ' + rs(valorVista) : '12x ' + rs(anual / 12)}${k.status === 'pago' ? ' · pago' : ''}` });
       }
       const m = await db.addMembro(b); membros.push(m);
-      await db.patchApl(r.id, { status: 'entrou', membro_id: m.id }); Object.assign(r, { status: 'entrou', membro_id: m.id });
+      await db.patchApl(r.id, { status: 'entrou', membro_id: m.id }); Object.assign(r, { status: 'entrou', membro_id: m.id, updated_at: new Date().toISOString() });
       if (k && !k.membro_id) { await db.patchContrato(k.id, { membro_id: m.id }); k.membro_id = m.id; }
       renderAll(); toast(k ? `Membro cadastrado com o contrato ${k.numero}` : 'Membro cadastrado'); openMembro(m.id);
     } catch (e) { fail(e, 'Não foi possível cadastrar'); }
