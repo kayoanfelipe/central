@@ -151,6 +151,16 @@
   .lk-url.muted { color: var(--muted); font-weight: 400; }
   .lk-btn { appearance: none; border: 0; cursor: pointer; flex: none; background: var(--dark); color: var(--on-dark); border-radius: 30px; padding: 9px 16px; font-size: 13px; font-weight: 500; }
   .lk-btn:disabled { opacity: .5; }
+  .lk-msg { margin-top: 12px; border: 1px solid var(--line); border-radius: 14px; padding: 12px 13px; }
+  .lk-txt { font-size: 13px; line-height: 1.55; color: var(--ink); white-space: pre-wrap; word-break: break-word; margin-bottom: 10px; }
+  .lk-btn2 { padding: 8px 14px; }
+  .lk-tip { font-size: 12.5px; color: var(--ink-2); margin-top: 10px; padding-left: 10px; border-left: 2px solid var(--gold); }
+  .rot { border: 1px solid var(--line); border-radius: 16px; padding: 14px 14px 12px; margin-top: 6px; }
+  .rot ol { margin: 0 0 4px; padding-left: 18px; font-size: 13.5px; line-height: 1.6; }
+  .rot ol li + li { margin-top: 4px; }
+  .rot .rk { font-size: 12px; color: var(--muted); margin: 14px 0 6px; }
+  .rot .rtx { font-size: 13px; line-height: 1.55; white-space: pre-wrap; background: var(--col); border-radius: 12px; padding: 11px 12px; margin-bottom: 8px; }
+  .jrot { font-size: 10.5px; border-radius: 20px; padding: 2px 8px; white-space: nowrap; border: 1px solid var(--gold); color: var(--gold); font-weight: 500; }
   .lk-off { font-size: 13px; line-height: 1.5; color: var(--ink-2); background: var(--col); border-radius: 14px; padding: 12px 14px; }
   .card .line { font-size: 12.5px; color: var(--ink-2); line-height: 1.65; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -553,6 +563,7 @@
     <div class="moves" id="j-status"></div>
     <div class="sec">O que ajustar</div>
     <textarea id="j-aj" maxlength="2000" placeholder="O que precisa mudar nesta etapa e qual o próximo passo"></textarea>
+    <div id="j-roteiro"></div>
     <div class="sec">Como funciona</div>
     <textarea id="j-desc" maxlength="1200" style="min-height:110px" placeholder="O que acontece nesta etapa"></textarea>
     <div class="sec">Quem cuida</div>
@@ -901,14 +912,22 @@
     return 'Convite enviado';
   };
   const linkDe = r => { const c = conviteDe(r); return c && r.status !== 'recusado' ? CONVITE_URL + c.token : ''; };
-  async function copia(texto) {
+  // Mensagens do convite (texto revisado no tom do Kayoan; não mudar sem ele).
+  const MSG_PADRAO = 'Fala, {primeiro nome}. Aqui é o Kayoan, do The Group.\n\nSeu perfil passou pela curadoria e você foi selecionado pra conhecer o grupo de perto. Preparei um convite pessoal pra você:\n\n{link do convite}\n\nLá tem tudo: como o grupo funciona, o que você vai ter lá dentro e os próximos passos. Se fizer sentido, no final você já marca um horário comigo pra gente trocar uma ideia.\n\nO link é só seu, então peço que não repasse.';
+  const MSG_INDICACAO = 'Fala, {primeiro nome}. Aqui é o Kayoan, do The Group. O {quem indicou} me falou de você e o seu perfil passou pela curadoria.\n\nSeparei um convite pessoal pra você conhecer o grupo:\n\n{link do convite}\n\nSe fizer sentido, no final dá pra marcar uma conversa comigo. O link é só seu, então peço que não repasse.';
+  const indicadoPor = r => r.canal === 'indicacao' && r.indicado_por ? r.indicado_por.trim() : '';
+  const mensagemConvite = (r, link) => (indicadoPor(r) ? MSG_INDICACAO : MSG_PADRAO)
+    .replace('{primeiro nome}', r.nome.trim().split(/\s+/)[0])
+    .replace('{quem indicou}', indicadoPor(r))
+    .replace('{link do convite}', link);
+  async function copia(texto, aviso = 'Link copiado') {
     try { await navigator.clipboard.writeText(texto); }
     catch {
       const t = document.createElement('textarea'); t.value = texto; t.setAttribute('readonly', ''); t.style.position = 'fixed'; t.style.opacity = '0';
       document.body.appendChild(t); t.select(); t.setSelectionRange(0, texto.length);
       try { document.execCommand('copy'); } finally { t.remove(); }
     }
-    toast('Link copiado');
+    toast(aviso);
   }
 
   async function move(id, status) {
@@ -955,7 +974,9 @@
     $('#d-link').innerHTML = r.status === 'recusado'
       ? `<div class="lk-off">${cv ? 'O link do convite está desativado porque a aplicação está em Não selecionado. Se mover o cartão de volta, ele volta a abrir.' : 'Aplicação em Não selecionado.'}</div>`
       : vale
-        ? `<div class="lk-k">Link do convite</div><div class="lk-row"><span class="lk-url">${esc(linkDe(r))}</span><button class="lk-btn" data-copy="${esc(linkDe(r))}">Copiar</button></div>`
+        ? `<div class="lk-k">Link do convite</div><div class="lk-row"><span class="lk-url">${esc(linkDe(r))}</span><button class="lk-btn" data-copy="${esc(linkDe(r))}">Copiar</button></div>
+           <div class="lk-msg"><div class="lk-k">Mensagem${indicadoPor(r) ? ' (indicação)' : ''}</div><div class="lk-txt">${esc(mensagemConvite(r, linkDe(r)))}</div><button class="lk-btn lk-btn2" data-copymsg="1">Copiar mensagem</button></div>
+           <div class="lk-tip">Mande a arte do convite antes da mensagem.</div>`
         : `<div class="lk-k">Link do convite</div><div class="lk-row"><span class="lk-url muted">Ainda não foi criado</span><button class="lk-btn" id="d-criar">Criar link</button></div>`;
     $('#d-quick').innerHTML = r.status === 'recusado' ? '' : `
       <a class="primary" href="#" id="d-convite">${vale ? 'Reenviar pelo WhatsApp' : 'Enviar pelo WhatsApp'}</a>
@@ -985,6 +1006,7 @@
   // Link visível: copiar (no cartão e na ficha) e criar sem abrir o WhatsApp.
   $('#d-link').addEventListener('click', async e => {
     const cp = e.target.closest('[data-copy]'); if (cp) { copia(cp.dataset.copy); return; }
+    if (e.target.closest('[data-copymsg]')) { const r = apls.find(x => x.id === openId); if (r && linkDe(r)) copia(mensagemConvite(r, linkDe(r)), 'Mensagem copiada'); return; }
     if (!e.target.closest('#d-criar')) return;
     const r = apls.find(x => x.id === openId); if (!r) return;
     const b = e.target.closest('#d-criar'); b.disabled = true;
@@ -998,7 +1020,7 @@
     const w = window.open('', '_blank');
     try {
       const j = await db.criarConvite(r.id);
-      const msg = `Oi, ${r.nome.split(' ')[0]}. Aqui é o Kayoan, do The Group. Seu convite está aqui: ${CONVITE_URL + j.token}`;
+      const msg = mensagemConvite(r, CONVITE_URL + j.token);
       const url = `https://wa.me/${r.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`;
       if (w) w.location.href = url; else location.href = url;
       toast(j.reaproveitado ? 'Mesmo convite, reenviado' : 'Convite criado');
@@ -1426,6 +1448,22 @@
     ex_membros: ['Ex-membros', () => membros.filter(m => m.status === 'removido').length],
   };
   let etapaId = null;
+  // Roteiro fixo da etapa do convite: o que mandar no WhatsApp e em que ordem.
+  const temRoteiro = e => /convite/i.test(e.titulo || '');
+  const roteiroHtml = () => `<div class="sec">Como mandar o convite</div>
+    <div class="rot">
+      <ol>
+        <li><b>A arte do convite</b> (imagem feita no Figma pela equipe). Mande primeiro, à mão: o link do WhatsApp aberto pelo botão não anexa imagem.</li>
+        <li><b>A mensagem</b>, com o link pessoal de convite. Na aba Aplicações, a ficha da pessoa já traz a mensagem preenchida, com o botão Copiar mensagem.</li>
+      </ol>
+      <div class="rk">Mensagem padrão</div>
+      <div class="rtx">${esc(MSG_PADRAO)}</div>
+      <button class="lk-btn lk-btn2" data-rot="padrao">Copiar mensagem</button>
+      <div class="rk">Quem veio por indicação</div>
+      <div class="rtx">${esc(MSG_INDICACAO)}</div>
+      <button class="lk-btn lk-btn2" data-rot="indicacao">Copiar mensagem</button>
+    </div>`;
+  $('#j-roteiro').addEventListener('click', ev => { const b = ev.target.closest('[data-rot]'); if (b) copia(b.dataset.rot === 'indicacao' ? MSG_INDICACAO : MSG_PADRAO, 'Mensagem copiada'); });
   const etapasDa = f => etapas.filter(e => e.fase === f).sort((a, b) => a.ordem - b.ordem || a.titulo.localeCompare(b.titulo));
   const numeroDe = () => { const map = {}; let n = 0; FASES.forEach(([f]) => etapasDa(f).forEach(e => { map[e.id] = ++n; })); return map; };
 
@@ -1451,7 +1489,7 @@
               <span class="jbody">
                 <span class="jtop"><span class="jt">${esc(e.titulo)}</span><span class="jst ${e.status}">${JSTATUS[e.status]}</span></span>
                 ${e.descricao ? `<span class="jd">${esc(e.descricao)}</span>` : ''}
-                <span class="jmeta">${e.responsavel ? `<span class="jresp">${esc(e.responsavel)}</span>` : ''}${tools.map(t => `<span class="jtool">${esc(t)}</span>`).join('')}</span>
+                <span class="jmeta">${temRoteiro(e) ? '<span class="jrot">Roteiro</span>' : ''}${e.responsavel ? `<span class="jresp">${esc(e.responsavel)}</span>` : ''}${tools.map(t => `<span class="jtool">${esc(t)}</span>`).join('')}</span>
                 ${e.ajustar ? `<span class="jaj"><b>Ajustar</b> ${esc(e.ajustar)}</span>` : ''}
               </span>
               ${c ? `<span class="jcount" title="${esc(c[0])}"><b>${qtd}</b><small>${qtd === 1 ? 'pessoa' : 'pessoas'}</small></span>` : ''}
@@ -1475,7 +1513,9 @@
   function fillEtapa(e, force) {
     if (!e) { close(); return; }
     const foco = document.activeElement, dentro = $('#jsheet').contains(foco) && ['INPUT', 'TEXTAREA', 'SELECT'].includes(foco.tagName);
-    $('#j-num').textContent = `Etapa ${numeroDe()[e.id]} · ${FASES.find(f => f[0] === e.fase)[1]}`;
+    $('#j-roteiro').innerHTML = temRoteiro(e) ? roteiroHtml() : '';
+    $('#j-num').textContent = `Etapa ${numeroDe()[e.id]}
+ · ${FASES.find(f => f[0] === e.fase)[1]}`;
     $('#j-since').textContent = e.atualizado_por ? `Atualizado por ${e.atualizado_por.split(' ')[0]} em ${new Date(e.updated_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '')}` : '';
     $('#j-status').innerHTML = Object.entries(JSTATUS).map(([k, l]) => `<button class="move${e.status === k ? ' cur' : ''}" data-k="status" data-v="${k}"><i class="jdot ${k}"></i>${l}</button>`).join('');
     $('#j-fase').innerHTML = FASES.map(([k, l]) => `<button class="move${e.fase === k ? ' cur' : ''}" data-k="fase" data-v="${k}">${l}</button>`).join('');
