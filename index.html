@@ -223,6 +223,12 @@
   .mgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
   .mcard { appearance: none; text-align: left; cursor: pointer; background: var(--col); border: 1px solid transparent; border-radius: 16px; padding: 14px 15px 12px; color: var(--ink); display: flex; flex-direction: column; min-width: 0; transition: border-color .15s; }
   .mcard:hover { border-color: var(--hover); }
+  .kst { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 500; color: var(--ink-2); margin-top: 6px; }
+  .kst i { width: 8px; height: 8px; border-radius: 50%; background: var(--error); flex: none; }
+  .kst.ok i { background: #2f9e5f; }
+  .kst.ok { color: #2f9e5f; }
+  #m-kst { display: block; }
+  #m-kst:empty { display: none; }
   .mcard .name { font-size: 14.5px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   .mcard .name span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .mcard .line { font-size: 12.5px; color: var(--ink-2); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-height: 18px; }
@@ -610,7 +616,7 @@
 
 <aside class="sheet" id="msheet" aria-hidden="true">
   <div class="head">
-    <div style="flex:1;min-width:0"><textarea class="title" id="m-nome" rows="1" maxlength="120" style="font-size:22px;font-weight:600;border-color:transparent;padding:0;resize:none"></textarea><div class="since" id="m-since"></div></div>
+    <div style="flex:1;min-width:0"><textarea class="title" id="m-nome" rows="1" maxlength="120" style="font-size:22px;font-weight:600;border-color:transparent;padding:0;resize:none"></textarea><div class="since" id="m-since"></div><div class="kst" id="m-kst"></div></div>
     <button class="x close" aria-label="Fechar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
   </div>
   <div class="body">
@@ -1574,6 +1580,15 @@
     if (k === 'contratos') return contratos.filter(x => ['enviado', 'preenchido', 'aceito'].includes(x.status)).length;
     const s = mfiltro, b = mbusca; mfiltro = k; mbusca = ''; const n = filtrarMembros().length; mfiltro = s; mbusca = b; return n; }
 
+  /* Bolinha do contrato: o mais recente ligado à ficha (ou, sem ficha ligada, com o mesmo nome), sem os cancelados.
+     Verde: assinado (aceito ou pago). Vermelha: ainda não assinado. Sem contrato: sem bolinha. */
+  function kSt(m) {
+    const nm = norm(m.nome).replace(/\s+/g, ' ').trim();
+    const k = contratos.filter(x => x.status !== 'cancelado' && (x.membro_id === m.id || (!x.membro_id && norm(x.nome).replace(/\s+/g, ' ').trim() === nm)))
+      .sort((a, b) => new Date(b.criado_em) - new Date(a.criado_em))[0];
+    if (!k) return null;
+    return k.status === 'pago' ? { ok: true, txt: 'Contrato assinado e pago' } : k.status === 'aceito' ? { ok: true, txt: 'Contrato assinado' } : { ok: false, txt: 'Contrato não assinado' };
+  }
   function renderMembros() {
     $('#mfilter').innerHTML = MFILTROS.map(([k, l]) => `<button class="chip${mfiltro === k ? ' cur' : ''}" data-f="${k}">${l} <span class="cnt">${contaFiltro(k)}</span></button>`).join('');
     const termos = norm(mbusca).split(/\s+/).filter(Boolean);
@@ -1589,6 +1604,7 @@
       return `<button class="mcard" data-id="${m.id}">
         <div class="name"><span>${esc(m.nome)}</span>${m.status !== 'ativo' ? `<span class="tag">${STATUS[m.status]}</span>` : ''}</div>
         <div class="line">${esc([m.cidade, m.mensalidade ? rs(m.mensalidade) + '/mês' : m.plano].filter(Boolean).join(' · ') || m.email || '')}</div>
+        ${kSt(m) ? `<div class="kst${kSt(m).ok ? ' ok' : ''}"><i></i>${kSt(m).txt}</div>` : ''}
         ${tr ? `<div class="snip">${esc(tr)}</div>` : ''}
         <div class="mfoot">${v && atual(m) ? `<span class="${d < 0 ? 'late' : d <= 30 ? 'soon' : ''}">${v}</span>` : '<span></span>'}${nx ? `<span>${nx} ${nx === 1 ? 'conexão' : 'conexões'}</span>` : ''}</div>
       </button>`;
@@ -1612,6 +1628,7 @@
     const foco = document.activeElement, dentro = $('#msheet').contains(foco) && ['INPUT', 'TEXTAREA'].includes(foco.tagName);
     if (dentro && !force) { renderConexoes(m); return; }
     $('#m-nome').value = m.nome;
+    { const s = kSt(m); $('#m-kst').className = 'kst' + (s && s.ok ? ' ok' : ''); $('#m-kst').innerHTML = s ? `<i></i>${s.txt}` : ''; }
     $('#m-since').textContent = (m.ultima_atualizacao ? `Atualizado em ${dataBR(m.ultima_atualizacao)}` : '') + (m.receita_gerada ? ` · ${brl(m.receita_gerada)} gerados` : '');
     const wa = waLink(m.telefone);
     $('#m-quick').innerHTML = [wa && `<a class="primary" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>`, m.email && `<a href="mailto:${esc(m.email)}">E-mail</a>`].filter(Boolean).join('');
