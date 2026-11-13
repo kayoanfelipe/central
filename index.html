@@ -121,6 +121,9 @@
   /* Aplicações */
   .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: -8px 0 18px; }
   .bar .lbl { font-size: 12px; color: var(--muted); margin-right: 4px; }
+  .bar .lbl.fixo { min-width: 72px; }
+  .chip .cnt.warn { color: var(--error); font-weight: 600; }
+  .chip.cur .cnt.warn { color: var(--error); }
   .chip { appearance: none; cursor: pointer; border: 1px solid var(--line); background: transparent; border-radius: 30px; padding: 7px 13px; font-size: 12.5px; font-weight: 500; color: var(--ink); }
   .chip:hover { border-color: var(--hover); }
   .chip.cur { background: var(--dark); border-color: var(--dark); color: var(--on-dark); }
@@ -224,6 +227,19 @@
   .mcard { appearance: none; text-align: left; cursor: pointer; background: var(--col); border: 1px solid transparent; border-radius: 16px; padding: 14px 15px 12px; color: var(--ink); display: flex; flex-direction: column; min-width: 0; transition: border-color .15s; }
   .mcard:hover { border-color: var(--hover); }
   .mmais { margin-top: 12px; }
+  .mhead .btn.sm { white-space: nowrap; }
+  @media (max-width: 520px) { .mhead { flex-wrap: wrap; gap: 10px; } .mhead .btn.sm { padding: 9px 14px; font-size: 13px; } }
+  .mres { font-size: 13px; color: var(--ink-2); line-height: 1.6; margin: 2px 0 6px; }
+  .fsec { border-top: 1px solid var(--line); }
+  .fsec:first-of-type, #m-renov-box + .fsec { margin-top: 14px; }
+  .fsec > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 14px 0; font-size: 14px; font-weight: 600; color: var(--ink); }
+  .fsec > summary::-webkit-details-marker { display: none; }
+  .fsec > summary .fsr { margin-left: auto; font-weight: 400; font-size: 12.5px; color: var(--muted); text-align: right; }
+  .fsec > summary .fsr.late { color: var(--error); }
+  .fsec > summary::after { content: '+'; color: var(--muted); font-weight: 400; width: 12px; text-align: center; }
+  .fsec[open] > summary::after { content: '−'; }
+  .fsec[open] { padding-bottom: 16px; }
+  .fsec .sec:first-child { margin-top: 0; }
   .mmais summary { cursor: pointer; font-size: 12.5px; color: var(--muted); list-style: none; }
   .mmais summary::-webkit-details-marker { display: none; }
   .mmais summary::before { content: '+ '; }
@@ -557,6 +573,7 @@
       <div class="mhead"><h1 class="page">Membros</h1><span style="display:flex;gap:8px"><button class="btn sm ghost-b" id="k-novo">Novo contrato</button><button class="btn sm" id="m-novo">Novo membro</button></span></div>
       <div class="input search"><input id="mbusca" type="search" placeholder="Buscar por nome, cidade, nicho, plataforma…" autocomplete="off"></div>
       <div class="bar" id="mfilter" style="margin-top:0"></div>
+      <div class="bar" id="mfazer" style="margin-top:-8px"></div>
       <div class="mcount" id="mcount"></div>
       <div class="mgrid" id="mgrid"></div>
     </section>
@@ -592,7 +609,7 @@
     <section id="v-tarefas" hidden>
       <h1 class="page">Tarefas</h1>
       <form class="add" id="f-tarefa">
-        <div class="input"><input id="tarefa" maxlength="280" placeholder="O que precisa fazer? Ex.: achar um copywriter júnior" autocomplete="off"></div>
+        <div class="input"><input id="tarefa" maxlength="280" placeholder="O que precisa fazer?" autocomplete="off"></div>
         <button class="btn">Anotar</button>
       </form>
       <div class="tmeta"><input id="t-membro" list="t-membros" placeholder="Para qual membro? (opcional)" autocomplete="off"><input id="t-prazo" type="date" title="Prazo (opcional)" aria-label="Prazo (opcional)"></div>
@@ -622,8 +639,7 @@
     <div class="lk" id="d-link"></div>
     <div class="quick" id="d-quick"></div>
     <dl id="d-list"></dl>
-    <div class="sec">Origem do lead</div>
-    <div class="moves" id="d-origem"></div>
+    <div class="moves" id="d-origem" hidden></div>
     <div class="sec">Mover para</div>
     <div class="moves" id="d-moves"></div>
     <div class="sec">Anotações</div>
@@ -639,40 +655,42 @@
     <button class="x close" aria-label="Fechar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
   </div>
   <div class="body">
+    <div class="mres" id="m-resumo"></div>
     <div class="quick" id="m-quick" style="margin-top:8px"></div>
-    <div class="sec">Status</div>
-    <div class="moves" id="m-status"></div>
-    <div class="sec">Contrato</div>
-    <div id="m-contrato"></div>
-    <div class="sec">Anel</div>
-    <div class="moves" id="m-anel"></div>
-    <div id="m-anel-tam" style="margin-top:10px"></div>
-    <div class="venc" id="m-anel-desde"></div>
-    <div class="sec">Acompanhamento</div>
-    <div id="m-acomp"></div>
-    <div class="sec">Tarefas</div>
-    <div id="m-tarefas"></div>
-    <form class="tadd" id="m-tadd"><input id="m-tnova" maxlength="280" placeholder="Nova tarefa para este membro" autocomplete="off"><button class="btn">Anotar</button></form>
-    <div id="m-renov-box"><div class="sec">Renovação</div>
-    <div class="moves" id="m-renov"></div>
-    <div id="m-renov-msg"></div></div>
-    <div class="sec">Conexões</div>
-    <ul class="cxl" id="m-conex"></ul>
-    <form class="cxf" id="f-cx">
-      <input id="cx-nome" list="m-nomes" placeholder="Conectar com…" autocomplete="off">
-      <input id="cx-motivo" placeholder="Ponto em comum" maxlength="400" autocomplete="off">
-      <button class="btn">Conectar</button>
-    </form>
-    <datalist id="m-nomes"></datalist>
-    <div id="m-sug"></div>
-    <div class="sec">Informações</div>
-    <textarea id="m-info" style="min-height:140px" maxlength="8000" placeholder="O que a pessoa faz, nicho, plataformas, números…"></textarea>
-    <div class="sec">Dados</div>
-    <div class="fields" id="m-campos"></div>
-    <div class="venc" id="m-venc"></div>
-    <details class="mmais"><summary>Mais dados</summary><div class="fields" id="m-mais" style="margin-top:10px"></div></details>
-    <div class="sec">Pagamentos</div>
-    <textarea id="m-pag" maxlength="4000" placeholder="- 28/10/2026 · R$ 6.000 · renovação"></textarea>
+    <div id="m-renov-box"><details class="fsec" id="fs-renov" open><summary>Renovação <span class="fsr" id="fsr-renov"></span></summary>
+      <div class="moves" id="m-renov"></div>
+      <div id="m-renov-msg"></div></details></div>
+    <details class="fsec" id="fs-acomp"><summary>Acompanhamento <span class="fsr" id="fsr-acomp"></span></summary>
+      <div id="m-acomp"></div></details>
+    <details class="fsec" id="fs-anel"><summary>Anel <span class="fsr" id="fsr-anel"></span></summary>
+      <div class="moves" id="m-anel"></div>
+      <div id="m-anel-tam" style="margin-top:10px"></div>
+      <div class="venc" id="m-anel-desde"></div></details>
+    <details class="fsec" id="fs-contrato"><summary>Contrato <span class="fsr" id="fsr-contrato"></span></summary>
+      <div id="m-contrato"></div></details>
+    <details class="fsec" id="fs-tarefas"><summary>Tarefas <span class="fsr" id="fsr-tarefas"></span></summary>
+      <div id="m-tarefas"></div>
+      <form class="tadd" id="m-tadd"><input id="m-tnova" maxlength="280" placeholder="Nova tarefa para este membro" autocomplete="off"><button class="btn">Anotar</button></form></details>
+    <details class="fsec" id="fs-conex"><summary>Conexões <span class="fsr" id="fsr-conex"></span></summary>
+      <ul class="cxl" id="m-conex"></ul>
+      <form class="cxf" id="f-cx">
+        <input id="cx-nome" list="m-nomes" placeholder="Conectar com…" autocomplete="off">
+        <input id="cx-motivo" placeholder="Ponto em comum" maxlength="400" autocomplete="off">
+        <button class="btn">Conectar</button>
+      </form>
+      <datalist id="m-nomes"></datalist>
+      <div id="m-sug"></div></details>
+    <details class="fsec" id="fs-info"><summary>Informações <span class="fsr" id="fsr-info"></span></summary>
+      <textarea id="m-info" style="min-height:140px" maxlength="8000" placeholder="O que a pessoa faz, nicho, plataformas, números…"></textarea></details>
+    <details class="fsec" id="fs-dados"><summary>Dados e pagamentos <span class="fsr" id="fsr-dados"></span></summary>
+      <div class="sec" style="margin-top:4px">Status</div>
+      <div class="moves" id="m-status"></div>
+      <div class="sec">Dados</div>
+      <div class="fields" id="m-campos"></div>
+      <div class="venc" id="m-venc"></div>
+      <details class="mmais"><summary>Mais dados</summary><div class="fields" id="m-mais" style="margin-top:10px"></div></details>
+      <div class="sec">Pagamentos</div>
+      <textarea id="m-pag" maxlength="4000" placeholder="- 28/10/2026 · R$ 6.000 · renovação"></textarea></details>
     <div class="saved" id="m-saved"></div>
     <button class="link del" id="m-del">Apagar ficha</button>
   </div>
@@ -1055,7 +1073,7 @@
       const ab = Object.values(vagas).reduce((s, x) => s + x.abertas, 0), tot = Object.values(vagas).reduce((s, x) => s + x.total, 0);
       vagasHtml = `<div class="v">${ab}<small>de ${tot}</small></div>
         <ul>${Object.entries(vagas).map(([n, x]) => `<li><a href="${PARCEIROS}/${n}/" target="_blank" rel="noopener"><span class="nm">${NIVEL[n] || esc(n)}</span><span class="meta">${x.abertas} de ${x.total} abertas</span></a></li>`).join('')}</ul>
-        <div class="foot">Lido do site de parceiros.</div>`;
+`;
     } else {
       vagasHtml = `<div class="v">–</div><div class="none">${vagas === false ? 'O site de parceiros ainda não está no ar.' : 'Carregando…'}</div>`;
     }
@@ -1067,7 +1085,7 @@
       <div class="stat"><div class="k">Calls marcadas <a href="https://app.cal.com/bookings/upcoming" target="_blank" rel="noopener">Agenda</a></div>
         <div class="v">${calls.length}</div>
         ${list(calls, aplItem, 'Nenhuma call marcada.')}
-        <div class="foot">Quem está em Call marcada no quadro. A agenda do Cal.com entra numa próxima versão.</div></div>
+</div>
       <div class="stat"><div class="k">Vagas de patrocínio <a href="${PARCEIROS}" target="_blank" rel="noopener">Site</a></div>${vagasHtml}</div>
       <div class="stat"><div class="k">Acompanhamento <a href="#membros" data-mf="chamar">Ver lista</a></div>
         <div class="v${contaFase('atrasado') ? ' hl' : ''}">${contaFase('atrasado')}<small>${contaFase('atrasado') === 1 ? 'atrasado' : 'atrasados'}</small></div>
@@ -1076,10 +1094,10 @@
           <li><a href="#membros" data-mf="chamar"><span class="nm">Contatar este mês</span><span class="meta">${contaFase('mes')}</span></a></li>
           <li><a href="#membros" data-mf="aneis"><span class="nm">Anéis pendentes</span><span class="meta">${membros.filter(anelPendente).length}</span></a></li>
         </ul></div>
-      <div class="stat"><div class="k">Renovações <a href="#membros" data-mf="vencer">Ver todas</a></div>
+      <div class="stat"><div class="k">Renovações <a href="#membros" data-mf="renov">Ver todas</a></div>
         <div class="v${vencer.length ? ' hl' : ''}">${vencer.length}<small>em 30 dias · ${rs(soma(vencer.filter(m => m.renovacao !== 'remover'), 'valor_renovacao'))}</small></div>
-        ${list(vencer, m => `<li><button class="two" data-mem="${m.id}"><span class="nm" style="max-width:100%">${esc(m.nome)}</span><span class="meta">${venceTxt(m)}${m.valor_renovacao ? ' · ' + rs(m.valor_renovacao) : ''}${m.renovacao ? ' · ' + RENOV[m.renovacao] : ''}</span></button></li>`, 'Nenhuma nos próximos 30 dias.', 3, 'href="#membros" data-mf="vencer"')}
-        ${vencidos.length ? `<div class="foot"><a href="#membros" data-mf="vencidos" style="color:var(--error);text-decoration:none">${vencidos.length} ${vencidos.length === 1 ? 'vencido' : 'vencidos'} sem renovar</a></div>` : ''}</div>
+        ${list(vencer, m => `<li><button class="two" data-mem="${m.id}"><span class="nm" style="max-width:100%">${esc(m.nome)}</span><span class="meta">${venceTxt(m)}${m.valor_renovacao ? ' · ' + rs(m.valor_renovacao) : ''}${m.renovacao ? ' · ' + RENOV[m.renovacao] : ''}</span></button></li>`, 'Nenhuma nos próximos 30 dias.', 3, 'href="#membros" data-mf="renov"')}
+        ${vencidos.length ? `<div class="foot"><a href="#membros" data-mf="renov" style="color:var(--error);text-decoration:none">${vencidos.length} ${vencidos.length === 1 ? 'vencido' : 'vencidos'} sem renovar</a></div>` : ''}</div>
       <div class="stat"><div class="k">Parcelas para cobrar <a href="#receber">Ver todas</a></div>
         <div class="v${cobrar.some(x => x.px.dias < 0) ? ' hl' : ''}">${cobrar.length}<small>${cobrar.some(x => x.px.dias < 0) ? cobrar.filter(x => x.px.dias < 0).length + (cobrar.filter(x => x.px.dias < 0).length === 1 ? ' atrasada' : ' atrasadas') : 'em dia'}</small></div>
         ${list(cobrar, x => `<li><button class="two" data-kmem="${x.k.id}"><span class="nm" style="max-width:100%">${esc(x.k.nome)}</span><span class="meta">${x.px.n}ª de ${x.s.total} · ${rs(x.s.valor)} · ${x.px.dias < 0 ? `atrasada há ${-x.px.dias} ${-x.px.dias === 1 ? 'dia' : 'dias'}` : x.px.dias === 0 ? 'vence hoje' : 'vence ' + dataCurta(x.px.data)}</span></button></li>`, 'Nada para cobrar nos próximos 7 dias.', 4, 'href="#receber"')}</div>
@@ -1098,6 +1116,10 @@
         <div class="v">${fazendo.length}</div>
         ${list(fazendo, i => `<li><button data-ideia="${i.id}"><span class="nm">${esc(i.texto)}</span></button></li>`, `${ideias.filter(i => i.status === 'fazer').length} pra fazer.`)}</div>`;
 
+    // Primeiro o que pede ação, depois os números.
+    const ORDEM_HOJE = ['Aplicações novas', 'Calls marcadas', 'Parcelas para cobrar', 'Renovações', 'Acompanhamento', 'Tarefas', 'A receber', 'Vagas de patrocínio', 'Ideias em andamento'];
+    const pos = el => { const t = (el.querySelector('.k')?.textContent || ''); const i = ORDEM_HOJE.findIndex(x => t.startsWith(x)); return i < 0 ? 99 : i; };
+    [...$('#stats').children].sort((a, b) => pos(a) - pos(b)).forEach(el => $('#stats').appendChild(el));
     renderLinks();
   }
   // instagram.com sem www trava (não responde); sempre www e só o @ limpo.
@@ -1184,9 +1206,10 @@
 
   /* ---------------- Aplicações ---------------- */
   function renderBoard() {
-    const chips = [['', 'Todas'], ...Object.entries(ORIGEM), ['sem', 'Sem origem']];
-    $('#filter').innerHTML = '<span class="lbl">Origem</span>' + chips.map(([k, l]) => `<button class="chip${filtro === k ? ' cur' : ''}" data-f="${k}">${l}</button>`).join('');
-    const vis = apls.filter(r => !filtro || (filtro === 'sem' ? !r.origem_lead : r.origem_lead === filtro));
+    const chips = [['', 'Todas'], ['indicacao', 'Indicação'], ['instagram', 'Instagram'], ['evento', 'Evento'], ['outro', 'Outro']];
+    $('#filter').innerHTML = '<span class="lbl">Como chegou</span>' + chips.map(([k, l]) => `<button class="chip${filtro === k ? ' cur' : ''}" data-f="${k}">${l}</button>`).join('');
+    const canalDe = r => ['indicacao', 'instagram', 'evento'].includes(r.canal) ? r.canal : 'outro';
+    const vis = apls.filter(r => !filtro || canalDe(r) === filtro);
     $('#board').innerHTML = COLS.map(([k, label]) => {
       // Quem acabou de ser movido fica no topo da coluna (updated_at muda a cada mudança no cartão).
       const list = vis.filter(r => r.status === k).sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
@@ -1199,7 +1222,7 @@
             <div class="line">${esc(phone(r.whatsapp))}</div>
             ${kStApl(r) ? `<div class="kst${kStApl(r).ok ? ' ok' : ''}"><i></i>${kStApl(r).txt}</div>` : ''}
             ${linkDe(r) ? `<span class="clink" title="${esc(linkDe(r))}"><span class="cl-url">Link do convite</span><span class="cl-copy" role="button" tabindex="0" data-copy="${esc(linkDe(r))}">Copiar</span></span>` : ''}
-            <div class="tags">${r.origem_lead ? `<span class="tag">${ORIGEM[r.origem_lead]}${r.origem_lead === 'indicacao' && r.indicado_por ? ' de ' + esc(r.indicado_por) : ''}</span>` : '<span class="tag none">Sem origem</span>'}${seloConvite(r) ? `<span class="tag convite">${esc(seloConvite(r))}</span>` : ''}${r.membro_id && byId(r.membro_id) ? '<span class="tag">Ficha de membro</span>' : ''}${(conviteDe(r)?.aberturas || 0) > 1 ? `<span class="tag convite${conviteDe(r).aberturas > 2 ? ' muito' : ''}">Abriu ${conviteDe(r).aberturas} vezes</span>` : ''}</div>
+            <div class="tags"><span class="tag">${r.canal === 'indicacao' && r.indicado_por ? 'Indicação de ' + esc(r.indicado_por) : esc(CANAL[r.canal] || 'Outro caminho')}</span>${seloConvite(r) ? `<span class="tag convite">${esc(seloConvite(r))}</span>` : ''}${r.membro_id && byId(r.membro_id) ? '<span class="tag">Ficha de membro</span>' : ''}${(conviteDe(r)?.aberturas || 0) > 1 ? `<span class="tag convite${conviteDe(r).aberturas > 2 ? ' muito' : ''}">Abriu ${conviteDe(r).aberturas} vezes</span>` : ''}</div>
           </button>`).join('') : '<div class="empty">Nada por aqui</div>'}</div>
       </section>`;
     }).join('');
@@ -1303,25 +1326,26 @@
            <div class="lk-tip">Mande a arte do convite antes da mensagem.</div>`
         : `<div class="lk-k">Link do convite</div><div class="lk-row"><span class="lk-url muted">Ainda não foi criado</span><button class="lk-btn" id="d-criar">Criar link</button></div>`;
     const fichaApl = r.membro_id ? byId(r.membro_id) : null, destaque = !fichaApl && ['aprovado', 'entrou'].includes(r.status);
-    $('#d-quick').innerHTML = r.status === 'recusado' ? '' : `
-      ${destaque ? '<a class="primary" href="#" id="d-membro">Cadastrar como membro</a>' : ''}
-      <a${destaque ? '' : ' class="primary"'} href="#" id="d-convite">${vale ? 'Reenviar pelo WhatsApp' : 'Enviar pelo WhatsApp'}</a>
-      <a href="https://wa.me/${wa}?text=${encodeURIComponent(chamada)}" target="_blank" rel="noopener">Link do Cal</a>
-      <a href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>
-      <a href="${igUrl(r.instagram)}" target="_blank" rel="noopener">Instagram</a>
-      <a href="mailto:${esc(r.email)}">E-mail</a>
-      <a href="#" id="d-contrato">Novo contrato</a>
-      ${destaque ? '' : `<a href="#" id="d-membro">${fichaApl ? 'Abrir ficha do membro' : 'Cadastrar como membro'}</a>`}`;
+    // Botões por etapa: o principal é o próximo passo dela. Instagram e e-mail ficam na lista abaixo.
+    const bConvite = p => `<a${p ? ' class="primary"' : ''} href="#" id="d-convite">${vale ? 'Reenviar convite pelo WhatsApp' : 'Enviar convite pelo WhatsApp'}</a>`;
+    const bCal = p => `<a${p ? ' class="primary"' : ''} href="https://wa.me/${wa}?text=${encodeURIComponent(chamada)}" target="_blank" rel="noopener">Mandar link da call</a>`;
+    const bZap = `<a href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>`;
+    const bContrato = p => `<a${p ? ' class="primary"' : ''} href="#" id="d-contrato">Gerar contrato</a>`;
+    const bMembro = p => `<a${p ? ' class="primary"' : ''} href="#" id="d-membro">${fichaApl ? 'Abrir ficha do membro' : 'Cadastrar como membro'}</a>`;
+    $('#d-quick').innerHTML = r.status === 'recusado' ? bZap
+      : r.status === 'nova' || r.status === 'conversa' ? bConvite(true) + bCal(false) + bZap
+      : r.status === 'call' ? bZap.replace('<a ', '<a class="primary" ') + bCal(false) + bContrato(false)
+      : r.status === 'aprovado' ? bContrato(true) + bMembro(false) + bZap
+      : bMembro(true) + bContrato(false) + bZap;
+
     const items = [
-      ['Atua com resposta direta', 'Sim'],
       ['Função', funcao(r)],
       ['Mercado', NICHO[r.nicho] || r.nicho || '-'],
       ['Faturamento por mês', FAT[r.faturamento] || r.faturamento],
-      ['Respondeu no quiz', r.canal === 'indicacao' && r.indicado_por ? `Indicação de ${r.indicado_por}` : (CANAL[r.canal] || r.canal || '-')],
+      ['Como chegou', r.canal === 'indicacao' && r.indicado_por ? `Indicação de ${r.indicado_por}` : (CANAL[r.canal] || r.canal || '-')],
       ['Instagram', `<a href="${igUrl(r.instagram)}" target="_blank" rel="noopener">@${esc(r.instagram)}</a>`, true],
       ['WhatsApp', `<a href="https://wa.me/${wa}" target="_blank" rel="noopener">${esc(phone(r.whatsapp))}</a>`, true],
       ['E-mail', `<a href="mailto:${esc(r.email)}">${esc(r.email)}</a>`, true],
-      ['Veio pelo', r.origem === 'app' ? 'App' : r.origem === 'site' ? 'Site' : 'Outro'],
       ['Convite', !cv ? 'Não criado' : (seloConvite(r) + (cv.aberturas > 1 ? ` · ${cv.aberturas} vezes` : ''))],
     ];
     $('#d-list').innerHTML = items.map(([k, v, html]) => `<div class="row"><dt>${k}</dt><dd>${html ? v : esc(v)}</dd></div>`).join('');
@@ -1559,9 +1583,12 @@
 
   /* ---------------- Membros ---------------- */
   const STATUS = { ativo: 'Ativo', convidado: 'Convidado', fundador: 'Fundador', removido: 'Ex-membro' };
-  const RENOV = { pendente: 'Pendente', pago: 'Pago', remover: 'Remover' };
+  const RENOV = { pendente: 'Em conversa', pago: 'Renovou', remover: 'Não vai renovar' };
   const ANEL = { 'falta medida': 'Falta medida', 'em produção': 'Em produção', 'entregue': 'Entregue' };
-  const MFILTROS = [['atuais', 'Atuais'], ['chamar', 'Acompanhamento'], ['aneis', 'Anéis pendentes'], ['contratos', 'Contratos'], ['vencer', 'Vencem em 30 dias'], ['vencidos', 'Vencidos'], ['convidado', 'Convidados'], ['ex', 'Ex-membros'], ['todos', 'Todos']];
+  // Quem aparece (status) e o que a equipe tem para fazer (filas de trabalho).
+  const MQUEM = [['atuais', 'Ativos'], ['convidado', 'Convidados'], ['ex', 'Ex-membros'], ['todos', 'Todos']];
+  const MFAZER = [['chamar', 'Acompanhamento'], ['renov', 'Renovações'], ['aneis', 'Anéis'], ['contratos', 'Contratos']];
+  const MFILTROS = [...MQUEM, ...MFAZER];
   let mfiltro = 'atuais', mbusca = '', memId = null;
   const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   const byId = id => membros.find(m => m.id === id);
@@ -1571,10 +1598,10 @@
   const dataBR = iso => new Date(iso + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/\./g, '');
   const venceTxt = m => {
     const d = diasAte(m.vencimento); if (d === null) return '';
-    if (d < 0) return `Venceu há ${-d} ${-d === 1 ? 'dia' : 'dias'}`;
-    if (d === 0) return 'Vence hoje';
-    if (d <= 30) return `Vence em ${d} ${d === 1 ? 'dia' : 'dias'}`;
-    return `Vence em ${dataBR(m.vencimento)}`;
+    if (d < 0) return `Renovação atrasada há ${-d} ${-d === 1 ? 'dia' : 'dias'}`;
+    if (d === 0) return 'Renova hoje';
+    if (d <= 30) return `Renova em ${d} ${d === 1 ? 'dia' : 'dias'}`;
+    return `Renova em ${dataBR(m.vencimento)}`;
   };
   const brl = v => v == null ? '' : v >= 1e9 ? `R$ ${(v / 1e9).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} bi` : v >= 1e6 ? `R$ ${(v / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mi` : `R$ ${v.toLocaleString('pt-BR')}`;
   const rs = v => 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
@@ -1603,7 +1630,7 @@
     const termos = norm(mbusca).split(/\s+/).filter(Boolean);
     return membros.filter(m => {
       if (!termos.length || mfiltro !== 'atuais') {
-        if (mfiltro === 'atuais' && !atual(m)) return false;
+        if (mfiltro === 'atuais' && !['ativo', 'fundador'].includes(m.status)) return false;
         if (mfiltro === 'convidado' && m.status !== 'convidado') return false;
         if (mfiltro === 'ex' && m.status !== 'removido') return false;
         if (mfiltro === 'vencer') { const d = diasAte(m.vencimento); if (!atual(m) || d === null || d < 0 || d > 30) return false; }
@@ -1617,6 +1644,7 @@
   function contaFiltro(k) {
     if (k === 'chamar') return ['atrasado', 'semana', 'mes'].reduce((s, f) => s + contaFase(f), 0);
     if (k === 'aneis') return membros.filter(anelPendente).length;
+    if (k === 'renov') return membros.filter(precisaRenovar).length;
     if (k === 'contratos') return contratos.filter(x => ['enviado', 'preenchido', 'aceito'].includes(x.status)).length;
     const s = mfiltro, b = mbusca; mfiltro = k; mbusca = ''; const n = filtrarMembros().length; mfiltro = s; mbusca = b; return n; }
 
@@ -1637,9 +1665,12 @@
     return k.status === 'pago' ? { ok: true, txt: 'Contrato assinado e pago' } : k.status === 'aceito' ? { ok: true, txt: 'Contrato assinado' } : { ok: false, txt: 'Contrato não assinado' };
   }
   function renderMembros() {
-    $('#mfilter').innerHTML = MFILTROS.map(([k, l]) => `<button class="chip${mfiltro === k ? ' cur' : ''}" data-f="${k}">${l} <span class="cnt">${contaFiltro(k)}</span></button>`).join('');
+    const chip = ([k, l]) => `<button class="chip${mfiltro === k ? ' cur' : ''}" data-f="${k}">${l} <span class="cnt${filaAtrasada(k) ? ' warn' : ''}">${contaFiltro(k)}</span></button>`;
+    $('#mfilter').innerHTML = '<span class="lbl fixo">Membros</span>' + MQUEM.map(chip).join('');
+    $('#mfazer').innerHTML = '<span class="lbl fixo">Para fazer</span>' + MFAZER.map(chip).join('');
     const termos = norm(mbusca).split(/\s+/).filter(Boolean);
     if (mfiltro === 'contratos') { $('#mgrid').classList.add('alist'); renderContratos(termos); if (memId) fillMembro(byId(memId)); return; }
+    if (mfiltro === 'renov') { $('#mgrid').classList.add('alist'); renderRenovacoes(termos); if (memId) fillMembro(byId(memId)); return; }
     if (mfiltro === 'chamar' || mfiltro === 'aneis') { $('#mgrid').classList.add('alist'); renderAcompanhamento(termos); if (memId) fillMembro(byId(memId)); return; }
     $('#mgrid').classList.remove('alist');
     const list = filtrarMembros();
@@ -1660,6 +1691,7 @@
     if (memId) fillMembro(byId(memId));
   }
   $('#mfilter').addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b) return; mfiltro = b.dataset.f; renderMembros(); });
+  $('#mfazer').addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b) return; mfiltro = b.dataset.f; renderMembros(); });
   $('#mbusca').addEventListener('input', e => { mbusca = e.target.value; renderMembros(); });
   $('#mgrid').addEventListener('click', e => {
     const z = e.target.closest('[data-rwa]'); if (z) { e.stopPropagation(); const m = byId(z.dataset.rwa); if (m) window.open(renovWa(m, 'primeiro'), '_blank', 'noopener'); return; }
@@ -1689,7 +1721,7 @@
     if (e.target.closest('[data-rcontrato]')) abrirNovoContrato(m);
   });
 
-  function openMembro(id) { close(); memId = id; $('#m-saved').textContent = ''; fillMembro(byId(id), true); sheetOn($('#msheet')); $('#msheet .body').scrollTop = 0; }
+  function openMembro(id) { close(); memId = id; acompTodos = false; $('#m-saved').textContent = ''; fillMembro(byId(id), true); sheetOn($('#msheet')); $('#msheet .body').scrollTop = 0; }
 
   const CAMPOS = [
     ['email', 'E-mail', 'email'], ['telefone', 'Telefone', 'tel'], ['cidade', 'Cidade', 'text'], ['plano', 'Plano', 'text'],
@@ -1707,7 +1739,8 @@
     { const s = kSt(m); $('#m-kst').className = 'kst' + (s && s.ok ? ' ok' : ''); $('#m-kst').innerHTML = s ? `<i></i>${s.txt}` : ''; }
     $('#m-since').textContent = (m.ultima_atualizacao ? `Atualizado em ${dataBR(m.ultima_atualizacao)}` : '') + (m.receita_gerada ? ` · ${brl(m.receita_gerada)} gerados` : '');
     const wa = waLink(m.telefone);
-    $('#m-quick').innerHTML = [wa && `<a class="primary" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>`, m.email && `<a href="mailto:${esc(m.email)}">E-mail</a>`].filter(Boolean).join('');
+    $('#m-quick').innerHTML = wa ? `<a class="primary" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>` : '';
+    fichaResumo(m, force);
     $('#m-status').innerHTML = Object.entries(STATUS).map(([k, l]) => `<button class="move${m.status === k ? ' cur' : ''}" data-k="status" data-v="${k}">${l}</button>`).join('');
     $('#m-campos').innerHTML = CAMPOS.map(campoHtml(m)).join('');
     $('#m-mais').innerHTML = CAMPOS_MAIS.map(campoHtml(m)).join('');
@@ -1724,6 +1757,25 @@
     renderContratoFicha(m);
     renderTarefasFicha(m);
     renderConexoes(m);
+  }
+  /* Resumo do topo da ficha e o que fica aberto: só o que pede ação agora. */
+  function fichaResumo(m, abrindo) {
+    const p = proximoContato(m), v = venceTxt(m), d = diasAte(m.vencimento), nT = tarefas.filter(t => t.membro_id === m.id && t.status !== 'feito').length, nC = conexoesDe(m.id).length;
+    const anelTxt = m.status === 'ativo' ? (m.anel === 'entregue' ? `entregue${m.anel_tamanho ? ' · tamanho ' + esc(m.anel_tamanho) : ''}` : m.anel === 'em produção' ? `em produção${m.anel_tamanho ? ' · tamanho ' + esc(m.anel_tamanho) : ''}` : 'falta medida') : '';
+    $('#m-resumo').innerHTML = [[m.plano ? esc(m.plano) : '', atual(m) && v ? `<span class="${d < 0 ? 'late' : ''}">${v}</span>` : ''].filter(Boolean).join(' · '),
+      [anelTxt ? 'Anel: ' + anelTxt : '', p ? `Próximo contato ${prazoTxt(p)}` : ''].filter(Boolean).join(' · ')].filter(Boolean).join('<br>');
+    const s = (id, txt, late) => { const el = $('#' + id); el.textContent = txt || ''; el.classList.toggle('late', !!late); };
+    s('fsr-renov', v, d !== null && d < 0); s('fsr-acomp', p ? prazoTxt(p) : 'só para ativos', p && p.dias < 0); s('fsr-anel', anelTxt || '—');
+    const ks = kSt(m); s('fsr-contrato', ks ? ks.txt : 'sem contrato'); s('fsr-tarefas', nT ? `${nT} ${nT === 1 ? 'aberta' : 'abertas'}` : 'nenhuma'); s('fsr-conex', nC ? String(nC) : 'nenhuma');
+    s('fsr-info', m.informacoes ? '' : 'vazio'); s('fsr-dados', STATUS[m.status] || '');
+    $('#fs-anel').hidden = m.status !== 'ativo';
+    if (abrindo) {
+      $('#fs-acomp').open = !!(p && p.dias <= 7);
+      $('#fs-anel').open = m.status === 'ativo' && m.anel !== 'entregue';
+      $('#fs-renov').open = true;
+      ['fs-contrato', 'fs-conex', 'fs-info', 'fs-dados'].forEach(x => { $('#' + x).open = false; });
+      $('#fs-tarefas').open = nT > 0;
+    }
   }
   function renderConexoes(m) {
     const cx = conexoesDe(m.id).sort((a, b) => byId(a.outro).nome.localeCompare(byId(b.outro).nome, 'pt-BR'));
@@ -2165,6 +2217,25 @@
   const prazoTxt = p => p.dias < 0 ? `atrasado há ${-p.dias} ${-p.dias === 1 ? 'dia' : 'dias'}` : p.dias === 0 ? 'vence hoje' : `até ${dataCurta(p.data)}`;
   const ultimoTxt = p => p.ultimo ? `último contato em ${dataCurta(p.ultimo.data)}${p.ultimo.por ? ' por ' + esc(p.ultimo.por.split(' ')[0]) : ''}` : 'nenhum contato registrado';
 
+  /* Renovações: membros pagantes cujo ano termina em até 60 dias ou já terminou, sem renovação marcada e sem contrato novo assinado. */
+  const precisaRenovar = m => m.status === 'ativo' && !['pago', 'remover'].includes(m.renovacao) && diasAte(m.vencimento) !== null && diasAte(m.vencimento) <= 60 && !kContratoAtivo(m);
+  function filaAtrasada(k) {
+    if (k === 'chamar') return contaFase('atrasado') > 0;
+    if (k === 'renov') return membros.some(m => precisaRenovar(m) && diasAte(m.vencimento) < 0);
+    return false;
+  }
+  function renderRenovacoes(termos) {
+    const bate = m => !termos.length || termos.every(t => norm(m.nome).includes(t));
+    const l = membros.filter(m => precisaRenovar(m) && bate(m)).sort((a, b) => a.vencimento < b.vencimento ? -1 : 1);
+    const g = [['atrasada', 'Renovação atrasada', l.filter(m => diasAte(m.vencimento) < 0)], ['30', 'Renova em até 30 dias', l.filter(m => diasAte(m.vencimento) >= 0 && diasAte(m.vencimento) <= 30)], ['60', 'Renova em 31 a 60 dias', l.filter(m => diasAte(m.vencimento) > 30)]].filter(x => x[2].length);
+    $('#mcount').textContent = `Membros cujo ano no The Group termina: mandar a mensagem de renovação e depois o contrato · ${g.map(x => `${x[2].length} ${x[0] === 'atrasada' ? (x[2].length === 1 ? 'atrasada' : 'atrasadas') : x[0] === '30' ? 'em até 30 dias' : 'em 31 a 60 dias'}`).join(' · ') || 'nenhuma agora'}`;
+    const kPend = m => contratos.find(k => ['enviado', 'preenchido'].includes(k.status) && (k.membro_id === m.id || norm(k.nome).trim() === norm(m.nome).trim()));
+    $('#mgrid').innerHTML = g.length ? g.map(([c, t, xs]) => `<section class="agrp${c === 'atrasada' ? ' atrasado' : ''}"><h3>${t} <span>${xs.length}</span></h3>${xs.map(m => {
+      const d = diasAte(m.vencimento), pend = kPend(m), wa = waLink(m.telefone);
+      return `<div class="arow"><button class="anm" data-open="${m.id}"><b>${esc(m.nome)}</b><span><span class="${d < 0 ? 'late' : ''}">${venceTxt(m)}</span>${m.plano ? ' · ' + esc(m.plano) : ''} · ${pend ? `contrato ${esc(pend.numero)} enviado, falta assinar` : 'sem contrato ainda'}</span></button>
+        <span class="aact">${wa && !pend ? `<a class="abtn pri" href="${esc(renovWa(m, 'primeiro'))}" target="_blank" rel="noopener">Mandar mensagem</a>` : wa ? `<a class="abtn" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ''}<button class="abtn" data-open="${m.id}">Abrir ficha</button></span></div>`;
+    }).join('')}</section>`).join('') : '<div class="empty" style="grid-column:1/-1">Nenhuma renovação pendente nos próximos 60 dias</div>';
+  }
   function renderAcompanhamento(termos) {
     const bate = m => !termos.length || termos.every(t => norm(m.nome).includes(t));
     if (mfiltro === 'chamar') {
@@ -2181,7 +2252,7 @@
     }
     const l = membros.filter(m => anelPendente(m) && bate(m)).sort((a, b) => (ANEL_ORDEM[a.anel] ?? 0) - (ANEL_ORDEM[b.anel] ?? 0) || ((a.anel_desde || a.entrada || '9') < (b.anel_desde || b.entrada || '9') ? -1 : 1));
     const fm = l.filter(m => m.anel !== 'em produção').length;
-    $('#mcount').textContent = `${l.length} ${l.length === 1 ? 'membro ativo' : 'membros ativos'} sem anel entregue · ${fm} sem medida · ${l.length - fm} em produção`;
+    $('#mcount').textContent = `Membros sem anel entregue: pegar a medida e acompanhar a produção · ${l.length} no total · ${fm} sem medida · ${l.length - fm} em produção`;
     $('#mgrid').innerHTML = l.length ? `<section class="agrp"><h3>Anéis pendentes <span>${l.length}</span></h3>${l.map(m => {
       const wa = waLink(m.telefone), parado = m.anel_desde && m.anel_desde !== m.entrada ? -diasAte(m.anel_desde) : null, prox = m.anel === 'falta medida' ? 'em produção' : 'entregue';
       return `<div class="arow"><button class="anm" data-open="${m.id}"><b>${esc(m.nome)}</b><span><span class="atp anel">${ANEL[m.anel] || 'Sem status'}</span>${parado !== null ? ` <span class="${parado >= 60 ? 'late' : ''}">${parado === 0 ? 'desde hoje' : `há ${parado} ${parado === 1 ? 'dia' : 'dias'}`}</span>` : ''} · no grupo há ${-diasAte(m.entrada)} dias${m.anel_tamanho ? ' · tamanho ' + esc(m.anel_tamanho) : ''}</span></button>
@@ -2204,6 +2275,7 @@
   }, true);
 
   // Bloco na ficha: próximo contato, registrar e histórico.
+  let acompTodos = false;
   function renderAcompFicha(m) {
     const p = proximoContato(m), cs = contatosDe(m.id);
     const parado = m.anel_desde && m.anel_desde !== m.entrada ? -diasAte(m.anel_desde) : null;
@@ -2212,9 +2284,10 @@
     $('#m-acomp').innerHTML = (p ? `<div class="aprox"><div><div class="lk-k">Próximo contato</div><b>${CICLO[p.tipo]}</b> <span class="${p.dias < 0 ? 'late' : ''}">${prazoTxt(p)}</span></div></div>
       <div class="areg"><input id="m-cnota" maxlength="1000" placeholder="Anotação do contato (opcional)"><select id="m-ctipo" class="sel"><option value="mensal"${p.tipo === 'mensal' ? ' selected' : ''}>Mensal</option><option value="trimestral"${p.tipo === 'trimestral' ? ' selected' : ''}>Trimestral</option></select><button class="lk-btn" id="m-chamei">Contato feito</button></div>`
       : '<div class="lk-off">O acompanhamento é só para membros ativos.</div>') +
-      (cs.length ? `<ul class="ahist">${cs.map(c => `<li><span><b>${dataCurta(c.data)}</b> · ${CICLO[c.tipo]}${c.por ? ' · ' + esc(c.por.split(' ')[0]) : ''}${c.nota ? `<em>${esc(c.nota)}</em>` : ''}</span><button class="cx-del" data-delc="${c.id}" aria-label="Apagar registro">×</button></li>`).join('')}</ul>` : '');
+      (cs.length ? `<ul class="ahist">${(acompTodos ? cs : cs.slice(0, 3)).map(c => `<li><span><b>${dataCurta(c.data)}</b> · ${CICLO[c.tipo]}${c.por ? ' · ' + esc(c.por.split(' ')[0]) : ''}${c.nota ? `<em>${esc(c.nota)}</em>` : ''}</span><button class="cx-del" data-delc="${c.id}" aria-label="Apagar registro">×</button></li>`).join('')}</ul>${cs.length > 3 ? `<button class="link" type="button" data-atodos="1" style="margin-top:6px">${acompTodos ? 'Mostrar só os últimos' : `Ver todos os contatos (${cs.length})`}</button>` : ''}` : '');
   }
   $('#m-acomp').addEventListener('click', async e => {
+    if (e.target.closest('[data-atodos]')) { acompTodos = !acompTodos; renderAcompFicha(byId(memId)); return; }
     if (e.target.closest('#m-chamei')) { await registraContato(memId, $('#m-ctipo').value, $('#m-cnota').value.trim()); renderAcompFicha(byId(memId)); return; }
     const d = e.target.closest('[data-delc]'); if (!d) return;
     if (!confirm('Apagar este registro de contato?')) return;
@@ -2258,7 +2331,7 @@
     const l = contratos.filter(k => k.status !== 'cancelado' && bate(k));
     const grupos = [['preenchido', 'Preenchidos, esperando o aceite'], ['enviado', 'Enviados, esperando os dados'], ['aceito', 'Aceitos, esperando o pagamento'], ['pago', 'Pagos']]
       .map(([s, t]) => [s, t, l.filter(k => k.status === s).sort((a, b) => a.atualizado_em < b.atualizado_em ? 1 : -1)]).filter(g => g[2].length);
-    $('#mcount').textContent = `${l.length} ${l.length === 1 ? 'contrato' : 'contratos'} · o membro abre em contrato.ogrupo.com.br`;
+    $('#mcount').textContent = `Contratos gerados, esperando assinatura ou pagamento · ${l.length} ${l.length === 1 ? 'contrato' : 'contratos'} · o membro abre em contrato.ogrupo.com.br`;
     $('#mgrid').innerHTML = `<div style="margin-bottom:12px"><button class="btn sm" id="k-novo2">Novo contrato</button></div>` + (grupos.length ? grupos.map(([s, t, g]) => `<section class="agrp"><h3>${t} <span>${g.length}</span></h3>${g.map(k => kLinha(k, true)).join('')}</section>`).join('') : '<div class="empty">Nenhum contrato ainda</div>');
   }
   function renderContratoFicha(m) {
