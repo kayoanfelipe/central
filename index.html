@@ -2343,7 +2343,7 @@
     const f = $('#kform'); f.reset(); document.querySelectorAll('#kform .bad').forEach(x => x.classList.remove('bad')); $('#k-erro').textContent = ''; $('#k-res').innerHTML = '';
     f.modo.value = 'membro'; f.mnome.value = m ? m.nome : ''; f.mtel.value = m ? (m.telefone || '') : ''; f.nome.value = m ? m.nome : ''; f.email.value = m ? (m.email || '') : ''; f.tel.value = m ? (m.telefone || '') : '';
     $('#k-para').textContent = kFicha ? `Fica ligado à ficha de ${m.nome}.` : apl ? `Para ${apl.nome}, da aplicação. Depois do aceite, dá para criar a ficha com um toque.` : 'Depois do aceite, dá para criar a ficha do membro com um toque.';
-    { const am = new Date(); am.setDate(am.getDate() + 1); f.prox.min = kIso(am); f.mprox.min = kIso(am); const h = new Date(); f.prox.value = f.mprox.value = kIso(new Date(h.getFullYear(), h.getMonth() + 1, Math.min(h.getDate(), 28))); }
+    { const am = new Date(); am.setDate(am.getDate() + 1); f.prox.min = kIso(am); f.mprox.min = kIso(am); f.prox.value = f.mprox.value = hojeISO(); }
     kApl = apl || null; K_APL.forEach(k => { delete f[k].dataset.ok; }); kMarcaApl(); f.tipo.value = kFicha && !apl ? 'renovacao' : 'entrada'; K_PADRAO = K_TIPOS[f.tipo.value]; kTrava(true); kTipo(); kConfFecha();
     kSyncEnd(); kModo(); sheetOn($('#ksheet')); $('#ksheet .body').scrollTop = 0;
   }
@@ -2414,7 +2414,7 @@
   $('#k-conf').addEventListener('click', e => { if (e.target.closest('#k-voltar')) { kConfFecha(); $('#k-gerar').scrollIntoView({ behavior: 'smooth', block: 'center' }); } else if (e.target.closest('#k-ok') && kPend) kCriar(kPend); });
   const kIso = dt => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
   const kProxErro = iso => { if (!iso) return 'Escolha a data do próximo pagamento.'; const [y, m, d] = iso.split('-').map(Number), h = new Date(); h.setHours(0, 0, 0, 0);
-    if (!(new Date(y, m - 1, d) > h)) return 'A data do próximo pagamento precisa ser a partir de amanhã.'; if (d > 28) return 'Escolha um dia de 1 a 28 para o próximo pagamento.'; return ''; };
+    if (!(new Date(y, m - 1, d) > h)) return 'Escolha a data da 2ª parcela: a 1ª já é paga hoje, no fechamento.'; if (d > 28) return 'Escolha um dia de 1 a 28 para o próximo pagamento.'; return ''; };
   const kDig = s => String(s || '').replace(/\D/g, '');
   const kMask = {
     cpf: s => kDig(s).slice(0, 11).replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2'),
