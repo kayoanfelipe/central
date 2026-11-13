@@ -282,6 +282,14 @@
 
   /* Receber */
   .muted { color: var(--muted); font-weight: 400; }
+  .prow { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+  .prow:first-of-type { border-top: 0; }
+  .prow .pn { font-weight: 500; font-size: 14px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: none; border: 0; padding: 0; color: var(--ink); text-align: left; cursor: pointer; font-family: inherit; }
+  .prow .pm { font-size: 12.5px; color: var(--ink-2); grid-column: 1; }
+  .prow .pm .late { color: var(--error); font-weight: 500; }
+  .prow .pm .soon { color: var(--gold); font-weight: 500; }
+  .prow .abtn { grid-column: 2; grid-row: 1 / span 2; }
+  .pgrp { font-size: 12px; color: var(--muted); margin: 14px 0 2px; }
   .rbox { background: var(--col); border-radius: 20px; padding: 18px 18px 16px; margin-top: 14px; }
   .rhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
   .rt { font-size: 15px; font-weight: 600; }
@@ -552,6 +560,7 @@
     <section id="v-receber" hidden>
       <h1 class="page">Receber</h1>
       <div class="stats" id="rk"></div>
+      <div class="rbox" id="r-parc"></div>
       <div class="rbox">
         <div class="rhead">
           <div><div class="rt">Próximos 12 meses</div><div class="legend" id="r-legend"></div></div>
@@ -918,7 +927,7 @@
     patchEtapa: (id, b) => api(`jornada_etapas?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
     delEtapa: id => api(`jornada_etapas?id=eq.${id}`, { method: 'DELETE' }),
     contatos: () => api('membro_contatos?select=*&order=data.desc'),
-    contratos: () => api('contratos?select=id,criado_em,atualizado_em,token,numero,modo,status,membro_id,nome,telefone,anual,desconto,renovacao,dados,preenchido_em,aceito_em,pdf_path,pago_em&order=criado_em.desc'),
+    contratos: () => api('contratos?select=id,criado_em,atualizado_em,token,numero,modo,status,membro_id,nome,telefone,anual,desconto,renovacao,dados,preenchido_em,aceito_em,pdf_path,pago_em,parcelas_pagas,recebimentos&order=criado_em.desc'),
     criarContrato: p => api('rpc/criar_contrato', { method: 'POST', body: JSON.stringify({ p }) }),
     patchContrato: (id, b) => api(`contratos?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
     addContato: b => api('membro_contatos', { method: 'POST', body: JSON.stringify(b) }).then(r => r[0]),
@@ -1022,6 +1031,7 @@
     const calls = apls.filter(r => r.status === 'call');
     const fazendo = ideias.filter(i => i.status === 'fazendo');
     const abertas = tarefas.filter(t => t.status !== 'feito');
+    const cobrar = kCobrancas().filter(x => x.px && x.px.dias <= 7).sort((a, b) => a.px.dias - b.px.dias);
     const vencer = membros.filter(m => atual(m) && diasAte(m.vencimento) !== null && diasAte(m.vencimento) >= 0 && diasAte(m.vencimento) <= 30).sort((a, b) => a.vencimento < b.vencimento ? -1 : 1);
     const m0 = mes(0), m12 = Array.from({ length: 12 }, (_, k) => mes(k)).reduce((s, x) => s + x.total + x.metaValor, 0);
     const vencidos = membros.filter(m => atual(m) && diasAte(m.vencimento) !== null && diasAte(m.vencimento) < 0);
@@ -1060,6 +1070,9 @@
         <div class="v${vencer.length ? ' hl' : ''}">${vencer.length}<small>em 30 dias · ${rs(soma(vencer.filter(m => m.renovacao !== 'remover'), 'valor_renovacao'))}</small></div>
         ${list(vencer, m => `<li><button class="two" data-mem="${m.id}"><span class="nm" style="max-width:100%">${esc(m.nome)}</span><span class="meta">${venceTxt(m)}${m.valor_renovacao ? ' · ' + rs(m.valor_renovacao) : ''}${m.renovacao ? ' · ' + RENOV[m.renovacao] : ''}</span></button></li>`, 'Nenhuma nos próximos 30 dias.', 3, 'href="#membros" data-mf="vencer"')}
         ${vencidos.length ? `<div class="foot"><a href="#membros" data-mf="vencidos" style="color:var(--error);text-decoration:none">${vencidos.length} ${vencidos.length === 1 ? 'vencido' : 'vencidos'} sem renovar</a></div>` : ''}</div>
+      <div class="stat"><div class="k">Parcelas para cobrar <a href="#receber">Ver todas</a></div>
+        <div class="v${cobrar.some(x => x.px.dias < 0) ? ' hl' : ''}">${cobrar.length}<small>${cobrar.some(x => x.px.dias < 0) ? cobrar.filter(x => x.px.dias < 0).length + (cobrar.filter(x => x.px.dias < 0).length === 1 ? ' atrasada' : ' atrasadas') : 'em dia'}</small></div>
+        ${list(cobrar, x => `<li><button class="two" data-kmem="${x.k.id}"><span class="nm" style="max-width:100%">${esc(x.k.nome)}</span><span class="meta">${x.px.n}ª de ${x.s.total} · ${rs(x.s.valor)} · ${x.px.dias < 0 ? `atrasada há ${-x.px.dias} ${-x.px.dias === 1 ? 'dia' : 'dias'}` : x.px.dias === 0 ? 'vence hoje' : 'vence ' + dataCurta(x.px.data)}</span></button></li>`, 'Nada para cobrar nos próximos 7 dias.', 4, 'href="#receber"')}</div>
       <div class="stat"><div class="k">A receber em ${MESES_LONGO[new Date().getMonth()]} <a href="#receber">Detalhes</a></div>
         <div class="v">${rs(m0.total)}</div>
         <ul>
@@ -1754,6 +1767,15 @@
   const periodo = m => /semestral/i.test(m.plano || '') ? 6 : 12;
   function cobranca(m, y, mo) {
     if (m.status !== 'ativo' || m.renovacao === 'remover') return null;
+    // Contrato assinado e mensal: cada mês tem a sua parcela, no dia do contrato. Depois da 12ª, segue a regra da renovação.
+    const kc = kContratoAtivo(m), s = kc && kSchedule(kc);
+    if (s && !s.vista) {
+      const ym = y * 12 + mo, mesDe = iso => { const [a, b] = iso.split('-').map(Number); return a * 12 + b - 1; };
+      if (ym <= mesDe(s.datas[s.datas.length - 1])) {
+        const i = s.datas.findIndex(x => mesDe(x) === ym); if (i < 0) return null;
+        return { m, valor: s.valor, dia: Number(s.datas[i].slice(8)), tipo: i < s.pagas ? 'recebido' : 'contrato', parcela: i + 1 };
+      }
+    }
     const v = m.vencimento ? new Date(m.vencimento + 'T12:00:00') : null;
     const ultimo = new Date(y, mo + 1, 0).getDate();
     const dia = Math.min(v ? v.getDate() : 1, ultimo);
@@ -1778,7 +1800,51 @@
     };
   }
 
+  /* ---------------- Parcelas dos contratos ---------------- */
+  // 1ª parcela no fechamento (conta como recebida no aceite); as outras todo dia X a partir do próximo pagamento.
+  const kMaisMeses = (iso, i, dia) => { const [y, mo] = iso.split('-').map(Number), d = new Date(y, mo - 1 + i, 1), ult = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate(); return kIso(new Date(d.getFullYear(), d.getMonth(), Math.min(dia, ult))); };
+  function kSchedule(k) {
+    if (!k || !['aceito', 'pago'].includes(k.status)) return null;
+    const d = k.dados || {}, anual = Number(k.anual), ini = kIso(new Date(k.aceito_em || k.criado_em));
+    if (d.forma === 'vista') return { total: 1, pagas: 1, valor: anual * (1 - Number(k.desconto) / 100), datas: [ini], vista: true };
+    const dia = Number(d.dia) || Number(ini.slice(8)), base = d.prox || kMaisMeses(ini, 1, dia);
+    const datas = [ini, ...Array.from({ length: 11 }, (_, i) => kMaisMeses(base, i, dia))];
+    return { total: 12, pagas: Math.min(12, Math.max(1, Number(k.parcelas_pagas) || 0)), valor: anual / 12, datas, vista: false, dia };
+  }
+  const kProxima = s => s && s.pagas < s.total ? { n: s.pagas + 1, data: s.datas[s.pagas], dias: diasAte(s.datas[s.pagas]) } : null;
+  // Contrato assinado da ficha: ligado pelo membro_id ou, sem ficha ligada, com o mesmo nome.
+  function kContratoAtivo(m) {
+    const nm = norm(m.nome).replace(/\s+/g, ' ').trim();
+    return contratos.filter(x => ['aceito', 'pago'].includes(x.status) && (x.membro_id === m.id || (!x.membro_id && norm(x.nome).replace(/\s+/g, ' ').trim() === nm)))
+      .sort((a, b) => new Date(b.aceito_em || b.criado_em) - new Date(a.aceito_em || a.criado_em))[0] || null;
+  }
+  const kParcTxt = (k, s, px) => `parcela ${s.pagas} de ${s.total} recebida${px ? ` · ${px.n}ª ${px.dias < 0 ? `<span class="late">atrasada há ${-px.dias} ${-px.dias === 1 ? 'dia' : 'dias'}</span>` : px.dias === 0 ? '<span class="soon">vence hoje</span>' : px.dias <= 7 ? `<span class="soon">vence ${dataCurta(px.data)}</span>` : `vence ${dataCurta(px.data)}`}` : ' · contrato quitado'}`;
+  function kCobrancas() {
+    return contratos.map(k => { const s = kSchedule(k); return s && !s.vista ? { k, s, px: kProxima(s) } : null; }).filter(Boolean);
+  }
+  function renderParcelas() {
+    const l = kCobrancas(), abertas = l.filter(x => x.px).sort((a, b) => a.px.dias - b.px.dias);
+    const g = [['Atrasadas', abertas.filter(x => x.px.dias < 0)], ['Vencem nos próximos 7 dias', abertas.filter(x => x.px.dias >= 0 && x.px.dias <= 7)], ['Depois', abertas.filter(x => x.px.dias > 7)]];
+    const row = x => `<div class="prow"><button class="pn" data-kmem="${x.k.id}">${esc(x.k.nome)} <span style="color:var(--muted);font-weight:400">${esc(x.k.numero)}</span></button>
+      <div class="pm">${kParcTxt(x.k, x.s, x.px)} · ${rs2(x.s.valor)}</div>
+      <button class="abtn${x.px.dias <= 7 ? ' pri' : ''}" data-kparc="${x.k.id}">Recebi a ${x.px.n}ª</button></div>`;
+    $('#r-parc').innerHTML = `<div class="rhead"><div class="rt">Parcelas dos contratos</div><span class="muted" style="font-size:12.5px">${l.length} ${l.length === 1 ? 'contrato mensal' : 'contratos mensais'}</span></div>`
+      + (abertas.length ? g.filter(([, xs]) => xs.length).map(([t, xs]) => `<div class="pgrp">${t} · ${xs.length}</div>${xs.map(row).join('')}`).join('')
+        : `<div class="venc" style="margin:6px 0 0">${l.length ? 'Tudo recebido.' : 'Nenhum contrato mensal assinado ainda. Quando um membro assinar, as 12 parcelas aparecem aqui.'}</div>`);
+  }
+  async function recebiParcela(id) {
+    const k = contratos.find(x => x.id === id), s = kSchedule(k), px = kProxima(s); if (!px) return;
+    if (!confirm(`Confirmar que ${k.nome} pagou a ${px.n}ª parcela (${rs2(s.valor)})?`)) return;
+    const rec = [...(Array.isArray(k.recebimentos) ? k.recebimentos : []), { n: px.n, em: hojeISO() }];
+    try { await db.patchContrato(k.id, { parcelas_pagas: px.n, recebimentos: rec }); k.parcelas_pagas = px.n; k.recebimentos = rec; renderAll(); if (memId) renderContratoFicha(byId(memId)); toast(`${px.n}ª parcela de ${k.nome.split(' ')[0]} recebida`); }
+    catch (e) { fail(e, 'Não foi possível marcar'); }
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-kparc]'); if (b) { e.preventDefault(); e.stopPropagation(); recebiParcela(b.dataset.kparc); return; }
+    const n = e.target.closest('[data-kmem]'); if (n) { const k = contratos.find(x => x.id === n.dataset.kmem); const f = k && (k.membro_id ? byId(k.membro_id) : membros.find(m => norm(m.nome).trim() === norm(k.nome).trim())); if (f) openMembro(f.id); else { location.hash = '#membros'; toast('Este contrato ainda não tem ficha. Use Criar ficha na lista de contratos.'); } }
+  }, true);
   function renderReceber() {
+    renderParcelas();
     const meses = Array.from({ length: 12 }, (_, k) => mes(k));
     const atualM = meses[0], hoje = new Date().getDate();
     const hojeItens = atualM.itens.filter(x => x.dia === hoje);
@@ -1820,7 +1886,7 @@
     $('#r-dias').innerHTML = Object.keys(dias).length ? Object.entries(dias).map(([d, xs]) => `
       <div class="dia${ehAtual && +d < hoje ? ' past' : ''}${ehAtual && +d === hoje ? ' today' : ''}">
         <div class="dn"><b>${d}</b><span>${ehAtual && +d === hoje ? 'hoje' : MESES[s.mo]}</span></div>
-        <ul>${xs.map(x => `<li><button data-mem="${x.m.id}"><span class="nm">${esc(x.m.nome)}</span><span class="tp ${x.tipo}">${x.tipo === 'contrato' ? 'Contrato mensal' : x.tipo === 'renovado' ? 'Renovado' : x.comeca ? 'Vence e renova' : 'A renovar'}</span><span class="vl">${rs(x.valor)}</span></button></li>`).join('')}</ul>
+        <ul>${xs.map(x => `<li><button data-mem="${x.m.id}"><span class="nm">${esc(x.m.nome)}</span><span class="tp ${x.tipo}">${x.parcela ? `Parcela ${x.parcela}/12${x.tipo === 'recebido' ? ' recebida' : ''}` : x.tipo === 'contrato' ? 'Contrato mensal' : x.tipo === 'renovado' ? 'Renovado' : x.comeca ? 'Vence e renova' : 'A renovar'}</span><span class="vl">${rs(x.valor)}</span></button></li>`).join('')}</ul>
         <div class="dt">${rs(xs.reduce((a, x) => a + x.valor, 0))}</div>
       </div>`).join('') : '<div class="empty">Nenhuma cobrança neste mês.</div>';
   }
@@ -2125,9 +2191,10 @@
     const quando = k.status === 'pago' && k.pago_em ? `pago em ${dataBR(k.pago_em.slice(0, 10))}` : k.aceito_em ? `aceito em ${dataBR(k.aceito_em.slice(0, 10))}` : k.preenchido_em ? `preenchido em ${dataBR(k.preenchido_em.slice(0, 10))}` : `criado em ${dataBR(k.criado_em.slice(0, 10))}`;
     return `<div class="arow krow" data-k="${k.id}">
       <div class="anm" style="cursor:default"><b>${esc(k.nome)} <span class="knum">${esc(k.numero)}</span></b>
-        <span>${kPassos(k)} <span class="atp k-${k.status}">${KSTATUS[k.status]}</span> ${quando}${kForma(k) ? ' · ' + kForma(k) : ''}${comFicha && ficha ? ` · <a href="#" data-open="${ficha.id}">ficha</a>` : ''}</span></div>
+        <span>${kPassos(k)} <span class="atp k-${k.status}">${KSTATUS[k.status]}</span> ${quando}${kForma(k) ? ' · ' + kForma(k) : ''}${(() => { const s = kSchedule(k); return s && !s.vista ? ' · ' + kParcTxt(k, s, kProxima(s)) : ''; })()}${comFicha && ficha ? ` · <a href="#" data-open="${ficha.id}">ficha</a>` : ''}</span></div>
       <span class="aact">
         ${['enviado', 'preenchido'].includes(k.status) ? `<button class="abtn" data-kcopy="${k.id}">Copiar mensagem</button>` : ''}
+        ${(() => { const s = kSchedule(k), px = s && !s.vista ? kProxima(s) : null; return px ? `<button class="abtn${px.dias <= 7 ? ' pri' : ''}" data-kparc="${k.id}">Recebi a ${px.n}ª</button>` : ''; })()}
         ${k.status === 'aceito' ? `<button class="abtn pri" data-kpago="${k.id}">Marcar pago</button>` : ''}
         ${['aceito', 'pago'].includes(k.status) ? `<a class="abtn" href="${CONTRATO_URL + k.token}" target="_blank" rel="noopener" title="Abre o contrato aceito, com o botão Baixar PDF">Ver e baixar PDF</a>` : ''}
         ${['aceito', 'pago'].includes(k.status) && !k.membro_id ? `<button class="abtn" data-kficha="${k.id}">Criar ficha</button>` : ''}
@@ -2449,7 +2516,7 @@
       contatos: async () => { await carregaCofre(); return CT.map(x => ({ ...x })); },
       addContato: b => { const c = { id: 'ct' + k++, created_at: new Date().toISOString(), data: hojeISO(), por: 'Kayoan Felipe', ...b }; CT.push(c); return wait({ ...c }); },
       delContato: id => { CT = CT.filter(c => c.id !== id); return wait(null); },
-      contratos: async () => { await carregaCofre(); if (!K.length) { const ex = { nome: 'Rafael Exemplo', cpf: '529.982.247-25', email: 'rafael@exemplo.com', tel: '(48) 99999-1234', cidade: 'Florianópolis', uf: 'SC', forma: 'mensal', dia: '10', pagador: 'cpf' }; K.push({ id: 'k1', criado_em: ago(6), atualizado_em: ago(1), token: 'aaaaaaaaaaaaaaa1', numero: 'TG-2026-001', modo: 'membro', status: 'aceito', membro_id: null, nome: 'Rafael Exemplo', telefone: ex.tel, anual: 30000, desconto: 15, renovacao: 15000, dados: ex, preenchido_em: ago(3), aceito_em: ago(1), pdf_path: null, pago_em: null }, { id: 'k2', criado_em: ago(2), atualizado_em: ago(2), token: 'aaaaaaaaaaaaaaa2', numero: 'TG-2026-002', modo: 'membro', status: 'enviado', membro_id: null, nome: 'Bianca Teste', telefone: '(11) 98888-7777', anual: 30000, desconto: 15, renovacao: 15000, dados: null, preenchido_em: null, aceito_em: null, pdf_path: null, pago_em: null }); } return K.map(x => ({ ...x })); },
+      contratos: async () => { await carregaCofre(); if (!K.length) { const ex = { nome: 'Rafael Exemplo', cpf: '529.982.247-25', email: 'rafael@exemplo.com', tel: '(48) 99999-1234', cidade: 'Florianópolis', uf: 'SC', forma: 'mensal', dia: '10', pagador: 'cpf' }; K.push({ id: 'k1', criado_em: ago(6), atualizado_em: ago(1), token: 'aaaaaaaaaaaaaaa1', numero: 'TG-2026-001', modo: 'membro', status: 'aceito', membro_id: null, nome: 'Rafael Exemplo', telefone: ex.tel, anual: 30000, desconto: 15, renovacao: 15000, dados: ex, preenchido_em: ago(42), aceito_em: ago(40), parcelas_pagas: 1, recebimentos: [], pdf_path: null, pago_em: null }, { id: 'k2', criado_em: ago(2), atualizado_em: ago(2), token: 'aaaaaaaaaaaaaaa2', numero: 'TG-2026-002', modo: 'membro', status: 'enviado', membro_id: null, nome: 'Bianca Teste', telefone: '(11) 98888-7777', anual: 30000, desconto: 15, renovacao: 15000, dados: null, preenchido_em: null, aceito_em: null, pdf_path: null, pago_em: null }); } return K.map(x => ({ ...x })); },
       criarContrato: p => { const n = K.length + 1, adm = p.modo === 'admin'; const x = { id: 'k' + k++, criado_em: new Date().toISOString(), atualizado_em: new Date().toISOString(), token: 'previa' + String(k).padStart(10, '0'), numero: 'TG-2026-' + String(n).padStart(3, '0'), modo: p.modo, status: adm ? 'preenchido' : 'enviado', membro_id: p.membro_id || null, nome: adm ? p.dados.nome : p.nome, telefone: adm ? p.dados.tel : p.telefone, anual: +p.anual, desconto: +p.desconto, renovacao: +p.renovacao, dados: adm ? p.dados : null, preenchido_em: adm ? new Date().toISOString() : null, aceito_em: null, pdf_path: null, pago_em: null }; K.unshift(x); return wait({ id: x.id, token: x.token, numero: x.numero, status: x.status }); },
       patchContrato: (id, b) => { const x = K.find(y => y.id === id); Object.assign(x || {}, b, b.status === 'pago' ? { pago_em: new Date().toISOString() } : {}); return wait(x ? [{ ...x }] : null); },
       addEtapa: b => { const e = { id: 'j' + k++, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), status: 'aberto', atualizado_por: 'Kayoan Felipe', descricao: null, responsavel: null, ferramentas: null, ajustar: null, contador: null, ...b }; J.push(e); return wait({ ...e }); },
