@@ -1072,8 +1072,8 @@
       <div class="stat"><div class="k">Acompanhamento <a href="#membros" data-mf="chamar">Ver lista</a></div>
         <div class="v${contaFase('atrasado') ? ' hl' : ''}">${contaFase('atrasado')}<small>${contaFase('atrasado') === 1 ? 'atrasado' : 'atrasados'}</small></div>
         <ul>
-          <li><a href="#membros" data-mf="chamar"><span class="nm">Chamar esta semana</span><span class="meta">${contaFase('semana')}</span></a></li>
-          <li><a href="#membros" data-mf="chamar"><span class="nm">Chamar este mês</span><span class="meta">${contaFase('mes')}</span></a></li>
+          <li><a href="#membros" data-mf="chamar"><span class="nm">Contatar esta semana</span><span class="meta">${contaFase('semana')}</span></a></li>
+          <li><a href="#membros" data-mf="chamar"><span class="nm">Contatar este mês</span><span class="meta">${contaFase('mes')}</span></a></li>
           <li><a href="#membros" data-mf="aneis"><span class="nm">Anéis pendentes</span><span class="meta">${membros.filter(anelPendente).length}</span></a></li>
         </ul></div>
       <div class="stat"><div class="k">Renovações <a href="#membros" data-mf="vencer">Ver todas</a></div>
@@ -1561,7 +1561,7 @@
   const STATUS = { ativo: 'Ativo', convidado: 'Convidado', fundador: 'Fundador', removido: 'Ex-membro' };
   const RENOV = { pendente: 'Pendente', pago: 'Pago', remover: 'Remover' };
   const ANEL = { 'falta medida': 'Falta medida', 'em produção': 'Em produção', 'entregue': 'Entregue' };
-  const MFILTROS = [['atuais', 'Atuais'], ['chamar', 'Chamar'], ['aneis', 'Anéis pendentes'], ['contratos', 'Contratos'], ['vencer', 'Vencem em 30 dias'], ['vencidos', 'Vencidos'], ['convidado', 'Convidados'], ['ex', 'Ex-membros'], ['todos', 'Todos']];
+  const MFILTROS = [['atuais', 'Atuais'], ['chamar', 'Acompanhamento'], ['aneis', 'Anéis pendentes'], ['contratos', 'Contratos'], ['vencer', 'Vencem em 30 dias'], ['vencidos', 'Vencidos'], ['convidado', 'Convidados'], ['ex', 'Ex-membros'], ['todos', 'Todos']];
   let mfiltro = 'atuais', mbusca = '', memId = null;
   const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   const byId = id => membros.find(m => m.id === id);
@@ -2144,7 +2144,7 @@
   // O trimestral também conta como mensal. Sem registro, conta a partir de acompanhar_desde.
   const CICLO = { mensal: 'Mensal', trimestral: 'Trimestral' };
   const ANEL_PRAZO = 30; // a partir de quantos dias no grupo o anel pendente vira cobrança
-  const FASE = { atrasado: 'Atrasados', semana: 'Chamar esta semana', mes: 'Chamar este mês', proximo: 'Próximo mês' };
+  const FASE = { atrasado: 'Atrasados', semana: 'Contatar esta semana', mes: 'Contatar este mês', proximo: 'Próximo mês' };
   const maisDias = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
   const dataCurta = iso => new Date(iso + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
   const contatosDe = id => contatos.filter(c => c.membro_id === id).sort((a, b) => (a.data < b.data ? 1 : a.data > b.data ? -1 : a.created_at < b.created_at ? 1 : -1));
@@ -2171,12 +2171,12 @@
       const itens = membros.filter(bate).map(m => ({ m, p: proximoContato(m) })).filter(x => x.p).sort((a, b) => a.p.data < b.p.data ? -1 : 1);
       const emDia = itens.filter(x => x.p.fase === 'proximo').length;
       const grupos = ['atrasado', 'semana', 'mes'].map(f => [f, itens.filter(x => x.p.fase === f)]).filter(([, l]) => l.length);
-      $('#mcount').textContent = `${itens.length - emDia} para chamar até o fim do mês · ${emDia} em dia · mensal a cada 30 dias, trimestral a cada 90`;
+      $('#mcount').textContent = `${itens.length - emDia} contatos de acompanhamento até o fim do mês: ver como o membro está e atualizar a ficha · ${emDia} em dia · mensal a cada 30 dias, trimestral a cada 90`;
       $('#mgrid').innerHTML = grupos.length ? grupos.map(([f, l]) => `<section class="agrp ${f}"><h3>${FASE[f]} <span>${l.length}</span></h3>${l.map(({ m, p }) => {
         const wa = waLink(m.telefone);
         return `<div class="arow"><button class="anm" data-open="${m.id}"><b>${esc(m.nome)}</b><span><span class="atp ${p.tipo}">${CICLO[p.tipo]}</span> <span class="${p.dias < 0 ? 'late' : ''}">${prazoTxt(p)}</span> · ${ultimoTxt(p)}</span></button>
-          <span class="aact">${wa ? `<a class="abtn" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ''}<button class="abtn pri" data-chamei="${m.id}">Já chamei</button></span></div>`;
-      }).join('')}</section>`).join('') : '<div class="empty" style="grid-column:1/-1">Ninguém para chamar</div>';
+          <span class="aact">${wa ? `<a class="abtn" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ''}<button class="abtn pri" data-chamei="${m.id}">Contato feito</button></span></div>`;
+      }).join('')}</section>`).join('') : '<div class="empty" style="grid-column:1/-1">Nenhum contato pendente</div>';
       return;
     }
     const l = membros.filter(m => anelPendente(m) && bate(m)).sort((a, b) => (ANEL_ORDEM[a.anel] ?? 0) - (ANEL_ORDEM[b.anel] ?? 0) || ((a.anel_desde || a.entrada || '9') < (b.anel_desde || b.entrada || '9') ? -1 : 1));
@@ -2210,7 +2210,7 @@
     const anelTxt = m.anel && m.anel !== 'entregue' ? (parado !== null ? `${ANEL[m.anel]} ${parado === 0 ? 'desde hoje' : `há ${parado} ${parado === 1 ? 'dia' : 'dias'}`}` : m.entrada ? `No grupo há ${-diasAte(m.entrada)} dias, sem anel entregue` : '') : '';
     $('#m-anel-desde').textContent = anelTxt;
     $('#m-acomp').innerHTML = (p ? `<div class="aprox"><div><div class="lk-k">Próximo contato</div><b>${CICLO[p.tipo]}</b> <span class="${p.dias < 0 ? 'late' : ''}">${prazoTxt(p)}</span></div></div>
-      <div class="areg"><input id="m-cnota" maxlength="1000" placeholder="Anotação do contato (opcional)"><select id="m-ctipo" class="sel"><option value="mensal"${p.tipo === 'mensal' ? ' selected' : ''}>Mensal</option><option value="trimestral"${p.tipo === 'trimestral' ? ' selected' : ''}>Trimestral</option></select><button class="lk-btn" id="m-chamei">Já chamei</button></div>`
+      <div class="areg"><input id="m-cnota" maxlength="1000" placeholder="Anotação do contato (opcional)"><select id="m-ctipo" class="sel"><option value="mensal"${p.tipo === 'mensal' ? ' selected' : ''}>Mensal</option><option value="trimestral"${p.tipo === 'trimestral' ? ' selected' : ''}>Trimestral</option></select><button class="lk-btn" id="m-chamei">Contato feito</button></div>`
       : '<div class="lk-off">O acompanhamento é só para membros ativos.</div>') +
       (cs.length ? `<ul class="ahist">${cs.map(c => `<li><span><b>${dataCurta(c.data)}</b> · ${CICLO[c.tipo]}${c.por ? ' · ' + esc(c.por.split(' ')[0]) : ''}${c.nota ? `<em>${esc(c.nota)}</em>` : ''}</span><button class="cx-del" data-delc="${c.id}" aria-label="Apagar registro">×</button></li>`).join('')}</ul>` : '');
   }
