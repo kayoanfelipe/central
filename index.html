@@ -707,6 +707,10 @@
   </div>
   <div class="body">
     <form id="kform" novalidate autocomplete="off">
+      <div class="sec">Tipo de contrato</div>
+      <div class="kseg"><label><input type="radio" name="tipo" value="entrada" checked> Entrada (novo membro)</label><label><input type="radio" name="tipo" value="renovacao"> Renovação</label></div>
+      <div class="venc" id="k-tipotxt"></div>
+      <div id="k-inicio" hidden style="margin-top:10px"><label class="fld" style="max-width:260px"><span>Início da vigência (fim do ciclo atual)</span><input name="inicio" type="date"></label></div>
       <div class="sec">Quem preenche os dados</div>
       <div class="kseg"><label><input type="radio" name="modo" value="membro" checked> O membro preenche</label><label><input type="radio" name="modo" value="admin"> Eu preencho</label></div>
       <div id="k-membro">
@@ -927,7 +931,7 @@
     patchEtapa: (id, b) => api(`jornada_etapas?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
     delEtapa: id => api(`jornada_etapas?id=eq.${id}`, { method: 'DELETE' }),
     contatos: () => api('membro_contatos?select=*&order=data.desc'),
-    contratos: () => api('contratos?select=id,criado_em,atualizado_em,token,numero,modo,status,membro_id,nome,telefone,anual,desconto,renovacao,dados,preenchido_em,aceito_em,pdf_path,pago_em,parcelas_pagas,recebimentos,primeira_no_fechamento&order=criado_em.desc'),
+    contratos: () => api('contratos?select=id,criado_em,atualizado_em,token,numero,modo,tipo,status,membro_id,nome,telefone,anual,desconto,renovacao,dados,preenchido_em,aceito_em,pdf_path,pago_em,parcelas_pagas,recebimentos,primeira_no_fechamento&order=criado_em.desc'),
     criarContrato: p => api('rpc/criar_contrato', { method: 'POST', body: JSON.stringify({ p }) }),
     patchContrato: (id, b) => api(`contratos?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
     addContato: b => api('membro_contatos', { method: 'POST', body: JSON.stringify(b) }).then(r => r[0]),
@@ -2192,9 +2196,10 @@
   const contratosDe = id => contratos.filter(k => k.membro_id === id && k.status !== 'cancelado').sort((a, b) => a.criado_em < b.criado_em ? 1 : -1);
   const msgContrato = k => {
     const pn = String(k.nome || '').trim().split(/\s+/)[0], url = CONTRATO_URL + k.token;
+    const ren = k.tipo === 'renovacao';
     return k.modo === 'membro' && k.status === 'enviado'
-      ? `Fala, ${pn}. Segue o link para você preencher seus dados e ver o contrato do The Group. Leva uns 2 minutos:\n${url}`
-      : `Fala, ${pn}. Segue o seu contrato do The Group. Dá uma lida com calma e, se tiver qualquer dúvida, me chama aqui:\n${url}`;
+      ? `Fala, ${pn}. Segue o link para você preencher seus dados e ver o contrato ${ren ? 'de renovação ' : ''}do The Group. Leva uns 2 minutos:\n${url}`
+      : `Fala, ${pn}. Segue o seu contrato ${ren ? 'de renovação ' : ''}do The Group. Dá uma lida com calma e, se tiver qualquer dúvida, me chama aqui:\n${url}`;
   };
   const kPassos = k => `<span class="kpassos">${KORDEM.map((s, i) => `<i class="${KORDEM.indexOf(k.status) >= i ? 'on' : ''}" title="${KSTATUS[s]}"></i>`).join('')}</span>`;
   const kForma = k => { const d = k.dados || {}; if (!d.forma) return ''; return d.forma === 'vista' ? `à vista ${rs(k.anual * (1 - k.desconto / 100))}` : `12x ${rs(k.anual / 12)} · dia ${d.dia || 10}`; };
@@ -2202,7 +2207,7 @@
     const ficha = k.membro_id ? byId(k.membro_id) : null;
     const quando = k.status === 'pago' && k.pago_em ? `pago em ${dataBR(k.pago_em.slice(0, 10))}` : k.aceito_em ? `aceito em ${dataBR(k.aceito_em.slice(0, 10))}` : k.preenchido_em ? `preenchido em ${dataBR(k.preenchido_em.slice(0, 10))}` : `criado em ${dataBR(k.criado_em.slice(0, 10))}`;
     return `<div class="arow krow" data-k="${k.id}">
-      <div class="anm" style="cursor:default"><b>${esc(k.nome)} <span class="knum">${esc(k.numero)}</span></b>
+      <div class="anm" style="cursor:default"><b>${esc(k.nome)} <span class="knum">${esc(k.numero)}${k.tipo === 'renovacao' ? ' · renovação' : ''}</span></b>
         <span>${kPassos(k)} <span class="atp k-${k.status}">${KSTATUS[k.status]}</span> ${quando}${kForma(k) ? ' · ' + kForma(k) : ''}${(() => { const s = kSchedule(k); return s && !s.vista ? ' · ' + kParcTxt(k, s, kProxima(s)) : ''; })()}${comFicha && ficha ? ` · <a href="#" data-open="${ficha.id}">ficha</a>` : ''}</span></div>
       <span class="aact">
         ${['enviado', 'preenchido'].includes(k.status) ? `<button class="abtn" data-kcopy="${k.id}">Copiar mensagem</button>` : ''}
@@ -2305,7 +2310,7 @@
     f.modo.value = 'membro'; f.mnome.value = m ? m.nome : ''; f.mtel.value = m ? (m.telefone || '') : ''; f.nome.value = m ? m.nome : ''; f.email.value = m ? (m.email || '') : ''; f.tel.value = m ? (m.telefone || '') : '';
     $('#k-para').textContent = kFicha ? `Fica ligado à ficha de ${m.nome}.` : apl ? `Para ${apl.nome}, da aplicação. Depois do aceite, dá para criar a ficha com um toque.` : 'Depois do aceite, dá para criar a ficha do membro com um toque.';
     { const am = new Date(); am.setDate(am.getDate() + 1); f.prox.min = kIso(am); const h = new Date(); f.prox.value = kIso(new Date(h.getFullYear(), h.getMonth() + 1, Math.min(h.getDate(), 28))); }
-    kApl = apl || null; K_APL.forEach(k => { delete f[k].dataset.ok; }); kMarcaApl(); kTrava(true); kConfFecha();
+    kApl = apl || null; K_APL.forEach(k => { delete f[k].dataset.ok; }); kMarcaApl(); f.tipo.value = kFicha && !apl ? 'renovacao' : 'entrada'; K_PADRAO = K_TIPOS[f.tipo.value]; kTrava(true); kTipo(); kConfFecha();
     kSyncEnd(); kModo(); sheetOn($('#ksheet')); $('#ksheet .body').scrollTop = 0;
   }
   /* E-mail e WhatsApp que vieram da aplicação: marcados até serem conferidos. */
@@ -2320,7 +2325,16 @@
   K_APL.forEach(k => $('#kform')[k].addEventListener('input', e => { e.target.dataset.ok = '1'; kNota(k, ''); }));
   ['nome', 'mnome'].forEach(k => $('#kform')[k].addEventListener('input', kMarcaApl));
   /* Valores travados no padrão; Mudar valores libera. */
-  const K_PADRAO = { anual: 30000, desconto: 15, renovacao: 15000 };
+  // Valores padrão por tipo. Renovação: R$ 15 mil para todos os membros, sem desconto à vista e sem tudo incluso.
+  const K_TIPOS = { entrada: { anual: 30000, desconto: 15, renovacao: 15000 }, renovacao: { anual: 15000, desconto: 0, renovacao: 15000 } };
+  let K_PADRAO = K_TIPOS.entrada;
+  function kTipo(t) {
+    const f = $('#kform'); if (t) f.tipo.value = t; K_PADRAO = K_TIPOS[f.tipo.value] || K_TIPOS.entrada;
+    $('#k-tipotxt').textContent = f.tipo.value === 'renovacao' ? 'Para quem já está no grupo e ainda não tem contrato. Sem o tudo incluso do primeiro ano. Assina uma vez; nos anos seguintes é só confirmar a renovação.' : 'Para quem está entrando no grupo. Primeiro ano com tudo incluso.';
+    $('#k-inicio').hidden = f.tipo.value !== 'renovacao';
+    if (f.tipo.value === 'renovacao' && !f.inicio.value) f.inicio.value = (kFicha && kFicha.vencimento) || hojeISO();
+    if (f.anual.readOnly) kTrava(true); else kValAviso();
+  }
   const rs2 = v => 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   function kTrava(on) {
     const f = $('#kform'); if (on) Object.entries(K_PADRAO).forEach(([k, v]) => { f[k].value = v; });
@@ -2329,7 +2343,7 @@
   function kValAviso() {
     const f = $('#kform'), dif = Object.keys(K_PADRAO).filter(k => Number(f[k].value) !== K_PADRAO[k]);
     $('#k-valaviso').hidden = !dif.length; $('#k-valtxt').hidden = !!dif.length;
-    if (dif.length) $('#k-valaviso').innerHTML = `<b>Valores diferentes do padrão.</b> ${dif.map(k => k === 'anual' ? `Valor anual ${rs2(f.anual.value)} (padrão R$ 30.000,00), parcela de ${rs2(f.anual.value / 12)}` : k === 'desconto' ? `Desconto à vista de ${esc(f.desconto.value)}% (padrão 15%)` : `Renovação de ${rs2(f.renovacao.value)} (padrão R$ 15.000,00)`).join('. ')}.`;
+    if (dif.length) $('#k-valaviso').innerHTML = `<b>Valores diferentes do padrão.</b> ${dif.map(k => k === 'anual' ? `Valor anual ${rs2(f.anual.value)} (padrão ${rs2(K_PADRAO.anual)}), parcela de ${rs2(f.anual.value / 12)}` : k === 'desconto' ? `Desconto à vista de ${esc(f.desconto.value)}% (padrão ${K_PADRAO.desconto}%)` : `Renovação de ${rs2(f.renovacao.value)} (padrão ${rs2(K_PADRAO.renovacao)})`).join('. ')}.`;
   }
   $('#k-mudar').addEventListener('click', () => { const f = $('#kform'); if (f.anual.readOnly) { kTrava(false); f.anual.focus(); } else kTrava(true); kConfFecha(); });
   ['anual', 'desconto', 'renovacao'].forEach(k => $('#kform')[k].addEventListener('input', kValAviso));
@@ -2344,7 +2358,8 @@
     const daApl = k => kApl && !f[k].dataset.ok && String(f[k].value).trim();
     const row = (k, v, hl) => `<div class="row${hl ? ' hl' : ''}"><span>${k}</span><b>${v}</b></div>`;
     const nota = k => daApl(k) ? ` <small style="color:var(--gold)">(da aplicação)</small>` : '';
-    let r = '';
+    let r = row('Tipo', p.tipo === 'renovacao' ? 'Renovação' : 'Entrada (novo membro)', p.tipo === 'renovacao');
+    if (p.tipo === 'renovacao') { const fim = new Date(p.inicio + 'T12:00:00'); fim.setFullYear(fim.getFullYear() + 1); fim.setDate(fim.getDate() - 1); r += row('Vigência', `${kDataBr(p.inicio)} a ${kDataBr(kIso(fim))}`, true); }
     if (!d) {
       r += row('Nome', esc(p.nome)) + row('WhatsApp', esc(p.telefone) + nota('mtel'), daApl('mtel'));
       r += row('Quem preenche', 'O membro preenche o resto');
@@ -2391,6 +2406,7 @@
     $('#k-gerar').textContent = adm ? 'Gerar link do contrato' : 'Gerar link do formulário';
   }
   $('#kform').addEventListener('change', kModo);
+  document.querySelectorAll('#kform input[name=tipo]').forEach(x => x.addEventListener('change', () => kTipo()));
   $('#kform').cep.addEventListener('input', async e => {
     const c = e.target.value.replace(/\D/g, ''); if (c.length !== 8) return;
     try { const j = await (await fetch(`https://viacep.com.br/ws/${c}/json/`)).json(); if (j.erro) return; const f = $('#kform'); f.rua.value = j.logradouro || ''; f.bairro.value = j.bairro || ''; f.cidade.value = j.localidade || ''; f.uf.value = j.uf || ''; f.numero.focus(); } catch {}
@@ -2408,10 +2424,11 @@
     if (adm && pj && f.rep_cpf.value && !kCpfOk(f.rep_cpf.value)) { falta.push('rep_cpf'); msg = msg || 'Confira o CPF de quem assina pela empresa.'; }
     if (adm && pj && f.cnpj.value && !kCnpjOk(f.cnpj.value)) { falta.push('cnpj'); msg = msg || 'Confira o CNPJ.'; }
     if (adm && mensal) { const pe = kProxErro(f.prox.value); if (pe) { falta.push('prox'); msg = msg || pe; } }
+    if (f.tipo.value === 'renovacao' && !f.inicio.value) { falta.push('inicio'); msg = msg || 'Informe o início da vigência (quando termina o ciclo atual dele).'; }
     if (falta.length) { falta.forEach(k => f[k].classList.add('bad')); f[falta[0]].focus(); $('#k-erro').textContent = precisa.some(k => falta.includes(k) && !String(f[k].value).trim()) ? 'Preencha os campos marcados.' : msg; return; }
-    const p = { modo: adm ? 'admin' : 'membro', anual: f.anual.value, desconto: f.desconto.value, renovacao: f.renovacao.value, membro_id: kFicha ? kFicha.id : '' };
+    const p = { tipo: f.tipo.value, inicio: f.tipo.value === 'renovacao' ? f.inicio.value : '', modo: adm ? 'admin' : 'membro', anual: f.anual.value, desconto: f.desconto.value, renovacao: f.renovacao.value, membro_id: kFicha ? kFicha.id : '' };
     if (adm) {
-      const d = Object.fromEntries(new FormData(f)); ['modo', 'mnome', 'mtel', 'anual', 'desconto', 'renovacao'].forEach(k => delete d[k]);
+      const d = Object.fromEntries(new FormData(f)); ['modo', 'tipo', 'inicio', 'mnome', 'mtel', 'anual', 'desconto', 'renovacao'].forEach(k => delete d[k]);
       d.uf = (d.uf || '').toUpperCase(); d.end = `${d.rua}, ${d.numero}${d.compl ? ', ' + d.compl : ''}, ${d.bairro}, ${d.cidade}/${d.uf}, CEP ${d.cep}`;
       if (d.forma === 'mensal') d.dia = String(+String(d.prox).slice(8)); else { d.dia = ''; delete d.prox; }
       if (d.pagador === 'cpf') ['cnpj', 'rs', 'endpj', 'rep', 'rep_nome', 'rep_cpf', 'emailnf', 'endpj_igual'].forEach(k => delete d[k]);
@@ -2530,7 +2547,7 @@
       addContato: b => { const c = { id: 'ct' + k++, created_at: new Date().toISOString(), data: hojeISO(), por: 'Kayoan Felipe', ...b }; CT.push(c); return wait({ ...c }); },
       delContato: id => { CT = CT.filter(c => c.id !== id); return wait(null); },
       contratos: async () => { await carregaCofre(); if (!K.length) { const ex = { nome: 'Rafael Exemplo', cpf: '529.982.247-25', email: 'rafael@exemplo.com', tel: '(48) 99999-1234', cidade: 'Florianópolis', uf: 'SC', forma: 'mensal', dia: '10', pagador: 'cpf' }; K.push({ id: 'k1', criado_em: ago(6), atualizado_em: ago(1), token: 'aaaaaaaaaaaaaaa1', numero: 'TG-2026-001', modo: 'membro', status: 'aceito', membro_id: null, nome: 'Rafael Exemplo', telefone: ex.tel, anual: 30000, desconto: 15, renovacao: 15000, dados: ex, preenchido_em: ago(42), aceito_em: ago(40), parcelas_pagas: 1, recebimentos: [], pdf_path: null, pago_em: null }, { id: 'k2', criado_em: ago(2), atualizado_em: ago(2), token: 'aaaaaaaaaaaaaaa2', numero: 'TG-2026-002', modo: 'membro', status: 'enviado', membro_id: null, nome: 'Bianca Teste', telefone: '(11) 98888-7777', anual: 30000, desconto: 15, renovacao: 15000, dados: null, preenchido_em: null, aceito_em: null, pdf_path: null, pago_em: null }); } return K.map(x => ({ ...x })); },
-      criarContrato: p => { const n = K.length + 1, adm = p.modo === 'admin'; const x = { id: 'k' + k++, criado_em: new Date().toISOString(), atualizado_em: new Date().toISOString(), token: 'previa' + String(k).padStart(10, '0'), numero: 'TG-2026-' + String(n).padStart(3, '0'), modo: p.modo, status: adm ? 'preenchido' : 'enviado', membro_id: p.membro_id || null, nome: adm ? p.dados.nome : p.nome, telefone: adm ? p.dados.tel : p.telefone, anual: +p.anual, desconto: +p.desconto, renovacao: +p.renovacao, dados: adm ? p.dados : null, preenchido_em: adm ? new Date().toISOString() : null, aceito_em: null, pdf_path: null, pago_em: null }; K.unshift(x); return wait({ id: x.id, token: x.token, numero: x.numero, status: x.status }); },
+      criarContrato: p => { const n = K.length + 1, adm = p.modo === 'admin'; const x = { id: 'k' + k++, criado_em: new Date().toISOString(), atualizado_em: new Date().toISOString(), token: 'previa' + String(k).padStart(10, '0'), numero: 'TG-2026-' + String(n).padStart(3, '0'), modo: p.modo, status: adm ? 'preenchido' : 'enviado', membro_id: p.membro_id || null, tipo: p.tipo || 'entrada', nome: adm ? p.dados.nome : p.nome, telefone: adm ? p.dados.tel : p.telefone, anual: +p.anual, desconto: +p.desconto, renovacao: +p.renovacao, dados: adm ? p.dados : null, preenchido_em: adm ? new Date().toISOString() : null, aceito_em: null, pdf_path: null, pago_em: null }; K.unshift(x); return wait({ id: x.id, token: x.token, numero: x.numero, status: x.status }); },
       patchContrato: (id, b) => { const x = K.find(y => y.id === id); Object.assign(x || {}, b, b.status === 'pago' ? { pago_em: new Date().toISOString() } : {}); return wait(x ? [{ ...x }] : null); },
       addEtapa: b => { const e = { id: 'j' + k++, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), status: 'aberto', atualizado_por: 'Kayoan Felipe', descricao: null, responsavel: null, ferramentas: null, ajustar: null, contador: null, ...b }; J.push(e); return wait({ ...e }); },
       patchEtapa: (id, b) => { const e = J.find(x => x.id === id); Object.assign(e || {}, b, { updated_at: new Date().toISOString(), atualizado_por: 'Kayoan Felipe' }); return wait(e ? [{ ...e }] : null); },
