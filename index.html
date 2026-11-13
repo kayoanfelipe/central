@@ -241,6 +241,10 @@
   .mcard .snip { font-size: 12px; color: var(--ink); background: var(--card); border-radius: 10px; padding: 7px 9px; margin-top: 8px; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-height: calc(2.9em + 14px); }
   #msheet { width: min(540px, 100%); }
   .mfoot span { white-space: nowrap; }
+  .mzap { display: inline-flex; align-self: flex-start; margin-top: 10px; font-size: 12px; font-weight: 500; color: var(--ink); border: 1px solid var(--line); border-radius: 30px; padding: 6px 12px; cursor: pointer; }
+  .mzap:hover { border-color: var(--ink); }
+  .lk-acts { display: flex; gap: 6px; flex-wrap: wrap; }
+  .lk-acts a.lk-btn { text-decoration: none; background: transparent; color: var(--ink); border: 1px solid var(--line); }
   .mfoot { display: flex; justify-content: space-between; gap: 8px; font-size: 11.5px; color: var(--muted); margin-top: 10px; }
   .mfoot .soon { color: var(--gold); font-weight: 500; }
   .mfoot .late { color: var(--error); font-weight: 500; }
@@ -650,7 +654,8 @@
     <div id="m-tarefas"></div>
     <form class="tadd" id="m-tadd"><input id="m-tnova" maxlength="280" placeholder="Nova tarefa para este membro" autocomplete="off"><button class="btn">Anotar</button></form>
     <div id="m-renov-box"><div class="sec">Renovação</div>
-    <div class="moves" id="m-renov"></div></div>
+    <div class="moves" id="m-renov"></div>
+    <div id="m-renov-msg"></div></div>
     <div class="sec">Conexões</div>
     <ul class="cxl" id="m-conex"></ul>
     <form class="cxf" id="f-cx">
@@ -1648,13 +1653,40 @@
         ${kSt(m) ? `<div class="kst${kSt(m).ok ? ' ok' : ''}"><i></i>${kSt(m).txt}</div>` : ''}
         ${tr ? `<div class="snip">${esc(tr)}</div>` : ''}
         <div class="mfoot">${v && atual(m) ? `<span class="${d < 0 ? 'late' : d <= 30 ? 'soon' : ''}">${v}</span>` : '<span></span>'}${nx ? `<span>${nx} ${nx === 1 ? 'conexão' : 'conexões'}</span>` : ''}</div>
+        ${['vencer', 'vencidos'].includes(mfiltro) && precisaRenovMsg(m) && waLink(m.telefone) ? `<span class="mzap" role="link" tabindex="0" data-rwa="${m.id}">WhatsApp com a mensagem de renovação</span>` : ''}
       </button>`;
     }).join('') : '<div class="empty" style="grid-column:1/-1">Ninguém encontrado</div>';
     if (memId) fillMembro(byId(memId));
   }
   $('#mfilter').addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b) return; mfiltro = b.dataset.f; renderMembros(); });
   $('#mbusca').addEventListener('input', e => { mbusca = e.target.value; renderMembros(); });
-  $('#mgrid').addEventListener('click', e => { const c = e.target.closest('.mcard'); if (c) openMembro(c.dataset.id); });
+  $('#mgrid').addEventListener('click', e => {
+    const z = e.target.closest('[data-rwa]'); if (z) { e.stopPropagation(); const m = byId(z.dataset.rwa); if (m) window.open(renovWa(m, 'primeiro'), '_blank', 'noopener'); return; }
+    const c = e.target.closest('.mcard'); if (c) openMembro(c.dataset.id);
+  });
+  /* Mensagens de renovação (R$ 15 mil para todos, por contrato). Aparecem para quem vence em até 60 dias ou já venceu e ainda não tem contrato assinado. */
+  const precisaRenovMsg = m => atual(m) && diasAte(m.vencimento) !== null && diasAte(m.vencimento) <= 60 && !kContratoAtivo(m);
+  function renovTexto(m, tipo) {
+    const pn = String(m.nome || '').trim().split(/\s+/)[0], d = diasAte(m.vencimento), data = m.vencimento ? dataCurta(m.vencimento) : '';
+    if (tipo === 'lembrete') return `${pn}, passando para lembrar da sua renovação no The Group: R$ 15 mil por ano, em 12 parcelas de R$ 1.250 por contrato. Quer que eu te mande o link para você fechar?`;
+    return `Fala, ${pn}. Tudo certo?\n\n` + (d < 0 ? `Seu ano no The Group venceu em ${data}, e quero acertar com você a renovação.` : `Seu ano no The Group vence em ${data}, e quero te explicar como funciona a renovação.`)
+      + `\n\nA renovação deste ano é de R$ 15 mil para todos os membros. Para quem entra hoje, o primeiro ano é R$ 30 mil.\n\nE você não paga tudo de uma vez: agora é por contrato, em 12 parcelas de R$ 1.250, uma por mês.\n\nFunciona assim: te mando um link, você confere seus dados, lê o contrato e aceita ali mesmo, com um código que chega no seu e-mail. Leva uns 3 minutos.\n\nPosso te mandar o link?`;
+  }
+  const renovWa = (m, tipo) => `${waLink(m.telefone)}?text=${encodeURIComponent(renovTexto(m, tipo))}`;
+  function renovMsgHtml(m) {
+    if (!precisaRenovMsg(m)) return '';
+    const pend = contratos.find(k => ['enviado', 'preenchido'].includes(k.status) && (k.membro_id === m.id || norm(k.nome).trim() === norm(m.nome).trim()));
+    const bloco = (tipo, titulo) => `<div class="lk-msg"><div class="lk-k">${titulo}</div><div class="lk-txt">${esc(renovTexto(m, tipo))}</div>
+      <div class="lk-acts"><button class="lk-btn lk-btn2" type="button" data-rcopy="${tipo}">Copiar</button>${waLink(m.telefone) ? `<a class="lk-btn lk-btn2" href="${esc(renovWa(m, tipo))}" target="_blank" rel="noopener">Enviar pelo WhatsApp</a>` : ''}</div></div>`;
+    return (pend ? `<div class="venc" style="margin-top:10px">O contrato ${esc(pend.numero)} já foi gerado e ainda não foi assinado. Cobre a assinatura com o Copiar mensagem do contrato, acima.</div>` : '')
+      + bloco('primeiro', 'Mensagem de renovação: primeiro contato') + bloco('lembrete', 'Lembrete, se não responder em 3 a 5 dias')
+      + (pend ? '' : `<button class="move" type="button" data-rcontrato="1" style="margin-top:10px">Gerar contrato de renovação</button>`);
+  }
+  $('#m-renov-msg').addEventListener('click', e => {
+    const m = byId(memId); if (!m) return;
+    const c = e.target.closest('[data-rcopy]'); if (c) { copia(renovTexto(m, c.dataset.rcopy), 'Mensagem copiada'); return; }
+    if (e.target.closest('[data-rcontrato]')) abrirNovoContrato(m);
+  });
 
   function openMembro(id) { close(); memId = id; $('#m-saved').textContent = ''; fillMembro(byId(id), true); sheetOn($('#msheet')); $('#msheet .body').scrollTop = 0; }
 
@@ -1681,6 +1713,7 @@
     $('#m-anel-tam').innerHTML = `<label class="fld" style="max-width:220px"><span>Tamanho do anel</span><input data-k="anel_tamanho" type="text" value="${esc(m.anel_tamanho ?? '')}" placeholder="Ex.: 22"></label>`;
     // Renovação só aparece quando importa: vence em até 60 dias, já venceu ou já tem uma marcação.
     $('#m-renov-box').hidden = !(m.renovacao || (atual(m) && diasAte(m.vencimento) !== null && diasAte(m.vencimento) <= 60));
+    $('#m-renov-msg').innerHTML = renovMsgHtml(m);
     $('#m-venc').textContent = atual(m) ? venceTxt(m) : '';
     $('#m-renov').innerHTML = Object.entries(RENOV).map(([k, l]) => `<button class="move${m.renovacao === k ? ' cur' : ''}" data-k="renovacao" data-v="${k}">${l}</button>`).join('');
     $('#m-anel').innerHTML = Object.entries(ANEL).map(([k, l]) => `<button class="move${m.anel === k ? ' cur' : ''}" data-k="anel" data-v="${k}">${l}</button>`).join('');
