@@ -927,7 +927,7 @@
     patchEtapa: (id, b) => api(`jornada_etapas?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
     delEtapa: id => api(`jornada_etapas?id=eq.${id}`, { method: 'DELETE' }),
     contatos: () => api('membro_contatos?select=*&order=data.desc'),
-    contratos: () => api('contratos?select=id,criado_em,atualizado_em,token,numero,modo,status,membro_id,nome,telefone,anual,desconto,renovacao,dados,preenchido_em,aceito_em,pdf_path,pago_em,parcelas_pagas,recebimentos&order=criado_em.desc'),
+    contratos: () => api('contratos?select=id,criado_em,atualizado_em,token,numero,modo,status,membro_id,nome,telefone,anual,desconto,renovacao,dados,preenchido_em,aceito_em,pdf_path,pago_em,parcelas_pagas,recebimentos,primeira_no_fechamento&order=criado_em.desc'),
     criarContrato: p => api('rpc/criar_contrato', { method: 'POST', body: JSON.stringify({ p }) }),
     patchContrato: (id, b) => api(`contratos?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
     addContato: b => api('membro_contatos', { method: 'POST', body: JSON.stringify(b) }).then(r => r[0]),
@@ -1808,6 +1808,8 @@
     const d = k.dados || {}, anual = Number(k.anual), ini = kIso(new Date(k.aceito_em || k.criado_em));
     if (d.forma === 'vista') return { total: 1, pagas: 1, valor: anual * (1 - Number(k.desconto) / 100), datas: [ini], vista: true };
     const dia = Number(d.dia) || Number(ini.slice(8)), base = d.prox || kMaisMeses(ini, 1, dia);
+    // Sem a 1ª no fechamento (o membro deu uma entrada à parte): as 12 parcelas vencem a partir do próximo pagamento.
+    if (k.primeira_no_fechamento === false) return { total: 12, pagas: Math.min(12, Math.max(0, Number(k.parcelas_pagas) || 0)), valor: anual / 12, datas: Array.from({ length: 12 }, (_, i) => kMaisMeses(base, i, dia)), vista: false, dia, semFech: true };
     const datas = [ini, ...Array.from({ length: 11 }, (_, i) => kMaisMeses(base, i, dia))];
     return { total: 12, pagas: Math.min(12, Math.max(1, Number(k.parcelas_pagas) || 0)), valor: anual / 12, datas, vista: false, dia };
   }
@@ -1818,7 +1820,7 @@
     return contratos.filter(x => ['aceito', 'pago'].includes(x.status) && (x.membro_id === m.id || (!x.membro_id && norm(x.nome).replace(/\s+/g, ' ').trim() === nm)))
       .sort((a, b) => new Date(b.aceito_em || b.criado_em) - new Date(a.aceito_em || a.criado_em))[0] || null;
   }
-  const kParcTxt = (k, s, px) => `parcela ${s.pagas} de ${s.total} recebida${px ? ` · ${px.n}ª ${px.dias < 0 ? `<span class="late">atrasada há ${-px.dias} ${-px.dias === 1 ? 'dia' : 'dias'}</span>` : px.dias === 0 ? '<span class="soon">vence hoje</span>' : px.dias <= 7 ? `<span class="soon">vence ${dataCurta(px.data)}</span>` : `vence ${dataCurta(px.data)}`}` : ' · contrato quitado'}`;
+  const kParcTxt = (k, s, px) => `${s.pagas ? `parcela ${s.pagas} de ${s.total} recebida` : `nenhuma das ${s.total} parcelas recebida`}${px ? ` · ${px.n}ª ${px.dias < 0 ? `<span class="late">atrasada há ${-px.dias} ${-px.dias === 1 ? 'dia' : 'dias'}</span>` : px.dias === 0 ? '<span class="soon">vence hoje</span>' : px.dias <= 7 ? `<span class="soon">vence ${dataCurta(px.data)}</span>` : `vence ${dataCurta(px.data)}`}` : ' · contrato quitado'}`;
   function kCobrancas() {
     return contratos.map(k => { const s = kSchedule(k); return s && !s.vista ? { k, s, px: kProxima(s) } : null; }).filter(Boolean);
   }
@@ -1832,6 +1834,15 @@
       + (abertas.length ? g.filter(([, xs]) => xs.length).map(([t, xs]) => `<div class="pgrp">${t} · ${xs.length}</div>${xs.map(row).join('')}`).join('')
         : `<div class="venc" style="margin:6px 0 0">${l.length ? 'Tudo recebido.' : 'Nenhum contrato mensal assinado ainda. Quando um membro assinar, as 12 parcelas aparecem aqui.'}</div>`);
   }
+  async function trocaPrimeira(id) {
+    const k = contratos.find(x => x.id === id); if (!k) return;
+    const sem = k.primeira_no_fechamento !== false;
+    const s = kSchedule({ ...k, primeira_no_fechamento: !sem, parcelas_pagas: sem ? 0 : k.parcelas_pagas });
+    if (!confirm(sem ? `${k.nome} deu uma entrada à parte e a 1ª parcela não foi paga no fechamento?\n\nAs 12 parcelas de ${rs2(s.valor)} passam a vencer de ${dataCurta(s.datas[0])} a ${dataBR(s.datas[11])}.` : `Voltar a contar a 1ª parcela como paga no aceite?`)) return;
+    const b = { primeira_no_fechamento: !sem }; if (sem) b.parcelas_pagas = 0;
+    try { await db.patchContrato(k.id, b); Object.assign(k, b); renderAll(); if (memId) renderContratoFicha(byId(memId)); toast(sem ? `Parcelas de ${k.nome.split(' ')[0]} a partir de ${dataCurta(s.datas[0])}` : 'A 1ª parcela volta a contar no aceite'); }
+    catch (e) { fail(e, 'Não foi possível salvar'); }
+  }
   async function recebiParcela(id) {
     const k = contratos.find(x => x.id === id), s = kSchedule(k), px = kProxima(s); if (!px) return;
     if (!confirm(`Confirmar que ${k.nome} pagou a ${px.n}ª parcela (${rs2(s.valor)})?`)) return;
@@ -1841,6 +1852,7 @@
   }
   document.addEventListener('click', e => {
     const b = e.target.closest('[data-kparc]'); if (b) { e.preventDefault(); e.stopPropagation(); recebiParcela(b.dataset.kparc); return; }
+    const pr = e.target.closest('[data-kprim]'); if (pr) { e.preventDefault(); e.stopPropagation(); trocaPrimeira(pr.dataset.kprim); return; }
     const n = e.target.closest('[data-kmem]'); if (n) { const k = contratos.find(x => x.id === n.dataset.kmem); const f = k && (k.membro_id ? byId(k.membro_id) : membros.find(m => norm(m.nome).trim() === norm(k.nome).trim())); if (f) openMembro(f.id); else { location.hash = '#membros'; toast('Este contrato ainda não tem ficha. Use Criar ficha na lista de contratos.'); } }
   }, true);
   function renderReceber() {
@@ -2195,6 +2207,7 @@
       <span class="aact">
         ${['enviado', 'preenchido'].includes(k.status) ? `<button class="abtn" data-kcopy="${k.id}">Copiar mensagem</button>` : ''}
         ${(() => { const s = kSchedule(k), px = s && !s.vista ? kProxima(s) : null; return px ? `<button class="abtn${px.dias <= 7 ? ' pri' : ''}" data-kparc="${k.id}">Recebi a ${px.n}ª</button>` : ''; })()}
+        ${(() => { const s = kSchedule(k); return !comFicha && s && !s.vista && (s.semFech || s.pagas <= 1) ? `<button class="abtn" data-kprim="${k.id}" title="${s.semFech ? 'Volta a contar a 1ª parcela como paga no aceite' : 'Para quem deu uma entrada à parte: as 12 parcelas começam no próximo pagamento'}">${s.semFech ? '1ª parcela foi no fechamento' : '1ª parcela não foi no fechamento'}</button>` : ''; })()}
         ${k.status === 'aceito' ? `<button class="abtn pri" data-kpago="${k.id}">Marcar pago</button>` : ''}
         ${['aceito', 'pago'].includes(k.status) ? `<a class="abtn" href="${CONTRATO_URL + k.token}" target="_blank" rel="noopener" title="Abre o contrato aceito, com o botão Baixar PDF">Ver e baixar PDF</a>` : ''}
         ${['aceito', 'pago'].includes(k.status) && !k.membro_id ? `<button class="abtn" data-kficha="${k.id}">Criar ficha</button>` : ''}
