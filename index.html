@@ -689,6 +689,11 @@
   .card { padding: 12px 13px; }
   .card .name { font-size: 14.5px; font-weight: 600; margin-bottom: 2px; align-items: baseline; }
   .card .sub { font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Call marcada pelo Cal.com (entra sozinha) */
+  .ccall { display: flex; align-items: center; gap: 6px; margin-top: 7px; font-size: 12.5px; font-weight: 600; color: var(--ink); }
+  .ccall svg { width: 13px; height: 13px; flex: none; fill: none; stroke: var(--gold); stroke-width: 1.6; stroke-linecap: round; }
+  .ccall.past { color: var(--muted); font-weight: 500; } .ccall.past svg { stroke: var(--muted); }
+  .ccall.off { color: var(--muted); font-weight: 500; } .ccall.off svg { stroke: var(--muted); }
   .card .tags { margin-top: 8px; gap: 4px; }
   .card .tags:empty { display: none; }
   .card .tag { background: var(--col); }
@@ -1259,6 +1264,18 @@
   }
 
   /* ---------------- Helpers ---------------- */
+  const callTxt = r => {
+    if (!r.call_em || !r.call_situacao) return null;
+    if (r.call_situacao === 'cancelada') return { cls: 'off', txt: 'Desmarcou a call' };
+    const d = new Date(r.call_em), hj = new Date(); hj.setHours(0, 0, 0, 0);
+    const dia = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - hj) / 864e5);
+    const hora = d.getMinutes() ? `${d.getHours()}h${String(d.getMinutes()).padStart(2, '0')}` : `${d.getHours()}h`;
+    const data = `${d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}, ${d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`;
+    if (d < new Date()) return { cls: 'past', txt: `Call foi ${dia === 0 ? 'hoje' : dia === -1 ? 'ontem' : data} às ${hora}` };
+    return { cls: '', txt: `Call ${dia === 0 ? 'hoje' : dia === 1 ? 'amanhã' : data} às ${hora}` };
+  };
+  const IC_CAL = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="3.5" width="11" height="10" rx="2"/><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3"/></svg>';
+  const callHtml = r => { const c = callTxt(r); return c ? `<div class="ccall ${c.cls}">${IC_CAL}${c.txt}</div>` : ''; };
   const when = iso => {
     const d = new Date(iso), now = new Date();
     const days = Math.floor((now - d) / 864e5);
@@ -1311,7 +1328,7 @@
     const hoje = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
     $('#today').textContent = hoje.charAt(0).toUpperCase() + hoje.slice(1);
     const novas = apls.filter(r => r.status === 'nova');
-    const calls = apls.filter(r => r.status === 'call');
+    const calls = apls.filter(r => r.status === 'call').sort((a, b) => (a.call_situacao === 'marcada' && a.call_em ? new Date(a.call_em) : Infinity) - (b.call_situacao === 'marcada' && b.call_em ? new Date(b.call_em) : Infinity));
     const fazendo = ideias.filter(i => i.status === 'fazendo');
     const abertas = tarefas.filter(t => t.status !== 'feito');
     const cobrar = kCobrancas().filter(x => x.px && x.px.dias <= 7).sort((a, b) => a.px.dias - b.px.dias);
@@ -1339,7 +1356,7 @@
         ${list(novas, aplItem, 'Nenhuma esperando.')}</div>
       <div class="stat"><div class="k">Calls marcadas <a href="https://app.cal.com/bookings/upcoming" target="_blank" rel="noopener">Agenda</a></div>
         <div class="v">${calls.length}</div>
-        ${list(calls, aplItem, 'Nenhuma call marcada.')}
+        ${list(calls, r => { const c = callTxt(r); return c && c.cls !== 'off' ? `<li><button class="two" data-apl="${r.id}"><span class="nm" style="max-width:100%">${esc(r.nome)}</span><span class="meta">${c.txt.replace(/^Call /, '')}</span></button></li>` : aplItem(r); }, 'Nenhuma call marcada.')}
 </div>
       <div class="stat"><div class="k">Vagas de patrocínio <a href="${PARCEIROS}" target="_blank" rel="noopener">Site</a></div>${vagasHtml}</div>
       <div class="stat"><div class="k">Acompanhamento <a href="#membros" data-mf="chamar">Ver lista</a></div>
@@ -1466,6 +1483,7 @@
           <button class="card" draggable="true" data-id="${r.id}">
             <div class="name"><span>${esc(r.nome)}</span><span class="when">${when(r.created_at)}</span></div>
             <div class="sub">${r.canal === 'indicacao' && r.indicado_por ? 'Indicação de ' + esc(r.indicado_por) : esc(CANAL[r.canal] || 'Outro caminho')}</div>
+            ${['nova', 'conversa', 'call'].includes(r.status) ? callHtml(r) : ''}
             ${kStApl(r) ? `<div class="kst${kStApl(r).ok ? ' ok' : ''}"><i></i>${kStApl(r).txt}</div>` : ''}
             ${linkDe(r) ? `<span class="clink" title="${esc(linkDe(r))}"><span class="cl-url">Link do convite</span><span class="cl-copy" role="button" tabindex="0" data-copy="${esc(linkDe(r))}">Copiar</span></span>` : ''}
             <div class="tags">${seloConvite(r) ? `<span class="tag convite">${esc(seloConvite(r))}</span>` : ''}${r.membro_id && byId(r.membro_id) ? '<span class="tag">Ficha de membro</span>' : ''}${(conviteDe(r)?.aberturas || 0) > 1 ? `<span class="tag convite${conviteDe(r).aberturas > 2 ? ' muito' : ''}">Abriu ${conviteDe(r).aberturas} vezes</span>` : ''}</div>
@@ -1561,13 +1579,14 @@
     $('#d-name').textContent = r.nome;
     { const s = kStApl(r); $('#d-kst').className = 'kst' + (s && s.ok ? ' ok' : ''); $('#d-kst').innerHTML = s ? `<i></i>${s.txt}` : ''; }
     const d = new Date(r.created_at);
-    $('#d-since').textContent = `Aplicou em ${d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })} às ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+    $('#d-since').innerHTML = esc(`Aplicou em ${d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })} às ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`) + callHtml(r);
     const wa = r.whatsapp.replace(/\D/g, '');
     const cal = new URL(CAL_URL);
     cal.searchParams.set('name', r.nome);
     cal.searchParams.set('email', r.email);
     cal.searchParams.set('attendeePhoneNumber', r.whatsapp);
     cal.searchParams.set('instagram', '@' + r.instagram);
+    cal.searchParams.set('metadata[apl]', r.id); // o Cal.com devolve no aviso e a central acha a aplicação certa
     const chamada = `Oi, ${r.nome.split(' ')[0]}. Aqui é o Kayoan, do The Group. Escolha o melhor horário para a nossa conversa por aqui: ${cal.toString()}`;
     const cv = conviteDe(r), vale = !!linkDe(r);
     $('#d-link').innerHTML = r.status === 'recusado'
@@ -2889,6 +2908,8 @@
       convites: n === 3 ? [{ token: 'k3m9xq2v7tpa', criado_em: ago(3), expira_em: '2099-12-31T23:59:59-03:00', aberto_em: ago(2, 5), ultima_abertura: ago(1), aberturas: 3 }]
         : n === 4 ? [{ token: 'r8w2nd5yq1zc', criado_em: ago(5), expira_em: '2099-12-31T23:59:59-03:00', aberto_em: null, ultima_abertura: null, aberturas: 0 }]
         : n === 7 ? [{ token: 'h4j6tb0sx9ke', criado_em: ago(12), expira_em: '2099-12-31T23:59:59-03:00', aberto_em: null, ultima_abertura: null, aberturas: 0 }] : [],
+      call_em: n === 4 ? (() => { const d = new Date(Date.now() + 864e5); d.setHours(15, 0, 0, 0); return d.toISOString(); })() : n === 5 ? (() => { const d = new Date(Date.now() + 4 * 864e5); d.setHours(9, 30, 0, 0); return d.toISOString(); })() : n === 3 ? ago(1) : null,
+      call_situacao: n === 4 || n === 5 ? 'marcada' : n === 3 ? 'cancelada' : null,
 
     }));
     const AT = ATALHOS.map(([titulo, sub, url], n) => ({ id: 'at' + n, created_at: ago(30), titulo, sub, url, ordem: n + 1 }));
