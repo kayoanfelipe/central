@@ -698,6 +698,7 @@
   .card .tags:empty { display: none; }
   .card .tag { background: var(--col); }
   .card .tag.convite { border: 0; background: var(--col); color: var(--ink-2); }
+  .tag.fdr, .card .tag.fdr { background: transparent; border: 1px solid var(--gold); color: var(--ink); }
   .card .tag.convite.muito { background: var(--dark); color: var(--on-dark); font-weight: 500; }
   .card .clink { background: var(--col); border-radius: 9px; }
   .seg.bseg { margin: -8px 0 16px; }
@@ -1471,11 +1472,13 @@
   }
 
   /* ---------------- Aplicações ---------------- */
+  const foraDR = r => r.atua_dr === false;
   function renderBoard() {
-    const chips = [['', 'Todas'], ['indicacao', 'Indicação'], ['instagram', 'Instagram'], ['evento', 'Evento'], ['outro', 'Outro']];
+    // Fora de DR: quem respondeu "Ainda não" no quiz (47-aplicacao-segmento.sql). O chip só aparece se houver alguém.
+    const chips = [['', 'Todas'], ['indicacao', 'Indicação'], ['instagram', 'Instagram'], ['evento', 'Evento'], ['outro', 'Outro'], ...(apls.some(foraDR) || filtro === 'foradr' ? [['foradr', 'Fora de DR']] : [])];
     $('#filter').innerHTML = chips.map(([k, l]) => `<button class="${filtro === k ? 'cur' : ''}" data-f="${k}" aria-pressed="${filtro === k}">${l}</button>`).join('');
     const canalDe = r => ['indicacao', 'instagram', 'evento'].includes(r.canal) ? r.canal : 'outro';
-    const vis = apls.filter(r => !filtro || canalDe(r) === filtro);
+    const vis = apls.filter(r => !filtro || (filtro === 'foradr' ? foraDR(r) : canalDe(r) === filtro));
     $('#board').innerHTML = COLS.map(([k, label]) => {
       // Quem acabou de ser movido fica no topo da coluna (updated_at muda a cada mudança no cartão).
       const list = vis.filter(r => r.status === k).sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
@@ -1488,7 +1491,7 @@
             ${['nova', 'conversa', 'call'].includes(r.status) ? callHtml(r) : ''}
             ${kStApl(r) ? `<div class="kst${kStApl(r).ok ? ' ok' : ''}"><i></i>${kStApl(r).txt}</div>` : ''}
             ${linkDe(r) ? `<span class="clink" title="${esc(linkDe(r))}"><span class="cl-url">Link do convite</span><span class="cl-copy" role="button" tabindex="0" data-copy="${esc(linkDe(r))}">Copiar</span></span>` : ''}
-            <div class="tags">${seloConvite(r) ? `<span class="tag convite">${esc(seloConvite(r))}</span>` : ''}${r.membro_id && byId(r.membro_id) ? '<span class="tag">Ficha de membro</span>' : ''}${(conviteDe(r)?.aberturas || 0) > 1 ? `<span class="tag convite${conviteDe(r).aberturas > 2 ? ' muito' : ''}">Abriu ${conviteDe(r).aberturas} vezes</span>` : ''}</div>
+            <div class="tags">${foraDR(r) ? `<span class="tag fdr" title="Ainda não atua com resposta direta">Fora de DR${r.segmento ? ' · ' + esc(r.segmento) : ''}</span>` : ''}${seloConvite(r) ? `<span class="tag convite">${esc(seloConvite(r))}</span>` : ''}${r.membro_id && byId(r.membro_id) ? '<span class="tag">Ficha de membro</span>' : ''}${(conviteDe(r)?.aberturas || 0) > 1 ? `<span class="tag convite${conviteDe(r).aberturas > 2 ? ' muito' : ''}">Abriu ${conviteDe(r).aberturas} vezes</span>` : ''}</div>
           </button>`).join('') : '<div class="empty">Nada por aqui</div>'}</div>
       </section>`;
     }).join('');
@@ -1614,6 +1617,7 @@
     const items = [
       ['Função', funcao(r)],
       ['Mercado', NICHO[r.nicho] || r.nicho || '-'],
+      ['Atua com resposta direta', foraDR(r) ? `Ainda não${r.segmento ? ` (${r.segmento})` : ''}` : 'Sim'],
       ['Faturamento por mês', FAT[r.faturamento] || r.faturamento],
       ['Como chegou', r.canal === 'indicacao' && r.indicado_por ? `Indicação de ${r.indicado_por}` : (CANAL[r.canal] || r.canal || '-')],
       ['Instagram', `<a href="${igUrl(r.instagram)}" target="_blank" rel="noopener">@${esc(r.instagram)}</a>`, true],
@@ -2905,7 +2909,7 @@
       ['Letícia Ramos', 'leticiaramos', '+5562995678901', 'leticia@exemplo.com', 'head', 'nutra', '7', 'outro', null, 'aprovado', 'mesa', 12],
       ['Felipe Dias', 'felipedias', '+5585996789012', 'felipe@exemplo.com', 'copywriter', 'info', '6', 'instagram', null, 'recusado', 'conteudo', 15],
     ].map(([nome, instagram, whatsapp, email, funcao, nicho, faturamento, canal, indicado_por, status, origem_lead, d], n) => ({
-      id: 'a' + n, created_at: ago(d, n), nome, instagram, whatsapp, email, funcao, funcao_outra: null, nicho, faturamento, canal, indicado_por, origem: n % 3 ? 'site' : 'app', status, origem_lead, nota: null,
+      id: 'a' + n, created_at: ago(d, n), nome, instagram, whatsapp, email, funcao, funcao_outra: null, nicho, faturamento, canal, indicado_por, origem: n % 3 ? 'site' : 'app', status, origem_lead, nota: null, atua_dr: n !== 1, segmento: n === 1 ? 'e-commerce e drop' : null,
       convites: n === 3 ? [{ token: 'k3m9xq2v7tpa', criado_em: ago(3), expira_em: '2099-12-31T23:59:59-03:00', aberto_em: ago(2, 5), ultima_abertura: ago(1), aberturas: 3 }]
         : n === 4 ? [{ token: 'r8w2nd5yq1zc', criado_em: ago(5), expira_em: '2099-12-31T23:59:59-03:00', aberto_em: null, ultima_abertura: null, aberturas: 0 }]
         : n === 7 ? [{ token: 'h4j6tb0sx9ke', criado_em: ago(12), expira_em: '2099-12-31T23:59:59-03:00', aberto_em: null, ultima_abertura: null, aberturas: 0 }] : [],
