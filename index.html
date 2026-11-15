@@ -266,6 +266,12 @@
   .mcard:hover { border-color: var(--hover); }
   .mmais { margin-top: 12px; }
   .mhead .btn.sm { white-space: nowrap; }
+  /* Parceiros */
+  .pvagas { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--muted); margin: -6px 0 16px; }
+  .pvagas b { color: var(--ink); font-weight: 600; }
+  button.arow.prow { appearance: none; border: 0; width: 100%; text-align: left; cursor: pointer; font: inherit; color: var(--ink); }
+  button.arow.prow:hover { box-shadow: inset 0 0 0 1px var(--hover); }
+  #psheet .fields { margin-top: 4px; }
   @media (max-width: 520px) { .mhead { flex-wrap: wrap; gap: 10px; } .mhead .btn.sm { padding: 9px 14px; font-size: 13px; } }
   .mres { font-size: 13px; color: var(--ink-2); line-height: 1.6; margin: 2px 0 6px; }
   .fsec { border-top: 1px solid var(--line); }
@@ -765,6 +771,7 @@
       <a href="#hoje" data-v="hoje"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 9.5 10 4l6.5 5.5V16a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1z"/><path d="M8 17v-4.5h4V17"/></svg><span class="nl">Hoje</span></a>
       <a href="#aplicacoes" data-v="aplicacoes"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="4" height="12" rx="1.2"/><rect x="8.5" y="4" width="4" height="8" rx="1.2"/><rect x="14" y="4" width="3" height="10" rx="1.2"/></svg><span class="nl">Aplicações</span><span class="dot" hidden></span></a>
       <a href="#membros" data-v="membros"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><circle cx="7.5" cy="7.5" r="2.6"/><path d="M2.8 16c.6-2.6 2.4-4 4.7-4s4.1 1.4 4.7 4"/><circle cx="14" cy="8" r="2"/><path d="M13 12.2c2.1-.2 3.6 1.1 4.2 3.8"/></svg><span class="nl">Membros</span></a>
+      <a href="#parceiros" data-v="parceiros"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 7.5h13v8a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1z"/><path d="M7.5 7.5V5.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2"/><path d="M3.5 11.5h13"/></svg><span class="nl">Parceiros</span></a>
       <a href="#tarefas" data-v="tarefas"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><rect x="3.5" y="3.5" width="13" height="13" rx="2.5"/><path d="M6.8 10.2l2.2 2.2 4.4-4.6"/></svg><span class="nl">Tarefas</span><span class="dot" hidden></span></a>
       <a href="#jornada" data-v="jornada"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><circle cx="4.5" cy="15" r="1.8"/><circle cx="15.5" cy="5" r="1.8"/><path d="M6.3 15H12a2.5 2.5 0 0 0 0-5H8a2.5 2.5 0 0 1 0-5h5.7"/></svg><span class="nl">Jornada</span></a>
       <a href="#ideias" data-v="ideias"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 14.5h5M8.3 17h3.4"/><path d="M10 3a5 5 0 0 0-3 9c.4.4.5.9.5 1.5h5c0-.6.1-1.1.5-1.5A5 5 0 0 0 10 3z"/></svg><span class="nl">Ideias</span></a>
@@ -828,6 +835,14 @@
       <p class="jsub">Do momento em que a pessoa aplica até a vida dentro do grupo. Toque numa etapa para editar o que ela é, quem cuida e o que ajustar.</p>
       <div class="jsum" id="jsum"></div>
       <div class="jmap" id="jmap"></div>
+    </section>
+
+    <section id="v-parceiros" hidden>
+      <div class="mhead"><h1 class="page">Parceiros</h1><button class="btn sm" id="p-novo">Novo parceiro</button></div>
+      <div class="pvagas" id="pvagas" aria-label="Vagas ocupadas por cota"></div>
+      <div class="input search"><input id="pbusca" type="search" placeholder="Buscar por marca, contato, segmento…" autocomplete="off"></div>
+      <div class="mlhead"><div class="seg" id="pfilter" role="group" aria-label="Status"></div><div class="mcount" id="pcount"></div></div>
+      <div class="mgrid alist" id="pgrid"></div>
     </section>
 
     <section id="v-tarefas" hidden>
@@ -998,6 +1013,7 @@
         <div class="fields"><label class="fld"><span>E-mail</span><input name="email" type="email"></label><label class="fld"><span>Celular</span><input name="tel" inputmode="tel"></label></div>
         <div class="sec">Quem paga</div>
         <div class="kseg"><label><input type="radio" name="pagador" value="cpf" checked> No CPF</label><label><input type="radio" name="pagador" value="cnpj"> Empresa (CNPJ)</label><label><input type="radio" name="pagador" value="patrocinio"> Patrocinador</label></div>
+        <label class="fld" id="k-parcwrap" hidden style="margin-top:10px;max-width:360px"><span>Qual patrocinador paga a vaga</span><select name="parceiro_id" class="sel"></select></label>
         <div class="fields" id="k-pj" hidden style="margin-top:10px">
           <label class="fld"><span>CNPJ</span><input name="cnpj" inputmode="numeric" maxlength="18" placeholder="00.000.000/0000-00"></label><label class="fld"><span>E-mail da nota fiscal</span><input name="emailnf" type="email"></label>
           <label class="fld" style="grid-column:1/-1"><span>Razão social</span><input name="rs"></label>
@@ -1011,6 +1027,30 @@
       <div class="kconf" id="k-conf" hidden></div>
     </form>
     <div id="k-res" style="margin-top:14px"></div>
+  </div>
+</aside>
+
+<aside class="sheet" id="psheet" aria-hidden="true">
+  <div class="head">
+    <div><h3 id="p-marca"></h3><div class="since" id="p-since"></div></div>
+    <button class="x close" aria-label="Fechar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="body">
+    <div class="quick" id="p-quick"></div>
+    <div class="sec">Status</div>
+    <div class="moves" id="p-status"></div>
+    <div class="venc" id="p-vig" style="margin-top:12px"></div>
+    <div class="sec">Empresa</div>
+    <div class="fields" id="p-fields"></div>
+    <div class="sec">Contrato de patrocínio</div>
+    <div id="p-contratos"></div>
+    <button class="move" id="p-abrir">Gerar contrato</button>
+    <div id="p-gerar" hidden style="margin-top:12px"></div>
+    <div id="p-res" style="margin-top:12px"></div>
+    <div class="sec">Anotações</div>
+    <textarea id="p-nota" placeholder="O que conversaram, o que interessa à marca, próximos passos…" maxlength="4000"></textarea>
+    <div class="saved" id="p-saved"></div>
+    <button class="link del" id="p-del">Apagar da carteira</button>
   </div>
 </aside>
 
@@ -1119,7 +1159,7 @@
   const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   const DEMO = LOCAL && new URLSearchParams(location.search).has('demo');
 
-  let session = null, apls = [], ideias = [], membros = [], conexoes = [], etapas = [], contatos = [], contratos = [], tarefas = [], tarefaId = null, atalhos = [], atalhoId = null, editAt = false, vagas = null, openId = null, ideaId = null, filtro = '';
+  let session = null, apls = [], ideias = [], membros = [], conexoes = [], etapas = [], contatos = [], contratos = [], contratosP = [], parceiros = [], tarefas = [], tarefaId = null, atalhos = [], atalhoId = null, editAt = false, vagas = null, openId = null, ideaId = null, filtro = '';
   if (!DEMO) { try { session = JSON.parse(localStorage.getItem(STORE)); } catch {} }
   const save = s => { session = s; try { s ? localStorage.setItem(STORE, JSON.stringify(s)) : localStorage.removeItem(STORE); } catch {} };
 
@@ -1182,8 +1222,12 @@
     patchEtapa: (id, b) => api(`jornada_etapas?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
     delEtapa: id => api(`jornada_etapas?id=eq.${id}`, { method: 'DELETE' }),
     contatos: () => api('membro_contatos?select=*&order=data.desc'),
-    contratos: () => api('contratos?select=id,criado_em,atualizado_em,token,numero,modo,tipo,status,membro_id,nome,telefone,anual,desconto,renovacao,dados,preenchido_em,aceito_em,pdf_path,pago_em,parcelas_pagas,recebimentos,primeira_no_fechamento,meio,condicoes&order=criado_em.desc'),
+    contratos: () => api('contratos?select=id,criado_em,atualizado_em,token,numero,modo,tipo,status,membro_id,nome,telefone,anual,desconto,renovacao,dados,preenchido_em,aceito_em,pdf_path,pago_em,parcelas_pagas,recebimentos,primeira_no_fechamento,meio,condicoes,publico,parceiro_id,cota,segmento,membro_beneficiado&order=criado_em.desc'),
     criarContrato: p => api('rpc/criar_contrato', { method: 'POST', body: JSON.stringify({ p }) }),
+    parceiros: () => api('parceiros?select=*&order=marca'),
+    addParceiro: b => api('parceiros', { method: 'POST', body: JSON.stringify(b) }).then(r => r[0]),
+    patchParceiro: (id, b) => api(`parceiros?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
+    delParceiro: id => api(`parceiros?id=eq.${id}`, { method: 'DELETE' }),
     patchContrato: (id, b) => api(`contratos?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
     addContato: b => api('membro_contatos', { method: 'POST', body: JSON.stringify(b) }).then(r => r[0]),
     delContato: id => api(`membro_contatos?id=eq.${id}`, { method: 'DELETE' }),
@@ -1236,16 +1280,17 @@
   }
 
   async function loadAll() {
-    const [a, i, m, c, j, ct, k, at, tf] = await Promise.all([db.apls(), db.ideias(), db.membros(), db.conexoes(), db.etapas(), db.contatos(), db.contratos().catch(() => []), db.atalhos().catch(() => null), db.tarefas().catch(() => [])]);
-    apls = a; ideias = i; membros = m; conexoes = c; etapas = j; contatos = ct; contratos = k; tarefas = tf;
+    const [a, i, m, c, j, ct, k, at, tf, pa] = await Promise.all([db.apls(), db.ideias(), db.membros(), db.conexoes(), db.etapas(), db.contatos(), db.contratos().catch(() => []), db.atalhos().catch(() => null), db.tarefas().catch(() => []), db.parceiros().catch(() => [])]);
+    // Contratos de patrocínio ficam na aba Parceiros; o resto da central só vê os de membro.
+    apls = a; ideias = i; membros = m; conexoes = c; etapas = j; contatos = ct; contratos = k.filter(x => x.publico !== 'patrocinio'); contratosP = k.filter(x => x.publico === 'patrocinio'); tarefas = tf; parceiros = pa;
     // Sem a tabela (migração 37 não rodada), mostra os atalhos fixos, sem edição.
     atalhos = at || ATALHOS.map(([titulo, sub, url], n) => ({ id: null, titulo, sub, url, ordem: n + 1 }));
     loadVagas();
   }
 
   /* ---------------- Navegação ---------------- */
-  const VIEWS = ['hoje', 'aplicacoes', 'membros', 'tarefas', 'jornada', 'ideias'];
-  const TITULO = { hoje: 'Central', aplicacoes: 'Aplicações', membros: 'Membros', tarefas: 'Tarefas', receber: 'Receber', jornada: 'Jornada do membro', ideias: 'Ideias' };
+  const VIEWS = ['hoje', 'aplicacoes', 'membros', 'parceiros', 'tarefas', 'jornada', 'ideias'];
+  const TITULO = { hoje: 'Central', aplicacoes: 'Aplicações', membros: 'Membros', parceiros: 'Parceiros', tarefas: 'Tarefas', receber: 'Receber', jornada: 'Jornada do membro', ideias: 'Ideias' };
   function route() {
     const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'hoje';
     VIEWS.forEach(k => { $('#v-' + k).hidden = k !== v; });
@@ -1257,7 +1302,7 @@
   const medeTopo = () => { const t = $('.top'); if (t) document.documentElement.style.setProperty('--toph', t.offsetHeight + 'px'); };
   window.addEventListener('resize', medeTopo); setTimeout(medeTopo, 0);
 
-  function renderAll() { renderHoje(); renderBoard(); renderMembros(); renderJornada(); renderIdeias(); renderTarefas(); renderNav(); }
+  function renderAll() { renderHoje(); renderBoard(); renderMembros(); renderParceiros(); renderJornada(); renderIdeias(); renderTarefas(); renderNav(); }
   function renderNav() {
     const n = apls.filter(r => r.status === 'nova').length;
     const a = document.querySelector('#nav a[data-v="aplicacoes"]');
@@ -1569,7 +1614,7 @@
     el.classList.add('on'); el.setAttribute('aria-hidden', 'false'); $('#scrim').classList.add('on');
   }
   function close() {
-    openId = null; ideaId = null; memId = null; etapaId = null; atalhoId = null; tarefaId = null;
+    openId = null; ideaId = null; memId = null; etapaId = null; atalhoId = null; tarefaId = null; parcId = null;
     document.querySelectorAll('.sheet').forEach(s => { s.classList.remove('on'); s.setAttribute('aria-hidden', 'true'); });
     $('#scrim').classList.remove('on'); document.body.classList.remove('msplit'); document.querySelectorAll('#mgrid .mrow.sel').forEach(r => r.classList.remove('sel'));
   }
@@ -2152,6 +2197,169 @@
     catch (e) { fail(e, 'Não foi possível apagar'); }
   });
 
+
+  /* ---------------- Parceiros (48-parceiros-patrocinio.sql) ----------------
+     Carteira de empresas (inclusive quem só demonstrou interesse) e contrato de patrocínio.
+     O contrato de patrocínio usa o mesmo motor do de membro: link contrato.ogrupo.com.br/parceiros/?c=TOKEN.
+     Texto ainda em RASCUNHO (falta o advogado): não mandar link para empresa antes da revisão. */
+  const PATROCINIO_RASCUNHO = false;
+  const CONTRATO_URL_P = 'https://contrato.ogrupo.com.br/parceiros/?c=';
+  const PSTATUS = [['prospeccao', 'Prospecção'], ['negociando', 'Negociando'], ['contrato_enviado', 'Contrato enviado'], ['ativo', 'Ativo'], ['inativo', 'Inativo']];
+  const PST = Object.fromEntries(PSTATUS);
+  const COTAS = [['principal', 'Parceiro principal', 150000, 1], ['oficial', 'Parceiro oficial', 50000, 4], ['apoiador', 'Apoiador', 15000, 6]];
+  const COTA = Object.fromEntries(COTAS.map(([k, l, v, n]) => [k, { l, v, n }]));
+  const SEGMENTOS = ['Plataforma', 'SaaS', 'Fábrica', 'Nutracêutico', 'Direct response', 'Agência e mídia', 'Financeiro e pagamentos', 'Bebida e charuto', 'Automóvel', 'Outros'];
+  let parcId = null, pfiltro = '', pbusca = '';
+  const byParc = id => parceiros.find(p => p.id === id);
+  const ocupa = p => ['ativo', 'contrato_enviado'].includes(p.status);
+  // Mesma regra do banco (parceiro_conflito): devolve o motivo do bloqueio, ou ''.
+  function pConflito(pid, cota, seg) {
+    if (!seg || seg === 'Outros') return '';
+    const outros = parceiros.filter(p => p.id !== pid && ocupa(p) && p.segmento === seg);
+    const x = cota === 'principal' ? outros[0] : cota === 'oficial' ? outros.find(p => ['principal', 'oficial'].includes(p.cota_interesse)) : outros.find(p => p.cota_interesse === 'principal');
+    return x ? `${x.marca} (${COTA[x.cota_interesse]?.l || 'sem cota'}) já está no segmento ${seg}.` : '';
+  }
+  const vagasUsadas = cota => parceiros.filter(p => ocupa(p) && p.cota_interesse === cota).length;
+  const contratosDoParc = id => contratosP.filter(k => k.parceiro_id === id && k.status !== 'cancelado').sort((a, b) => a.criado_em < b.criado_em ? 1 : -1);
+  const vagasMembro = id => contratos.filter(k => k.parceiro_id === id && k.status !== 'cancelado');
+  const pMaisDias = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return kIso(d); };
+  const pFim = iso => { const d = new Date(iso + 'T12:00:00'); d.setFullYear(d.getFullYear() + 1); d.setDate(d.getDate() - 1); return kIso(d); };
+  function pProxReuniao(p) {
+    if (!p.inicio || !['principal', 'oficial'].includes(p.cota_interesse)) return null;
+    let d = p.inicio; while (diasAte(d) < 0) d = pMaisDias(d, 90);
+    return d < pFim(p.inicio) ? d : null;
+  }
+  function renderParceiros() {
+    if ($('#v-parceiros').hidden) return;
+    const termos = norm(pbusca).split(/\s+/).filter(Boolean);
+    const bate = p => !termos.length || termos.every(t => norm([p.marca, p.razao_social, p.contato_nome, p.segmento].join(' ')).includes(t));
+    $('#pfilter').innerHTML = [['', 'Todos'], ...PSTATUS].map(([k, l]) => `<button class="${pfiltro === k ? 'cur' : ''}" data-pf="${k}" aria-pressed="${pfiltro === k}">${l}${k ? ` <span class="cnt">${parceiros.filter(p => p.status === k).length}</span>` : ''}</button>`).join('');
+    $('#pvagas').innerHTML = COTAS.map(([k, l, , n]) => `<span><b>${vagasUsadas(k)}</b> de ${n} · ${l}</span>`).join('');
+    const l = parceiros.filter(p => (!pfiltro || p.status === pfiltro) && bate(p));
+    $('#pcount').textContent = `${l.length} ${l.length === 1 ? 'empresa' : 'empresas'}`;
+    const grupos = PSTATUS.map(([s, t]) => [t, l.filter(p => p.status === s).sort((a, b) => a.marca.localeCompare(b.marca, 'pt-BR'))]).filter(g => g[1].length);
+    $('#pgrid').innerHTML = grupos.length ? grupos.map(([t, xs]) => `<section class="agrp"><h3>${t} <span>${xs.length}</span></h3>${xs.map(p => {
+      const k = contratosDoParc(p.id)[0];
+      return `<button class="arow prow" data-parc="${p.id}"><span class="anm"><b>${esc(p.marca)}</b><span>${[p.cota_interesse ? COTA[p.cota_interesse].l : '', p.segmento, p.contato_nome, k ? `${k.numero} ${KSTATUS[k.status].toLowerCase()}` : ''].filter(Boolean).map(esc).join(' · ') || 'Sem detalhes'}</span></span></button>`;
+    }).join('')}</section>`).join('') : `<div class="empty">${parceiros.length ? 'Ninguém com esse filtro' : 'Nenhuma empresa ainda. Cadastre quem já demonstrou interesse.'}</div>`;
+  }
+  $('#pfilter').addEventListener('click', e => { const b = e.target.closest('[data-pf]'); if (!b) return; pfiltro = b.dataset.pf; renderParceiros(); });
+  $('#pbusca').addEventListener('input', e => { pbusca = e.target.value; renderParceiros(); });
+  $('#pgrid').addEventListener('click', e => { const b = e.target.closest('[data-parc]'); if (b) openParceiro(b.dataset.parc); });
+  $('#p-novo').addEventListener('click', async () => {
+    const marca = (prompt('Nome da marca') || '').trim(); if (marca.length < 2) return;
+    try { const p = await db.addParceiro({ marca, status: 'prospeccao' }); parceiros.push(p); renderParceiros(); openParceiro(p.id); }
+    catch (e) { fail(e, 'Não foi possível cadastrar'); }
+  });
+  const P_CAMPOS = [['marca', 'Marca', 'text', 120], ['razao_social', 'Razão social', 'text', 200], ['cnpj', 'CNPJ', 'text', 18], ['contato_nome', 'Contato', 'text', 120], ['contato_whats', 'WhatsApp do contato', 'tel', 40], ['contato_email', 'E-mail do contato', 'email', 200]];
+  const fmtCnpj = s => kMask.cnpj(s || '');
+  function openParceiro(id) {
+    close(); parcId = id; const p = byParc(id); if (!p) return;
+    fillParceiro(p); sheetOn($('#psheet')); $('#psheet .body').scrollTop = 0;
+  }
+  function fillParceiro(p) {
+    $('#p-marca').textContent = p.marca;
+    $('#p-since').textContent = `${PST[p.status]}${p.cota_interesse ? ' · ' + COTA[p.cota_interesse].l : ''}${p.segmento ? ' · ' + p.segmento : ''}`;
+    $('#p-fields').innerHTML = P_CAMPOS.map(([k, l, t, max]) => `<label class="fld"${k === 'razao_social' ? ' style="grid-column:1/-1"' : ''}><span>${l}</span><input data-pk="${k}" type="${t}" maxlength="${max}" value="${esc(k === 'cnpj' ? fmtCnpj(p[k]) : p[k] || '')}"></label>`).join('')
+      + `<label class="fld"><span>Cota de interesse</span><select data-pk="cota_interesse" class="sel"><option value="">Ainda não sabe</option>${COTAS.map(([k, l]) => `<option value="${k}"${p.cota_interesse === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>`
+      + `<label class="fld"><span>Segmento</span><select data-pk="segmento" class="sel"><option value="">Escolha</option>${SEGMENTOS.map(s => `<option${p.segmento === s ? ' selected' : ''}>${s}</option>`).join('')}</select></label>`;
+    $('#p-status').innerHTML = PSTATUS.map(([k, l]) => `<button class="move${p.status === k ? ' cur' : ''}" data-ps="${k}">${l}</button>`).join('');
+    const wa = waLink(p.contato_whats);
+    $('#p-quick').innerHTML = (wa ? `<a href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp</a>` : '') + (p.contato_email ? `<a href="mailto:${esc(p.contato_email)}">E-mail</a>` : '');
+    $('#p-quick').hidden = !$('#p-quick').innerHTML;
+    // Vigência, reunião de 90 dias, renovação 90 dias antes do fim e preferência até 60 dias antes (cláusulas 3.4, 11.1 e 11.3).
+    const vig = [];
+    if (p.inicio) {
+      const fim = pFim(p.inicio), dr = diasAte(pMaisDias(fim, -90)), pr = pProxReuniao(p);
+      vig.push(`Vigência de ${dataBR(p.inicio)} a ${dataBR(fim)}.`);
+      if (pr) vig.push(`Próxima reunião de alinhamento por volta de ${dataBR(pr)}.`);
+      vig.push(dr <= 0 ? `<b>Hora de mandar o resumo do ano e as condições da renovação</b> (o contrato acaba em ${dataBR(fim)}).` : `Resumo do ano e renovação: a partir de ${dataBR(pMaisDias(fim, -90))}. A preferência da marca pela vaga acaba em ${dataBR(pMaisDias(fim, -60))}.`);
+    } else if (p.status === 'ativo') vig.push('A vigência começa quando o contrato for marcado como pago.');
+    if (p.cota_interesse === 'principal' && ocupa(p)) { const v = vagasMembro(p.id); vig.push(`Vagas de membro usadas: ${v.length} de 3${v.length ? ` (${v.map(k => esc(k.nome)).join(', ')})` : ''}.`); }
+    $('#p-vig').innerHTML = vig.join('<br>'); $('#p-vig').hidden = !vig.length;
+    const ks = contratosDoParc(p.id);
+    $('#p-contratos').innerHTML = (ks.length ? ks.map(k => kLinha(k, false)).join('') : '<div class="venc" style="margin:0 0 8px">Nenhum contrato de patrocínio ainda.</div>');
+    if (document.activeElement !== $('#p-nota')) $('#p-nota').value = p.nota || '';
+    $('#p-gerar').hidden = true; $('#p-gerar').innerHTML = ''; $('#p-res').innerHTML = '';
+  }
+  async function salvaParc(b) {
+    const p = byParc(parcId); if (!p) return;
+    const antes = { ...p }; Object.assign(p, b);
+    try { await db.patchParceiro(p.id, b); $('#p-saved').textContent = 'Salvo'; setTimeout(() => { $('#p-saved').textContent = ''; }, 1500); renderParceiros(); $('#p-marca').textContent = p.marca; $('#p-since').textContent = `${PST[p.status]}${p.cota_interesse ? ' · ' + COTA[p.cota_interesse].l : ''}${p.segmento ? ' · ' + p.segmento : ''}`; }
+    catch (e) { Object.assign(p, antes); fillParceiro(p); fail(e, /cnpj/i.test(e.message) ? 'Esse CNPJ já está em outra empresa' : 'Não foi possível salvar'); }
+  }
+  $('#p-fields').addEventListener('change', e => {
+    const el = e.target.closest('[data-pk]'); if (!el) return; const k = el.dataset.pk; let v = el.value.trim();
+    if (k === 'marca' && v.length < 2) { toast('A marca precisa de pelo menos 2 letras'); fillParceiro(byParc(parcId)); return; }
+    if (k === 'cnpj') { v = kDig(v); if (v && v.length !== 14) { toast('O CNPJ tem 14 números'); return; } }
+    salvaParc({ [k]: v || null });
+  });
+  $('#p-status').addEventListener('click', e => { const b = e.target.closest('[data-ps]'); if (!b) return; salvaParc({ status: b.dataset.ps }); document.querySelectorAll('#p-status .move').forEach(x => x.classList.toggle('cur', x === b)); });
+  $('#p-nota').addEventListener('change', e => salvaParc({ nota: e.target.value.trim() || null }));
+  $('#p-del').addEventListener('click', async () => {
+    const p = byParc(parcId); if (!p) return;
+    if (contratosDoParc(p.id).length) { toast('Esta empresa tem contrato. Marque como Inativo em vez de apagar.'); return; }
+    if (!confirm(`Apagar ${p.marca} da carteira? Não dá para desfazer.`)) return;
+    try { await db.delParceiro(p.id); parceiros = parceiros.filter(x => x.id !== p.id); close(); renderParceiros(); toast('Empresa apagada'); }
+    catch (e) { fail(e, 'Não foi possível apagar'); }
+  });
+  $('#p-contratos').addEventListener('click', e => { kAcao(e); });
+  // Gerar contrato de patrocínio: o admin define cota, segmento, valor, pagamento e o membro beneficiado.
+  $('#p-abrir').addEventListener('click', () => {
+    const p = byParc(parcId); if (!p) return;
+    const cota = p.cota_interesse || 'oficial';
+    $('#p-gerar').innerHTML = `
+      ${PATROCINIO_RASCUNHO ? '<div class="kwarn" style="margin-top:0"><b>Contrato em rascunho.</b> O texto ainda passa pelo advogado. Não mande o link para a empresa antes da revisão: use só para testar.</div>' : ''}
+      <div class="fields" style="margin-top:12px">
+        <label class="fld"><span>Cota</span><select id="pg-cota" class="sel">${COTAS.map(([k, l, , n]) => `<option value="${k}"${k === cota ? ' selected' : ''}>${l} (${vagasUsadas(k)} de ${n} vagas)</option>`).join('')}</select></label>
+        <label class="fld"><span>Segmento</span><select id="pg-seg" class="sel"><option value="">Escolha</option>${SEGMENTOS.map(s => `<option${p.segmento === s ? ' selected' : ''}>${s}</option>`).join('')}</select></label>
+        <label class="fld"><span>Valor da cota no ano (R$)</span><input id="pg-valor" type="number" min="1" value="${COTA[cota].v}"></label>
+        <label class="fld"><span>Meio de pagamento</span><select id="pg-meio" class="sel"><option value="">Escolha</option>${Object.entries(MEIO_TXT).map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></label>
+        <label class="fld" style="grid-column:1/-1"><span>Condições combinadas na call</span><input id="pg-cond" maxlength="300" placeholder="Ex.: Pix à vista até 30/11"></label>
+        <label class="fld" style="grid-column:1/-1" id="pg-benefwrap"><span>Membro sócio da empresa (ganha +6 meses, opcional)</span><input id="pg-benef" list="t-membros" maxlength="120" placeholder="Nome do membro" autocomplete="off"></label>
+      </div>
+      <div class="kwarn" id="pg-aviso" hidden></div>
+      <div class="msg" id="pg-erro"></div>
+      <button class="btn" id="pg-ok" style="width:100%;margin-top:4px">Gerar link do contrato</button>`;
+    $('#p-gerar').hidden = false; pgAtualiza(); $('#p-gerar').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  function pgAtualiza() {
+    const cota = $('#pg-cota').value, seg = $('#pg-seg').value, p = byParc(parcId);
+    $('#pg-benefwrap').hidden = cota === 'apoiador'; if (cota === 'apoiador') $('#pg-benef').value = '';
+    const av = [], c = pConflito(p.id, cota, seg);
+    if (c) av.push(`<b>Exclusividade:</b> ${esc(c)} O contrato não vai ser gerado.`);
+    if (seg === 'Outros') av.push('Segmento "Outros" não entra na regra de exclusividade. Confira à mão se não tem conflito.');
+    const usadas = vagasUsadas(cota) - (p.cota_interesse === cota && ocupa(p) ? 1 : 0);
+    if (usadas >= COTA[cota].n) av.push(`As ${COTA[cota].n} vagas de ${COTA[cota].l.toLowerCase()} já estão ocupadas.`);
+    $('#pg-aviso').innerHTML = av.join('<br>'); $('#pg-aviso').hidden = !av.length;
+  }
+  $('#p-gerar').addEventListener('change', e => {
+    if (e.target.id === 'pg-cota') $('#pg-valor').value = COTA[e.target.value].v;
+    if (['pg-cota', 'pg-seg'].includes(e.target.id)) pgAtualiza();
+  });
+  $('#p-gerar').addEventListener('click', async e => {
+    if (!e.target.closest('#pg-ok')) return;
+    e.preventDefault();
+    const p = byParc(parcId), cota = $('#pg-cota').value, seg = $('#pg-seg').value, meio = $('#pg-meio').value, cond = $('#pg-cond').value.trim(), valor = Number($('#pg-valor').value), benef = $('#pg-benef').value.trim();
+    const erro = !seg ? 'Escolha o segmento.' : !(valor > 0) ? 'Informe o valor da cota.' : !meio ? 'Escolha o meio de pagamento combinado na call.' : !cond ? 'Escreva as condições combinadas na call.' : pConflito(p.id, cota, seg) ? 'Exclusividade: ' + pConflito(p.id, cota, seg) : '';
+    if (erro) { $('#pg-erro').textContent = erro; return; }
+    const ant = contratosDoParc(p.id).filter(k => ['enviado', 'preenchido'].includes(k.status));
+    if (!confirm(`Gerar o contrato de patrocínio de ${p.marca}?\n\n${COTA[cota].l}, segmento ${seg}\n${rs(valor)} pelo ano · ${MEIO_TXT[meio]}: ${cond}${benef ? `\nMembro beneficiado: ${benef} (+6 meses)` : ''}${ant.length ? `\n\nCancela o link anterior: ${ant.map(k => k.numero).join(', ')}` : ''}${PATROCINIO_RASCUNHO ? '\n\nLembrete: o texto ainda é rascunho. Não mande para a empresa antes do advogado.' : ''}`)) return;
+    const b = $('#pg-ok'); b.disabled = true; $('#pg-erro').textContent = '';
+    try {
+      const r = await db.criarContrato({ publico: 'patrocinio', parceiro_id: p.id, cota, segmento: seg, anual: valor, meio, condicoes: cond, membro_beneficiado: benef });
+      for (const a of ant) { try { await db.patchContrato(a.id, { status: 'cancelado' }); } catch { toast(`Não deu para cancelar o ${a.numero}. Cancele na ficha.`); } }
+      await recarregaContratos(); parceiros = await db.parceiros();
+      const k = contratosP.find(x => x.id === r.id) || { ...r, nome: p.marca, publico: 'patrocinio', modo: 'membro' };
+      fillParceiro(byParc(p.id)); renderParceiros();
+      $('#p-res').innerHTML = `<div class="lk-msg"><div class="lk-k">Mensagem para ${esc(p.contato_nome || p.marca)} (contrato ${esc(r.numero)})</div><div class="lk-txt">${esc(msgContrato(k))}</div>
+        <button class="lk-btn lk-btn2" type="button" data-kcopy="${k.id}">Copiar mensagem</button> <a class="abtn" style="margin-left:6px" href="${CONTRATO_URL_P + r.token}" target="_blank" rel="noopener">Abrir como a empresa vê</a></div>`;
+      $('#p-res').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (err) { $('#pg-erro').textContent = err.message === 'auth' ? 'Entre de novo.' : err.message; b.disabled = false; }
+  });
+  $('#p-res').addEventListener('click', e => { kAcao(e); });
+  async function recarregaContratos() { const all = await db.contratos(); contratos = all.filter(k => k.publico !== 'patrocinio'); contratosP = all.filter(k => k.publico === 'patrocinio'); }
+
   /* ---------------- Receber ---------------- */
   // Regra (sem mês a mês desde 15/11/2026): quem pagou não deve nada até o vencimento.
   // No mês do vencimento entra a renovação inteira (semestral: a cada 6 meses), no dia do
@@ -2626,6 +2834,12 @@
   const KORDEM = ['enviado', 'preenchido', 'aceito', 'pago'];
   const contratosDe = id => contratos.filter(k => k.membro_id === id && k.status !== 'cancelado').sort((a, b) => a.criado_em < b.criado_em ? 1 : -1);
   const msgContrato = k => {
+    if (k.publico === 'patrocinio') {
+      const pc = byParc(k.parceiro_id), pn = String((pc && pc.contato_nome) || '').trim().split(/\s+/)[0], url = CONTRATO_URL_P + k.token;
+      return k.status === 'enviado'
+        ? `${pn ? `Fala, ${pn}. ` : ''}Segue o link do contrato de patrocínio da ${k.nome} com o The Group. Primeiro vocês preenchem os dados da empresa e do representante legal, e depois ele lê e aceita na mesma página:\n${url}`
+        : `${pn ? `Fala, ${pn}. ` : ''}Segue o contrato de patrocínio da ${k.nome} com o The Group. O representante legal lê com calma e aceita na mesma página. Qualquer dúvida, me chama aqui:\n${url}`;
+    }
     const pn = String(k.nome || '').trim().split(/\s+/)[0], url = CONTRATO_URL + k.token;
     const ren = k.tipo === 'renovacao';
     return k.modo === 'membro' && k.status === 'enviado'
@@ -2640,15 +2854,15 @@
     const ficha = k.membro_id ? byId(k.membro_id) : null;
     const quando = k.status === 'pago' && k.pago_em ? `pago em ${dataBR(k.pago_em.slice(0, 10))}` : k.aceito_em ? `aceito em ${dataBR(k.aceito_em.slice(0, 10))}` : k.preenchido_em ? `preenchido em ${dataBR(k.preenchido_em.slice(0, 10))}` : `criado em ${dataBR(k.criado_em.slice(0, 10))}`;
     return `<div class="arow krow" data-k="${k.id}">
-      <div class="anm" style="cursor:default"><b>${esc(k.nome)} <span class="knum">${esc(k.numero)}${k.tipo === 'renovacao' ? ' · renovação' : ''}</span></b>
+      <div class="anm" style="cursor:default"><b>${esc(k.nome)} <span class="knum">${esc(k.numero)}${k.tipo === 'renovacao' ? ' · renovação' : ''}${k.publico === 'patrocinio' ? ` · ${esc(COTA[k.cota]?.l || '')}, ${rs(k.anual)}` : ''}</span></b>
         <span>${kPassos(k)} <span class="atp k-${k.status}">${KSTATUS[k.status]}</span> ${quando}${kForma(k) ? ' · ' + kForma(k) : ''}${(() => { const s = kSchedule(k); return s && !s.vista ? ' · ' + kParcTxt(k, s, kProxima(s)) : ''; })()}${comFicha && ficha ? ` · <a href="#" data-open="${ficha.id}">ficha</a>` : ''}</span></div>
       <span class="aact">
         ${['enviado', 'preenchido'].includes(k.status) ? `<button class="abtn" data-kcopy="${k.id}">Copiar mensagem</button>` : ''}
         ${(() => { const s = kSchedule(k), px = s && !s.vista ? kProxima(s) : null; return px ? `<button class="abtn${px.dias <= 7 ? ' pri' : ''}" data-kparc="${k.id}">Recebi a ${px.n}ª</button>` : ''; })()}
         ${(() => { const s = kSchedule(k); return !comFicha && s && !s.vista && (s.semFech || s.pagas <= 1) ? `<button class="abtn" data-kprim="${k.id}" title="${s.semFech ? 'Volta a contar a 1ª parcela como paga no aceite' : 'Para quem deu uma entrada à parte: as 12 parcelas começam no próximo pagamento'}">${s.semFech ? '1ª parcela foi no fechamento' : '1ª parcela não foi no fechamento'}</button>` : ''; })()}
         ${k.status === 'aceito' ? `<button class="abtn pri" data-kpago="${k.id}">Marcar pago</button>` : ''}
-        ${['aceito', 'pago'].includes(k.status) ? `<a class="abtn" href="${CONTRATO_URL + k.token}" target="_blank" rel="noopener" title="Abre o contrato aceito, com o botão Baixar PDF">Ver e baixar PDF</a>` : ''}
-        ${['aceito', 'pago'].includes(k.status) && !k.membro_id ? `<button class="abtn" data-kficha="${k.id}">Criar ficha</button>` : ''}
+        ${['aceito', 'pago'].includes(k.status) ? `<a class="abtn" href="${(k.publico === 'patrocinio' ? CONTRATO_URL_P : CONTRATO_URL) + k.token}" target="_blank" rel="noopener" title="Abre o contrato aceito, com o botão Baixar PDF">Ver e baixar PDF</a>` : ''}
+        ${['aceito', 'pago'].includes(k.status) && !k.membro_id && k.publico !== 'patrocinio' ? `<button class="abtn" data-kficha="${k.id}">Criar ficha</button>` : ''}
         ${['enviado', 'preenchido'].includes(k.status) ? `<button class="abtn" data-kcancel="${k.id}" title="Cancela o link">Cancelar</button>` : ''}
       </span></div>`;
   }
@@ -2671,14 +2885,16 @@
     e.preventDefault(); e.stopPropagation();
     if (t.id === 'k-novo2') { abrirNovoContrato(); return true; }
     if (t.dataset.knovo) { abrirNovoContrato(byId(t.dataset.knovo)); return true; }
-    const k = contratos.find(x => x.id === (t.dataset.kcopy || t.dataset.kpago || t.dataset.kficha || t.dataset.kcancel)); if (!k) return true;
+    const k = [...contratos, ...contratosP].find(x => x.id === (t.dataset.kcopy || t.dataset.kpago || t.dataset.kficha || t.dataset.kcancel)); if (!k) return true;
     try {
       if (t.dataset.kcopy) copia(msgContrato(k), 'Mensagem copiada');
       if (t.dataset.kpago) { if (!confirm(`Marcar o contrato de ${k.nome} como pago?`)) return true; const r = await db.patchContrato(k.id, { status: 'pago' }); Object.assign(k, r && r[0] ? r[0] : { status: 'pago', pago_em: new Date().toISOString() }); toast('Marcado como pago'); }
       if (t.dataset.kcancel) { if (!confirm(`Cancelar o contrato de ${k.nome}? O link para de abrir.`)) return true; await db.patchContrato(k.id, { status: 'cancelado' }); k.status = 'cancelado'; toast('Contrato cancelado'); }
       if (t.dataset.kficha) await criarFichaDoContrato(k);
+      // Patrocínio: aceite, pago e cancelamento mudam a empresa e criam tarefas no banco (trigger da 48).
+      if (k.publico === 'patrocinio' && (t.dataset.kpago || t.dataset.kcancel)) { parceiros = await db.parceiros(); tarefas = await db.tarefas().catch(() => tarefas); }
     } catch (err) { fail(err, 'Não foi possível concluir'); }
-    renderMembros(); renderBoard(); if (memId) renderContratoFicha(byId(memId)); renderHoje();
+    renderMembros(); renderBoard(); if (memId) renderContratoFicha(byId(memId)); renderHoje(); renderTarefas(); renderParceiros(); if (parcId && byParc(parcId)) fillParceiro(byParc(parcId));
     return true;
   }
   $('#mgrid').addEventListener('click', e => { kAcao(e); }, true);
@@ -2830,6 +3046,8 @@
   function kModo() {
     const f = $('#kform'), adm = f.modo.value === 'admin';
     $('#k-membro').hidden = adm; $('#k-dados').hidden = !adm; $('#k-pj').hidden = !adm || f.pagador.value === 'cpf';
+    const pp = adm && f.pagador.value === 'patrocinio'; $('#k-parcwrap').hidden = !pp;
+    if (pp && !f.parceiro_id.options.length) f.parceiro_id.innerHTML = '<option value="">Escolha</option>' + parceiros.filter(p => p.status === 'ativo').map(p => `<option value="${p.id}">${esc(p.marca)}${p.cota_interesse ? ' · ' + COTA[p.cota_interesse].l : ''}</option>`).join('');
     $('#k-gerar').textContent = adm ? 'Gerar link do contrato' : 'Gerar link do formulário';
   }
   $('#kform').addEventListener('change', kModo);
@@ -2856,7 +3074,8 @@
     if (falta.length) { falta.forEach(k => f[k].classList.add('bad')); f[falta[0]].focus(); $('#k-erro').textContent = precisa.some(k => falta.includes(k) && !String(f[k].value).trim()) ? 'Preencha os campos marcados.' : msg; return; }
     const p = { tipo: f.tipo.value, inicio: f.tipo.value === 'renovacao' ? f.inicio.value : '', modo: adm ? 'admin' : 'membro', anual: f.anual.value, renovacao: f.renovacao.value, meio: f.meio.value, condicoes: f.condicoes.value.trim(), membro_id: kFicha ? kFicha.id : '' };
     if (adm) {
-      const d = Object.fromEntries(new FormData(f)); ['modo', 'tipo', 'inicio', 'mnome', 'mtel', 'anual', 'renovacao', 'meio', 'condicoes'].forEach(k => delete d[k]);
+      const d = Object.fromEntries(new FormData(f)); ['modo', 'tipo', 'inicio', 'mnome', 'mtel', 'anual', 'renovacao', 'meio', 'condicoes', 'parceiro_id'].forEach(k => delete d[k]);
+      if (d.pagador === 'patrocinio' && f.parceiro_id.value) p.parceiro_id = f.parceiro_id.value;
       d.uf = (d.uf || '').toUpperCase(); d.end = `${d.rua}, ${d.numero}${d.compl ? ', ' + d.compl : ''}, ${d.bairro}, ${d.cidade}/${d.uf}, CEP ${d.cep}`;
       if (d.pagador === 'cpf') ['cnpj', 'rs', 'endpj', 'rep', 'rep_nome', 'rep_cpf', 'emailnf', 'endpj_igual'].forEach(k => delete d[k]);
       else { d.rep_nome = d.rep_nome.trim(); d.rep = `${d.rep_nome}, CPF ${d.rep_cpf}`; }
@@ -2877,7 +3096,7 @@
       const ant = kAnteriores(p);
       const r = await db.criarContrato(p);
       for (const a of ant) { try { await db.patchContrato(a.id, { status: 'cancelado' }); } catch (e2) { toast(`Não deu para cancelar o ${a.numero}. Cancele na lista.`); } }
-      contratos = await db.contratos();
+      await recarregaContratos();
       const k = contratos.find(x => x.id === r.id) || { ...r, nome: adm ? p.dados.nome : p.nome, modo: p.modo };
       $('#k-res').innerHTML = `<div class="lk-msg"><div class="lk-k">Mensagem para ${esc(String(k.nome).split(' ')[0])} (contrato ${esc(r.numero)})</div><div class="lk-txt">${esc(msgContrato(k))}</div>
         <button class="lk-btn lk-btn2" type="button" data-kmsg="${k.id}">Copiar mensagem</button> <a class="abtn" style="margin-left:6px" href="${CONTRATO_URL + r.token}" target="_blank" rel="noopener">Abrir como o membro vê</a></div>`;
@@ -2928,6 +3147,11 @@
     ].map(([texto, status, d], n) => ({ id: 'i' + n, created_at: ago(d), updated_at: ago(Math.max(0, d - 2)), texto, status, nota: null }));
     const wait = v => new Promise(r => setTimeout(() => r(v), 120));
     let k = 100, M = [], C = [], CT = [], K = [], cofre = null;
+    const PA = [
+      { id: 'pa1', created_at: ago(40), updated_at: ago(2), marca: 'Payflow', razao_social: 'Payflow Pagamentos Ltda', cnpj: '11222333000181', contato_nome: 'Renata Lima', contato_whats: '(11) 98888-1111', contato_email: 'renata@exemplo.com', cota_interesse: 'oficial', segmento: 'Financeiro e pagamentos', status: 'ativo', inicio: '2026-09-01', nota: 'Quer ativação de pôquer na próxima The House.' },
+      { id: 'pa2', created_at: ago(12), updated_at: ago(3), marca: 'Charutaria Norte', razao_social: null, cnpj: null, contato_nome: 'Paulo', contato_whats: '(48) 97777-2222', contato_email: null, cota_interesse: 'apoiador', segmento: 'Bebida e charuto', status: 'negociando', inicio: null, nota: null },
+      { id: 'pa3', created_at: ago(5), updated_at: ago(5), marca: 'CloudFunil', razao_social: null, cnpj: null, contato_nome: 'Marcos', contato_whats: null, contato_email: 'marcos@exemplo.com', cota_interesse: 'principal', segmento: 'SaaS', status: 'prospeccao', inicio: null, nota: 'Viu o site de parceiros. Retomar em dezembro.' },
+    ];
     const J = [{"fase": "antes", "ordem": 1, "titulo": "Aplicação", "descricao": "Quiz em aplicar.ogrupo.com.br. Recusa faturamento abaixo de 6 dígitos. O lead entra no painel.", "responsavel": "Automático", "ferramentas": "Quiz, Painel", "status": "ok", "contador": "apl_nova"}, {"fase": "antes", "ordem": 2, "titulo": "Curadoria", "descricao": "O Kayoan avalia o perfil e confirma com membros que a pessoa é confiável. Para entrar, precisa conhecer alguém lá dentro.", "responsavel": "Kayoan", "ferramentas": "Painel, WhatsApp", "status": "aberto", "contador": "apl_conversa"}, {"fase": "antes", "ordem": 3, "titulo": "Convite", "descricao": "Arte do convite e link da página de apresentação pelo WhatsApp. A página mostra tudo o que o grupo entrega e o valor: R$ 30 mil, com o pagamento combinado na call.", "responsavel": "Kayoan", "ferramentas": "WhatsApp, Página de apresentação", "status": "fazendo", "contador": null}, {"fase": "antes", "ordem": 4, "titulo": "Call", "descricao": "A pessoa marca 30 minutos no Cal.com pela própria página. A call serve para validar.", "responsavel": "Kayoan", "ferramentas": "Cal.com", "status": "ok", "contador": "apl_call"}, {"fase": "antes", "ordem": 5, "titulo": "Contrato e pagamento", "descricao": "Contrato pelo link (contrato.ogrupo.com.br), com o meio e as condições combinados na call: Pix, link de pagamento, cripto, Payoneer ou LootRush. Arrependimento em 7 dias.", "responsavel": "Kayoan", "ferramentas": "WhatsApp, Central, Contrato", "status": "aberto", "contador": "apl_aprovado"}, {"fase": "durante", "ordem": 6, "titulo": "Primeiro dia", "descricao": "Acesso ao app, apresentação no grupo e divulgação no Instagram do Kayoan e do The Group.", "responsavel": "Kayoan", "ferramentas": "App, Instagram", "status": "aberto", "contador": null}, {"fase": "durante", "ordem": 7, "titulo": "Primeiro mês", "descricao": "Um encontro com quem faz sentido para o novo membro.", "responsavel": "Kayoan", "ferramentas": "App, WhatsApp", "status": "aberto", "contador": null}, {"fase": "durante", "ordem": 8, "titulo": "Rotina", "descricao": "Encontros mensais regionais (mesa de até 6 pessoas), The House 2 vezes por ano, podcast, acompanhamento leve a cada 30 dias e profundo a cada 90. No primeiro ano os encontros são all inclusive, menos a passagem.", "responsavel": "Kayoan e Amanda", "ferramentas": "App, WhatsApp", "status": "aberto", "contador": "membros_ativos"}, {"fase": "durante", "ordem": 9, "titulo": "Cobrança", "descricao": "Só o que foi combinado na call: à vista ou parcelado. A Amanda acompanha quem atrasa e marca pago na central.", "responsavel": "Amanda", "ferramentas": "Central", "status": "aberto", "contador": null}, {"fase": "depois", "ordem": 10, "titulo": "Seu ano no The Group", "descricao": "Envio 60 dias antes do fim do contrato. Formato em aberto.", "responsavel": "Kayoan", "ferramentas": "WhatsApp", "status": "aberto", "contador": "vence_60"}, {"fase": "depois", "ordem": 11, "titulo": "Renovação", "descricao": "R$ 15 mil por ano, sem o all inclusive, com o pagamento combinado na conversa. Aviso de saída 30 dias antes.", "responsavel": "Kayoan e Amanda", "ferramentas": "WhatsApp, Contrato", "status": "aberto", "contador": "renovar"}, {"fase": "depois", "ordem": 12, "titulo": "Saída", "descricao": "Vira ex-membro na central e é desativado no app.", "responsavel": "Kayoan", "ferramentas": "Central, App", "status": "ok", "contador": "ex_membros"}].map((e, n) => ({ id: 'j' + n, created_at: ago(30), updated_at: ago(30), ajustar: null, atualizado_por: null, ...e }));
     const carregaCofre = () => cofre || (cofre = fetch('/membros.json').then(r => r.ok ? r.json() : { membros: [] }).catch(() => ({ membros: [] })).then(d => {
       M = d.membros.map(({ conexoes, ...m }) => m);
@@ -2976,7 +3200,12 @@
       addContato: b => { const c = { id: 'ct' + k++, created_at: new Date().toISOString(), data: hojeISO(), por: 'Kayoan Felipe', ...b }; CT.push(c); return wait({ ...c }); },
       delContato: id => { CT = CT.filter(c => c.id !== id); return wait(null); },
       contratos: async () => { await carregaCofre(); if (!K.length) { const ex = { nome: 'Rafael Exemplo', cpf: '529.982.247-25', email: 'rafael@exemplo.com', tel: '(48) 99999-1234', cidade: 'Florianópolis', uf: 'SC', pagador: 'cpf' }; K.push({ id: 'k1', criado_em: ago(6), atualizado_em: ago(1), token: 'aaaaaaaaaaaaaaa1', numero: 'TG-2026-001', modo: 'membro', status: 'aceito', membro_id: null, nome: 'Rafael Exemplo', telefone: ex.tel, anual: 30000, desconto: 0, renovacao: 15000, meio: 'link', condicoes: '10x no cartão pelo link', dados: ex, preenchido_em: ago(42), aceito_em: ago(40), parcelas_pagas: 1, recebimentos: [], pdf_path: null, pago_em: null }, { id: 'k2', criado_em: ago(2), atualizado_em: ago(2), token: 'aaaaaaaaaaaaaaa2', numero: 'TG-2026-002', modo: 'membro', status: 'enviado', membro_id: null, nome: 'Bianca Teste', telefone: '(11) 98888-7777', anual: 30000, desconto: 0, renovacao: 15000, meio: 'pix', condicoes: 'à vista até 20/11', dados: null, preenchido_em: null, aceito_em: null, pdf_path: null, pago_em: null }); } return K.map(x => ({ ...x })); },
-      criarContrato: p => { const n = K.length + 1, adm = p.modo === 'admin'; const x = { id: 'k' + k++, criado_em: new Date().toISOString(), atualizado_em: new Date().toISOString(), token: 'previa' + String(k).padStart(10, '0'), numero: 'TG-2026-' + String(n).padStart(3, '0'), modo: p.modo, status: adm ? 'preenchido' : 'enviado', membro_id: p.membro_id || null, tipo: p.tipo || 'entrada', nome: adm ? p.dados.nome : p.nome, telefone: adm ? p.dados.tel : p.telefone, anual: +p.anual, desconto: 0, renovacao: +p.renovacao, meio: p.meio, condicoes: p.condicoes, dados: adm ? p.dados : null, preenchido_em: adm ? new Date().toISOString() : null, aceito_em: null, pdf_path: null, pago_em: null }; K.unshift(x); return wait({ id: x.id, token: x.token, numero: x.numero, status: x.status }); },
+      criarContrato: p => { if (p.publico === 'patrocinio') { const pa = PA.find(x => x.id === p.parceiro_id); const x = { id: 'k' + k++, criado_em: new Date().toISOString(), atualizado_em: new Date().toISOString(), token: 'previap' + String(k).padStart(9, '0'), numero: 'TP-2026-' + String(K.filter(y => y.publico === 'patrocinio').length + 1).padStart(3, '0'), modo: 'membro', status: 'enviado', membro_id: null, tipo: 'entrada', publico: 'patrocinio', parceiro_id: pa.id, cota: p.cota, segmento: p.segmento, membro_beneficiado: p.membro_beneficiado || null, nome: pa.marca, telefone: pa.contato_whats, anual: +p.anual, desconto: 0, renovacao: 0, meio: p.meio, condicoes: p.condicoes, dados: null, preenchido_em: null, aceito_em: null, pdf_path: null, pago_em: null }; K.unshift(x); Object.assign(pa, { cota_interesse: p.cota, segmento: p.segmento, status: pa.status === 'ativo' ? 'ativo' : 'contrato_enviado' }); return wait({ id: x.id, token: x.token, numero: x.numero, status: x.status }); }
+        const n = K.length + 1, adm = p.modo === 'admin'; const x = { id: 'k' + k++, criado_em: new Date().toISOString(), atualizado_em: new Date().toISOString(), token: 'previa' + String(k).padStart(10, '0'), numero: 'TG-2026-' + String(n).padStart(3, '0'), modo: p.modo, status: adm ? 'preenchido' : 'enviado', membro_id: p.membro_id || null, tipo: p.tipo || 'entrada', nome: adm ? p.dados.nome : p.nome, telefone: adm ? p.dados.tel : p.telefone, anual: +p.anual, desconto: 0, renovacao: +p.renovacao, meio: p.meio, condicoes: p.condicoes, dados: adm ? p.dados : null, preenchido_em: adm ? new Date().toISOString() : null, aceito_em: null, pdf_path: null, pago_em: null }; K.unshift(x); return wait({ id: x.id, token: x.token, numero: x.numero, status: x.status }); },
+      parceiros: () => wait(PA.map(x => ({ ...x }))),
+      addParceiro: b => { const x = { id: 'pa' + k++, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), razao_social: null, cnpj: null, contato_nome: null, contato_whats: null, contato_email: null, cota_interesse: null, segmento: null, inicio: null, nota: null, ...b }; PA.push(x); return wait({ ...x }); },
+      patchParceiro: (id, b) => { Object.assign(PA.find(x => x.id === id) || {}, b); return wait(null); },
+      delParceiro: id => { PA.splice(PA.findIndex(x => x.id === id), 1); return wait(null); },
       patchContrato: (id, b) => { const x = K.find(y => y.id === id); Object.assign(x || {}, b, b.status === 'pago' ? { pago_em: new Date().toISOString() } : {}); return wait(x ? [{ ...x }] : null); },
       addEtapa: b => { const e = { id: 'j' + k++, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), status: 'aberto', atualizado_por: 'Kayoan Felipe', descricao: null, responsavel: null, ferramentas: null, ajustar: null, contador: null, ...b }; J.push(e); return wait({ ...e }); },
       patchEtapa: (id, b) => { const e = J.find(x => x.id === id); Object.assign(e || {}, b, { updated_at: new Date().toISOString(), atualizado_por: 'Kayoan Felipe' }); return wait(e ? [{ ...e }] : null); },
