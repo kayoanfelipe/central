@@ -77,8 +77,7 @@
     .nav a.cur { background: transparent; color: var(--ink); font-weight: 600; }
     .nav a.cur .ni { stroke-width: 1.9; }
     .nav a .dot { position: absolute; top: 4px; left: calc(50% + 9px); margin: 0; }
-  /* 8 itens no menu: letra um pouco menor para os nomes caberem */
-  .nav a .nl { font-size: 8.6px; letter-spacing: -0.3px; }
+    .nav a .nl { font-size: 8.8px; letter-spacing: -0.35px; }
     main { padding: 22px 16px 110px; }
     h1.page { font-size: 26px; }
   }
@@ -598,6 +597,9 @@
   .mlhead .mcount { margin: 0 0 0 2px; }
   .seg { display: inline-flex; background: var(--col); border-radius: 10px; padding: 2px; gap: 2px; max-width: 100%; }
   .seg button { appearance: none; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 13px; font-weight: 500; padding: 6px 16px; border-radius: 8px; cursor: pointer; white-space: nowrap; transition: background-color .15s; }
+  .fsub { display: flex; width: fit-content; margin: -10px 0 22px; }
+  .fsub a { text-decoration: none; color: var(--ink); font-size: 13.5px; font-weight: 500; padding: 7px 18px; border-radius: 8px; white-space: nowrap; }
+  .fsub a.cur { background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.04); }
   .seg button.cur { background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.04); }
   @media (prefers-color-scheme: dark) { .seg button.cur { background: var(--hover); } }
   @media (max-width: 560px) { .seg { display: flex; width: 100%; } .seg button { flex: 1; padding: 6px 4px; font-size: 12.5px; } }
@@ -783,11 +785,10 @@
     <div class="brand"><span class="logo"></span><span>Central</span></div>
     <nav class="nav" id="nav">
       <a href="#hoje" data-v="hoje"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 9.5 10 4l6.5 5.5V16a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1z"/><path d="M8 17v-4.5h4V17"/></svg><span class="nl">Hoje</span></a>
-      <a href="#aplicacoes" data-v="aplicacoes"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="4" height="12" rx="1.2"/><rect x="8.5" y="4" width="4" height="8" rx="1.2"/><rect x="14" y="4" width="3" height="10" rx="1.2"/></svg><span class="nl">Aplicações</span><span class="dot" hidden></span></a>
+      <a href="#aplicacoes" data-v="aplicacoes" data-grupo="aplicacoes pesquisas"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="4" height="12" rx="1.2"/><rect x="8.5" y="4" width="4" height="8" rx="1.2"/><rect x="14" y="4" width="3" height="10" rx="1.2"/></svg><span class="nl">Formulários</span><span class="dot" hidden></span></a>
       <a href="#membros" data-v="membros"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><circle cx="7.5" cy="7.5" r="2.6"/><path d="M2.8 16c.6-2.6 2.4-4 4.7-4s4.1 1.4 4.7 4"/><circle cx="14" cy="8" r="2"/><path d="M13 12.2c2.1-.2 3.6 1.1 4.2 3.8"/></svg><span class="nl">Membros</span></a>
       <a href="#parceiros" data-v="parceiros"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 7.5h13v8a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1z"/><path d="M7.5 7.5V5.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2"/><path d="M3.5 11.5h13"/></svg><span class="nl">Parceiros</span></a>
       <a href="#tarefas" data-v="tarefas"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><rect x="3.5" y="3.5" width="13" height="13" rx="2.5"/><path d="M6.8 10.2l2.2 2.2 4.4-4.6"/></svg><span class="nl">Tarefas</span><span class="dot" hidden></span></a>
-      <a href="#pesquisas" data-v="pesquisas"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 16.5V9.5M8.7 16.5V4.5M13.3 16.5V11M17 16.5H3"/></svg><span class="nl">Pesquisas</span></a>
       <a href="#jornada" data-v="jornada"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><circle cx="4.5" cy="15" r="1.8"/><circle cx="15.5" cy="5" r="1.8"/><path d="M6.3 15H12a2.5 2.5 0 0 0 0-5H8a2.5 2.5 0 0 1 0-5h5.7"/></svg><span class="nl">Jornada</span></a>
       <a href="#ideias" data-v="ideias"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 14.5h5M8.3 17h3.4"/><path d="M10 3a5 5 0 0 0-3 9c.4.4.5.9.5 1.5h5c0-.6.1-1.1.5-1.5A5 5 0 0 0 10 3z"/></svg><span class="nl">Ideias</span></a>
     </nav>
@@ -810,7 +811,8 @@
     </section>
 
     <section id="v-aplicacoes" hidden>
-      <h1 class="page">Aplicações</h1>
+      <h1 class="page">Formulários</h1>
+      <div class="fsub seg" role="tablist" aria-label="Formulários"><a href="#aplicacoes">Aplicações</a><a href="#pesquisas">Pesquisas</a></div>
       <div class="seg bseg" id="filter" role="group" aria-label="Como chegou"></div>
       <div class="colnav" id="colnav" aria-label="Colunas"></div>
       <div class="board" id="board"></div>
@@ -861,7 +863,8 @@
     </section>
 
     <section id="v-pesquisas" hidden>
-      <h1 class="page">Pesquisas</h1>
+      <h1 class="page">Formulários</h1>
+      <div class="fsub seg" role="tablist" aria-label="Formulários"><a href="#aplicacoes">Aplicações</a><a href="#pesquisas">Pesquisas</a></div>
       <div class="seg" id="pq-lista" role="group" aria-label="Pesquisa" style="margin-bottom:16px" hidden></div>
       <div class="pq-head" id="pq-head"></div>
       <div class="pq-total" id="pq-total"></div>
@@ -1318,7 +1321,8 @@
   function route() {
     const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'hoje';
     VIEWS.forEach(k => { $('#v-' + k).hidden = k !== v; });
-    document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('cur', a.dataset.v === v));
+    document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('cur', a.dataset.v === v || (a.dataset.grupo || '').split(' ').includes(v)));
+    document.querySelectorAll('.fsub a').forEach(a => a.classList.toggle('cur', a.getAttribute('href') === '#' + v));
     document.title = TITULO[v] + ' · The Group';
     renderAll();
   }
