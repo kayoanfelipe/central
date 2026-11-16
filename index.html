@@ -2891,7 +2891,8 @@
   $('#mgrid').addEventListener('click', e => {
     const ch = e.target.closest('[data-chamei]'); if (ch) { e.stopPropagation(); const p = proximoContato(byId(ch.dataset.chamei)); registraContato(ch.dataset.chamei, p ? p.tipo : 'mensal'); return; }
     const an = e.target.closest('[data-anel]'); if (an) { e.stopPropagation(); salvaMembro(an.dataset.anel, 'anel', an.dataset.v).then(() => toast(`Anel: ${ANEL[an.dataset.v].toLowerCase()}`)); return; }
-    const op = e.target.closest('[data-open]'); if (op) { e.stopPropagation(); openMembro(op.dataset.open); }
+    // O link "ficha" da lista de contratos é <a href="#">: sem o preventDefault, a página voltava para o Hoje.
+    const op = e.target.closest('[data-open]'); if (op) { e.preventDefault(); e.stopPropagation(); openMembro(op.dataset.open); }
   }, true);
 
   // Bloco na ficha: próximo contato, registrar e histórico.
