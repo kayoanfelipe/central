@@ -1408,9 +1408,9 @@
     const fazendo = ideias.filter(i => i.status === 'fazendo');
     const abertas = tarefas.filter(t => t.status !== 'feito');
     const cobrar = kCobrancas().filter(x => x.px && x.px.dias <= 7).sort((a, b) => a.px.dias - b.px.dias);
-    const vencer = membros.filter(m => atual(m) && diasAte(m.vencimento) !== null && diasAte(m.vencimento) >= 0 && diasAte(m.vencimento) <= 30).sort((a, b) => a.vencimento < b.vencimento ? -1 : 1);
+    const vencer = membros.filter(m => precisaRenovar(m) && diasAte(m.vencimento) >= 0).sort((a, b) => a.vencimento < b.vencimento ? -1 : 1);
     const m0 = mes(0), m12 = Array.from({ length: 12 }, (_, k) => mes(k)).reduce((s, x) => s + x.total + x.metaValor, 0);
-    const vencidos = membros.filter(m => atual(m) && diasAte(m.vencimento) !== null && diasAte(m.vencimento) < 0);
+    const vencidos = membros.filter(m => precisaRenovar(m) && diasAte(m.vencimento) < 0);
     const aplItem = r => `<li><button class="two" data-apl="${r.id}"><span class="nm" style="max-width:100%">${esc(r.nome)}</span><span class="meta">${esc(funcao(r))} · ${esc(FAT_CURTO[r.faturamento] || '')} · ${when(r.created_at)}</span></button></li>`;
     const list = (arr, fn, vazio, max = 4, mais = 'href="#aplicacoes"') => arr.length
       ? `<ul>${arr.slice(0, max).map(fn).join('')}${arr.length > max ? `<li><a ${mais}><span class="meta">e mais ${arr.length - max}</span></a></li>` : ''}</ul>`
@@ -2057,7 +2057,8 @@
     const c = e.target.closest('.mrow'); if (c) openMembro(c.dataset.id);
   });
   /* Mensagens de renovação (R$ 15 mil para todos, por contrato). Aparecem para quem vence em até 60 dias ou já venceu e ainda não tem contrato assinado. */
-  const precisaRenovMsg = m => atual(m) && diasAte(m.vencimento) !== null && diasAte(m.vencimento) <= 60 && !kContratoAtivo(m);
+  // Mensagens de renovação na ficha: mesma janela da lista de Renovações (até 30 dias ou vencido), menos quem já renovou.
+  const precisaRenovMsg = m => naJanelaRenov(m) && m.renovacao !== 'pago';
   function renovTexto(m, tipo) {
     const pn = String(m.nome || '').trim().split(/\s+/)[0], d = diasAte(m.vencimento), data = m.vencimento ? dataCurta(m.vencimento) : '';
     if (tipo === 'lembrete') return `${pn}, passando para lembrar da sua renovação no The Group: R$ 15 mil pelo próximo ano, e a forma de pagamento a gente combina. Quer marcar uma conversa rápida para fechar?`;
@@ -2834,8 +2835,11 @@
   const prazoTxt = p => p.dias < 0 ? `atrasado há ${-p.dias} ${-p.dias === 1 ? 'dia' : 'dias'}` : p.dias === 0 ? 'vence hoje' : `até ${dataCurta(p.data)}`;
   const ultimoTxt = p => p.ultimo ? `último contato em ${dataCurta(p.ultimo.data)}${p.ultimo.por ? ' por ' + esc(p.ultimo.por.split(' ')[0]) : ''}` : 'nenhum contato registrado';
 
-  /* Renovações: membros pagantes cujo ano termina em até 60 dias ou já terminou, sem renovação marcada e sem contrato novo assinado. */
-  const precisaRenovar = m => m.status === 'ativo' && !['pago', 'remover'].includes(m.renovacao) && diasAte(m.vencimento) !== null && diasAte(m.vencimento) <= 60 && !kContratoAtivo(m);
+  /* Renovações (16/11/2026): todo membro ativo cujo ano termina em até 30 dias ou já terminou aparece na lista.
+     Quem está marcado "Não vai renovar" ou "Renovou" (sem a data atualizada) fica num grupo à parte, nunca escondido.
+     Contrato pago já empurra a data para o próximo ano (50-contrato-pago-ficha.sql), então sai da lista sozinho. */
+  const naJanelaRenov = m => m.status === 'ativo' && diasAte(m.vencimento) !== null && diasAte(m.vencimento) <= 30;
+  const precisaRenovar = m => naJanelaRenov(m) && !['pago', 'remover'].includes(m.renovacao);
   function filaAtrasada(k) {
     if (k === 'chamar') return contaFase('atrasado') > 0;
     if (k === 'renov') return membros.some(m => precisaRenovar(m) && diasAte(m.vencimento) < 0);
@@ -2846,15 +2850,19 @@
   const lembreteAssinatura = k => { const pn = String(k.nome || '').trim().split(/\s+/)[0]; return `Fala, ${pn}. Passando para lembrar do seu contrato ${k.tipo === 'renovacao' ? 'de renovação ' : ''}do The Group. É só abrir o link, conferir e aceitar com o código que chega no seu e-mail:\n${CONTRATO_URL + k.token}`; };
   function renderRenovacoes(termos) {
     const bate = m => !termos.length || termos.every(t => norm(m.nome).includes(t));
-    const l = membros.filter(m => precisaRenovar(m) && bate(m)).sort((a, b) => a.vencimento < b.vencimento ? -1 : 1);
-    const g = [['atrasada', 'Renovação atrasada', l.filter(m => diasAte(m.vencimento) < 0)], ['30', 'Renova em até 30 dias', l.filter(m => diasAte(m.vencimento) >= 0 && diasAte(m.vencimento) <= 30)], ['60', 'Renova em 31 a 60 dias', l.filter(m => diasAte(m.vencimento) > 30)]].filter(x => x[2].length);
-    $('#mcount').textContent = `Membros cujo ano no The Group termina: mandar a mensagem de renovação e depois o contrato · ${g.map(x => `${x[2].length} ${x[0] === 'atrasada' ? (x[2].length === 1 ? 'atrasada' : 'atrasadas') : x[0] === '30' ? 'em até 30 dias' : 'em 31 a 60 dias'}`).join(' · ') || 'nenhuma agora'}`;
-    const kPend = m => contratos.find(k => ['enviado', 'preenchido'].includes(k.status) && (k.membro_id === m.id || norm(k.nome).trim() === norm(m.nome).trim()));
+    const l = membros.filter(m => naJanelaRenov(m) && bate(m)).sort((a, b) => a.vencimento < b.vencimento ? -1 : 1);
+    const g = [['atrasada', 'Vencidos, sem renovar', l.filter(m => precisaRenovar(m) && diasAte(m.vencimento) < 0)],
+      ['30', 'Renovam em até 30 dias', l.filter(m => precisaRenovar(m) && diasAte(m.vencimento) >= 0)],
+      ['pago', 'Marcados como "Renovou", falta atualizar a data na ficha', l.filter(m => m.renovacao === 'pago')],
+      ['remover', 'Marcados como "Não vai renovar"', l.filter(m => m.renovacao === 'remover')]].filter(x => x[2].length);
+    const nomeG = { atrasada: n => `${n} ${n === 1 ? 'vencido' : 'vencidos'}`, '30': n => `${n} em até 30 dias`, pago: n => `${n} com "Renovou" sem data nova`, remover: n => `${n} não vai renovar` };
+    $('#mcount').textContent = `Membros ativos cujo ano no The Group termina em até 30 dias ou já terminou: mandar a mensagem de renovação e depois o contrato · ${g.map(x => nomeG[x[0]](x[2].length)).join(' · ') || 'nenhum agora'}`;
+    const kPend = m => contratos.find(k => ['enviado', 'preenchido', 'aceito'].includes(k.status) && k.tipo === 'renovacao' && (k.membro_id === m.id || norm(k.nome).trim() === norm(m.nome).trim()));
     $('#mgrid').innerHTML = g.length ? g.map(([c, t, xs]) => `<section class="agrp${c === 'atrasada' ? ' atrasado' : ''}"><h3>${t} <span>${xs.length}</span></h3>${xs.map(m => {
       const d = diasAte(m.vencimento), pend = kPend(m), wa = waLink(m.telefone);
-      return `<div class="arow"><button class="anm" data-open="${m.id}"><b>${esc(m.nome)}</b><span><span class="${d < 0 ? 'late' : ''}">${venceTxt(m)}</span>${m.plano ? ' · ' + esc(m.plano) : ''} · ${pend ? `contrato ${esc(pend.numero)} enviado, falta assinar` : 'sem contrato ainda'}</span></button>
-        <span class="aact">${wa && !pend ? `<a class="abtn pri" href="${esc(renovWa(m, 'primeiro'))}" target="_blank" rel="noopener">Mandar mensagem</a>` : wa ? `<a class="abtn pri" href="${esc(wa + '?text=' + encodeURIComponent(lembreteAssinatura(pend)))}" target="_blank" rel="noopener">Cobrar assinatura</a>` : ''}<button class="abtn" data-open="${m.id}">Abrir ficha</button></span></div>`;
-    }).join('')}</section>`).join('') : '<div class="empty" style="grid-column:1/-1">Nenhuma renovação pendente nos próximos 60 dias</div>';
+      return `<div class="arow"><button class="anm" data-open="${m.id}"><b>${esc(m.nome)}</b><span><span class="${d < 0 ? 'late' : ''}">${venceTxt(m)}</span>${m.plano ? ' · ' + esc(m.plano) : ''} · ${m.renovacao === 'remover' ? 'marcado como não vai renovar' : m.renovacao === 'pago' ? 'marcado como renovou: confira o pagamento e atualize a data' : pend ? (pend.status === 'aceito' ? `contrato ${esc(pend.numero)} assinado, falta o pagamento` : `contrato ${esc(pend.numero)} enviado, falta assinar`) : 'sem contrato ainda'}</span></button>
+        <span class="aact">${wa && !pend ? `<a class="abtn${m.renovacao ? '' : ' pri'}" href="${esc(renovWa(m, 'primeiro'))}" target="_blank" rel="noopener">Mandar mensagem</a>` : wa && pend.status !== 'aceito' ? `<a class="abtn pri" href="${esc(wa + '?text=' + encodeURIComponent(lembreteAssinatura(pend)))}" target="_blank" rel="noopener">Cobrar assinatura</a>` : ''}<button class="abtn" data-open="${m.id}">Abrir ficha</button></span></div>`;
+    }).join('')}</section>`).join('') : '<div class="empty" style="grid-column:1/-1">Nenhuma renovação nos próximos 30 dias e ninguém vencido</div>';
   }
   function renderAcompanhamento(termos) {
     const bate = m => !termos.length || termos.every(t => norm(m.nome).includes(t));
