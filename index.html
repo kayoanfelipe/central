@@ -2976,7 +2976,12 @@
     const k = [...contratos, ...contratosP].find(x => x.id === (t.dataset.kcopy || t.dataset.kpago || t.dataset.kficha || t.dataset.kcancel)); if (!k) return true;
     try {
       if (t.dataset.kcopy) copia(msgContrato(k), 'Mensagem copiada');
-      if (t.dataset.kpago) { if (!confirm(`Marcar o contrato de ${k.nome} como pago?`)) return true; const r = await db.patchContrato(k.id, { status: 'pago' }); Object.assign(k, r && r[0] ? r[0] : { status: 'pago', pago_em: new Date().toISOString() }); toast('Marcado como pago'); }
+      if (t.dataset.kpago) {
+        const atualiza = k.publico !== 'patrocinio' && k.membro_id && k.meio, venc = kVenc({ ...k, pago_em: new Date().toISOString() });
+        if (!confirm(`Marcar o contrato de ${k.nome} como pago?${atualiza ? `\n\nA ficha é atualizada sozinha: próxima renovação em ${dataBR(venc)}, renovação de ${rs(k.renovacao)} e o pagamento no histórico.` : ''}`)) return true;
+        const r = await db.patchContrato(k.id, { status: 'pago' }); Object.assign(k, r && r[0] ? r[0] : { status: 'pago', pago_em: new Date().toISOString() });
+        if (atualiza) { membros = await db.membros(); toast(`Pago. Próxima renovação de ${k.nome.split(' ')[0]} em ${dataBR(venc)}`); if (memId === k.membro_id) fillMembro(byId(memId)); } else toast('Marcado como pago');
+      }
       if (t.dataset.kcancel) { if (!confirm(`Cancelar o contrato de ${k.nome}? O link para de abrir.`)) return true; await db.patchContrato(k.id, { status: 'cancelado' }); k.status = 'cancelado'; toast('Contrato cancelado'); }
       if (t.dataset.kficha) await criarFichaDoContrato(k);
       // Patrocínio: aceite, pago e cancelamento mudam a empresa e criam tarefas no banco (trigger da 48).
@@ -3013,9 +3018,8 @@
       const b = { nome: k ? k.nome : r.nome, status: 'ativo', email: (d.email || r.email || '').toLowerCase() || null, telefone: d.tel || (k && k.telefone) || phone(r.whatsapp) || null,
         cidade: d.cidade ? `${d.cidade}/${d.uf}` : null, entrada: hojeISO(), informacoes: info.slice(0, 8000) };
       if (k) {
-        const venc = new Date(); venc.setFullYear(venc.getFullYear() + 1);
-        Object.assign(b, { plano: kPlano(k), valor_renovacao: Number(k.renovacao), vencimento: venc.toISOString().slice(0, 10),
-          pagamentos: `- ${hoje} · contrato ${k.numero} ${['aceito', 'pago'].includes(k.status) ? 'aceito' : 'enviado, aguardando aceite'} · ${kForma(k)}${k.status === 'pago' ? ' · pago' : ''}` });
+        Object.assign(b, { plano: kPlano(k), valor_renovacao: Number(k.renovacao), vencimento: kVenc(k), entrada: kDiaPago(k),
+          ltv: k.status === 'pago' ? Number(k.anual) : null, pagamentos: kLinhaPag(k) });
       }
       const m = await db.addMembro(b); membros.push(m);
       await db.patchApl(r.id, { status: 'entrou', membro_id: m.id }); Object.assign(r, { status: 'entrou', membro_id: m.id, updated_at: new Date().toISOString() });
@@ -3023,12 +3027,17 @@
       renderAll(); toast(k ? `Membro cadastrado com o contrato ${k.numero}` : 'Membro cadastrado'); openMembro(m.id);
     } catch (e) { fail(e, 'Não foi possível cadastrar'); }
   }
+  // Mesma regra do banco (50-contrato-pago-ficha.sql): pago = a vigência começa no dia do pagamento (Brasília);
+  // renovação vai até o início do novo ciclo + 1 ano. Antes do pagamento, conta de hoje (o banco corrige no "Marcar pago").
+  const kDiaPago = k => k.pago_em ? new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date(k.pago_em)) : hojeISO();
+  const kVenc = k => { const base = k.tipo === 'renovacao' && k.inicio ? k.inicio : kDiaPago(k), d = new Date(base + 'T12:00:00'); d.setFullYear(d.getFullYear() + 1); return kIso(d); };
+  const kLinhaPag = k => `- ${dataBR(kDiaPago(k))} · contrato ${k.numero} ${k.status === 'pago' ? 'pago' : ['aceito'].includes(k.status) ? 'aceito, aguardando pagamento' : 'enviado, aguardando aceite'} · ${kForma(k)}${k.status === 'pago' ? ` · próxima renovação em ${dataBR(kVenc(k))}` : ''}`;
   async function criarFichaDoContrato(k) {
-    const d = k.dados || {}, venc = new Date(); venc.setFullYear(venc.getFullYear() + 1);
+    const d = k.dados || {};
     const m = await db.addMembro({
       nome: k.nome, status: 'ativo', email: (d.email || '').toLowerCase() || null, telefone: d.tel || k.telefone || null, cidade: d.cidade ? `${d.cidade}/${d.uf}` : null,
-      plano: kPlano(k), valor_renovacao: Number(k.renovacao), vencimento: venc.toISOString().slice(0, 10), entrada: hojeISO(),
-      pagamentos: `- ${new Date().toLocaleDateString('pt-BR')} · contrato ${k.numero} aceito · ${kForma(k)}`,
+      plano: kPlano(k), valor_renovacao: Number(k.renovacao), vencimento: kVenc(k), entrada: k.tipo === 'renovacao' ? null : kDiaPago(k),
+      ltv: k.status === 'pago' ? Number(k.anual) : null, pagamentos: kLinhaPag(k),
     });
     membros.push(m);
     await db.patchContrato(k.id, { membro_id: m.id }); k.membro_id = m.id;
@@ -3297,7 +3306,10 @@
       addParceiro: b => { const x = { id: 'pa' + k++, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), razao_social: null, cnpj: null, contato_nome: null, contato_whats: null, contato_email: null, cota_interesse: null, segmento: null, inicio: null, nota: null, ...b }; PA.push(x); return wait({ ...x }); },
       patchParceiro: (id, b) => { Object.assign(PA.find(x => x.id === id) || {}, b); return wait(null); },
       delParceiro: id => { PA.splice(PA.findIndex(x => x.id === id), 1); return wait(null); },
-      patchContrato: (id, b) => { const x = K.find(y => y.id === id); Object.assign(x || {}, b, b.status === 'pago' ? { pago_em: new Date().toISOString() } : {}); return wait(x ? [{ ...x }] : null); },
+      patchContrato: (id, b) => { const x = K.find(y => y.id === id); Object.assign(x || {}, b, b.status === 'pago' ? { pago_em: new Date().toISOString() } : {});
+        // Igual ao trigger da 50: contrato de membro pago atualiza a ficha ligada.
+        if (x && b.status === 'pago' && x.membro_id && x.meio && x.publico !== 'patrocinio') { const m = M.find(y => y.id === x.membro_id); if (m) { const v = kVenc(x); Object.assign(m, { vencimento: v, valor_renovacao: x.renovacao, plano: kPlano(x), renovacao: null, mensalidade: null, ltv: (+m.ltv || 0) + +x.anual, pagamentos: [m.pagamentos, kLinhaPag(x)].filter(Boolean).join('\n'), entrada: x.tipo === 'renovacao' ? m.entrada : (m.entrada || kDiaPago(x)) }); } }
+        return wait(x ? [{ ...x }] : null); },
       addEtapa: b => { const e = { id: 'j' + k++, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), status: 'aberto', atualizado_por: 'Kayoan Felipe', descricao: null, responsavel: null, ferramentas: null, ajustar: null, contador: null, ...b }; J.push(e); return wait({ ...e }); },
       patchEtapa: (id, b) => { const e = J.find(x => x.id === id); Object.assign(e || {}, b, { updated_at: new Date().toISOString(), atualizado_por: 'Kayoan Felipe' }); return wait(e ? [{ ...e }] : null); },
       delEtapa: id => { J.splice(J.findIndex(x => x.id === id), 1); return wait(null); },
