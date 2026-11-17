@@ -1589,7 +1589,7 @@
             ${!ehConvidado(r) && ['nova', 'conversa', 'call'].includes(r.status) ? callHtml(r) : ''}
             ${kStApl(r) ? `<div class="kst${kStApl(r).ok ? ' ok' : ''}"><i></i>${kStApl(r).txt}</div>` : ''}
             ${linkDe(r) && !ehConvidado(r) ? `<span class="clink" title="${esc(linkDe(r))}"><span class="cl-url">Link do convite</span><span class="cl-copy" role="button" tabindex="0" data-copy="${esc(linkDe(r))}">Copiar</span></span>` : ''}
-            <div class="tags">${foraDR(r) ? `<span class="tag fdr" title="Ainda não atua com resposta direta">Fora de DR${r.segmento ? ' · ' + esc(r.segmento) : ''}</span>` : ''}${seloConvite(r) ? `<span class="tag convite">${esc(seloConvite(r))}</span>` : ''}${r.membro_id && byId(r.membro_id) ? '<span class="tag">Ficha de membro</span>' : ''}${(conviteDe(r)?.aberturas || 0) > 1 ? `<span class="tag convite${conviteDe(r).aberturas > 2 ? ' muito' : ''}">Abriu ${conviteDe(r).aberturas} vezes</span>` : ''}</div>
+            <div class="tags">${foraDR(r) ? `<span class="tag fdr" title="Ainda não atua com resposta direta">Fora de DR${r.segmento ? ' · ' + esc(r.segmento) : ''}</span>` : ''}${seloConvite(r) && !ehConvidado(r) ? `<span class="tag convite">${esc(seloConvite(r))}</span>` : ''}${r.membro_id && byId(r.membro_id) ? '<span class="tag">Ficha de membro</span>' : ''}${(conviteDe(r)?.aberturas || 0) > 1 ? `<span class="tag convite${conviteDe(r).aberturas > 2 ? ' muito' : ''}">Abriu ${conviteDe(r).aberturas} vezes</span>` : ''}</div>
           </button>`).join('') : '<div class="empty">Nada por aqui</div>'}</div>
       </section>`;
     }).join('');
