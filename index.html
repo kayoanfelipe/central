@@ -849,8 +849,9 @@
     </section>
 
     <section id="v-jornada" hidden>
-      <h1 class="page" style="margin-bottom:6px">Jornada do membro</h1>
-      <p class="jsub">Do momento em que a pessoa aplica até a vida dentro do grupo. Toque numa etapa para editar o que ela é, quem cuida e o que ajustar.</p>
+      <h1 class="page" style="margin-bottom:6px" id="j-h1">Jornada do membro</h1>
+      <div class="seg" id="jtroca" role="group" aria-label="Qual jornada" style="margin-bottom:14px"><button class="cur" data-j="membro" aria-pressed="true">Membro</button><button data-j="convidado" aria-pressed="false">Convidado de membro</button></div>
+      <p class="jsub" id="j-sub">Do momento em que a pessoa aplica até a vida dentro do grupo. Toque numa etapa para editar o que ela é, quem cuida e o que ajustar.</p>
       <div class="jsum" id="jsum"></div>
       <div class="jmap" id="jmap"></div>
     </section>
@@ -998,16 +999,20 @@
   <div class="body">
     <form id="kform" novalidate autocomplete="off">
       <div class="sec">Tipo de contrato</div>
-      <div class="kseg"><label><input type="radio" name="tipo" value="entrada" checked> Entrada (novo membro)</label><label><input type="radio" name="tipo" value="renovacao"> Renovação</label></div>
+      <div class="kseg"><label><input type="radio" name="tipo" value="entrada" checked> Entrada (novo membro)</label><label><input type="radio" name="tipo" value="renovacao"> Renovação</label><label><input type="radio" name="tipo" value="convidado"> Convidado (3 meses)</label></div>
       <div class="venc" id="k-tipotxt"></div>
       <div id="k-inicio" hidden style="margin-top:10px"><label class="fld" style="max-width:260px"><span>Início da vigência (fim do ciclo atual)</span><input name="inicio" type="date"></label></div>
-      <div class="sec">Quem preenche os dados</div>
-      <div class="kseg"><label><input type="radio" name="modo" value="membro" checked> O membro preenche</label><label><input type="radio" name="modo" value="admin"> Eu preencho</label></div>
-      <div id="k-membro">
-        <div class="fields" style="margin-top:12px"><label class="fld"><span>Nome do membro</span><input name="mnome" maxlength="120"></label><label class="fld"><span>WhatsApp</span><input name="mtel" inputmode="tel" maxlength="40"></label></div>
-        <div class="venc">Ele recebe um link, preenche os próprios dados e já vê o contrato com o pagamento que vocês combinaram na call. Ele só vê, não muda. A central avisa você no e-mail contato@ quando ele terminar.</div>
+      <div id="k-conv" hidden style="margin-top:10px">
+        <div class="fields"><label class="fld"><span>Membro que convidou</span><select name="convidado_por" class="sel"></select></label><label class="fld"><span>Início do convite</span><input name="conv_inicio" type="date"></label></div>
+        <div class="venc" id="k-convfim"></div>
       </div>
-      <div class="sec row"><span>Valores deste contrato</span><button class="link" type="button" id="k-mudar">Mudar valores</button></div>
+      <div id="k-modowrap"><div class="sec">Quem preenche os dados</div>
+      <div class="kseg"><label><input type="radio" name="modo" value="membro" checked> O membro preenche</label><label><input type="radio" name="modo" value="admin"> Eu preencho</label></div></div>
+      <div id="k-membro">
+        <div class="fields" style="margin-top:12px"><label class="fld"><span id="k-mnomelbl">Nome do membro</span><input name="mnome" maxlength="120"></label><label class="fld"><span>WhatsApp</span><input name="mtel" inputmode="tel" maxlength="40"></label></div>
+        <div class="venc" id="k-mtxt">Ele recebe um link, preenche os próprios dados e já vê o contrato com o pagamento que vocês combinaram na call. Ele só vê, não muda. A central avisa você no e-mail contato@ quando ele terminar.</div>
+      </div>
+      <div id="k-valwrap"><div class="sec row"><span>Valores deste contrato</span><button class="link" type="button" id="k-mudar">Mudar valores</button></div>
       <div class="fields"><label class="fld"><span>Valor do contrato (R$)</span><input name="anual" type="number" value="30000" min="1" readonly></label><label class="fld"><span>Renovação (R$)</span><input name="renovacao" type="number" value="15000" min="0" readonly></label></div>
       <div class="venc" id="k-valtxt">Valores padrão. Para uma condição diferente, toque em Mudar valores.</div>
       <div class="kwarn" id="k-valaviso" hidden></div>
@@ -1016,7 +1021,7 @@
         <label class="fld"><span>Meio de pagamento</span><select name="meio" class="sel"><option value="">Escolha</option><option value="pix">Pix ou transferência</option><option value="link">Link de pagamento (cartão)</option><option value="cripto">Criptomoeda</option><option value="payoneer">Payoneer</option><option value="lootrush">LootRush</option></select></label>
         <label class="fld"><span>Condições combinadas</span><input name="condicoes" maxlength="300" placeholder="Ex.: à vista até 20/11 ou 10x no cartão pelo link"></label>
       </div>
-      <div class="venc">Vai escrito no contrato (cláusula 5.3). O membro só vê, não muda.</div>
+      <div class="venc">Vai escrito no contrato (cláusula 5.3). O membro só vê, não muda.</div></div>
       <div id="k-dados" hidden>
         <div class="sec">Dados pessoais</div>
         <div class="fields">
@@ -1249,7 +1254,7 @@
     patchEtapa: (id, b) => api(`jornada_etapas?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
     delEtapa: id => api(`jornada_etapas?id=eq.${id}`, { method: 'DELETE' }),
     contatos: () => api('membro_contatos?select=*&order=data.desc'),
-    contratos: () => api('contratos?select=id,criado_em,atualizado_em,token,numero,modo,tipo,status,membro_id,nome,telefone,anual,desconto,renovacao,dados,preenchido_em,aceito_em,pdf_path,pago_em,parcelas_pagas,recebimentos,primeira_no_fechamento,meio,condicoes,publico,parceiro_id,cota,segmento,membro_beneficiado&order=criado_em.desc'),
+    contratos: () => api('contratos?select=id,criado_em,atualizado_em,token,numero,modo,tipo,status,membro_id,nome,telefone,anual,desconto,renovacao,dados,preenchido_em,aceito_em,pdf_path,pago_em,parcelas_pagas,recebimentos,primeira_no_fechamento,meio,condicoes,publico,parceiro_id,cota,segmento,membro_beneficiado,convidado_por,convidado_por_nome&order=criado_em.desc'),
     criarContrato: p => api('rpc/criar_contrato', { method: 'POST', body: JSON.stringify({ p }) }),
     parceiros: () => api('parceiros?select=*&order=marca'),
     raioX: () => api('pesquisa_raio_x?select=criado_em,trafego,plataformas,pagamento,conta_dolar,vende_fora&order=criado_em.asc'),
@@ -2724,7 +2729,16 @@
   $('#r-dias').addEventListener('click', e => { const b = e.target.closest('[data-mem]'); if (b) openMembro(b.dataset.mem); });
 
   /* ---------------- Jornada do membro ---------------- */
-  const FASES = [['antes', 'Antes', 'Aquisição'], ['durante', 'Durante', 'Entrada e primeiro ano'], ['depois', 'Depois', 'Renovação ou saída']];
+  // Duas jornadas na mesma aba (55-jornada-convidado.sql): a do membro e a do convidado de membro (3 meses).
+  const JORNADAS = {
+    membro: { h1: 'Jornada do membro', sub: 'Do momento em que a pessoa aplica até a vida dentro do grupo. Toque numa etapa para editar o que ela é, quem cuida e o que ajustar.',
+      fases: [['antes', 'Antes', 'Aquisição'], ['durante', 'Durante', 'Entrada e primeiro ano'], ['depois', 'Depois', 'Renovação ou saída']] },
+    convidado: { h1: 'Jornada do convidado', sub: 'Um membro convida uma pessoa grande do mercado para passar 3 meses no grupo. Do convite até virar membro ou sair. Toque numa etapa para editar.',
+      fases: [['antes', 'Antes', 'Convite e aplicação'], ['durante', 'Durante', 'Os 3 meses'], ['depois', 'Depois', 'Virar membro ou sair']] },
+  };
+  let jornadaAtual = 'membro';
+  const FASES_J = () => JORNADAS[jornadaAtual].fases;
+  const etapasJ = () => etapas.filter(e => (e.jornada || 'membro') === jornadaAtual);
   const JSTATUS = { ok: 'Funcionando', fazendo: 'Ajustando', ajustar: 'Precisa ajustar', aberto: 'Em aberto' };
   const JRESP = ['Kayoan', 'Amanda', 'Kayoan e Amanda', 'Automático'];
   const CONTADORES = {
@@ -2739,7 +2753,7 @@
   };
   let etapaId = null;
   // Roteiro fixo da etapa do convite: o que mandar no WhatsApp e em que ordem.
-  const temRoteiro = e => /convite/i.test(e.titulo || '');
+  const temRoteiro = e => (e.jornada || 'membro') === 'membro' && /convite/i.test(e.titulo || '');
   const roteiroHtml = () => `<div class="sec">Como mandar o convite</div>
     <div class="rot">
       <ol>
@@ -2754,15 +2768,17 @@
       <button class="lk-btn lk-btn2" data-rot="indicacao">Copiar mensagem</button>
     </div>`;
   $('#j-roteiro').addEventListener('click', ev => { const b = ev.target.closest('[data-rot]'); if (b) copia(b.dataset.rot === 'indicacao' ? MSG_INDICACAO : MSG_PADRAO, 'Mensagem copiada'); });
-  const etapasDa = f => etapas.filter(e => e.fase === f).sort((a, b) => a.ordem - b.ordem || a.titulo.localeCompare(b.titulo));
-  const numeroDe = () => { const map = {}; let n = 0; FASES.forEach(([f]) => etapasDa(f).forEach(e => { map[e.id] = ++n; })); return map; };
+  const etapasDa = f => etapasJ().filter(e => e.fase === f).sort((a, b) => a.ordem - b.ordem || a.titulo.localeCompare(b.titulo));
+  const numeroDe = () => { const map = {}; let n = 0; FASES_J().forEach(([f]) => etapasDa(f).forEach(e => { map[e.id] = ++n; })); return map; };
 
   function renderJornada() {
     const num = numeroDe();
-    const cont = s => etapas.filter(e => e.status === s).length;
-    $('#jsum').innerHTML = `<span class="js-total">${etapas.length} etapas</span>` +
+    const J = JORNADAS[jornadaAtual], cont = s => etapasJ().filter(e => e.status === s).length;
+    $('#j-h1').textContent = J.h1; $('#j-sub').textContent = J.sub;
+    document.querySelectorAll('#jtroca [data-j]').forEach(b => { const on = b.dataset.j === jornadaAtual; b.classList.toggle('cur', on); b.setAttribute('aria-pressed', on); });
+    $('#jsum').innerHTML = `<span class="js-total">${etapasJ().length} etapas</span>` +
       ['ok', 'fazendo', 'ajustar', 'aberto'].map(s => `<span class="js-it"><i class="jdot ${s}"></i>${cont(s)} ${JSTATUS[s].toLowerCase()}</span>`).join('');
-    $('#jmap').innerHTML = FASES.map(([f, nome, sub], fi) => {
+    $('#jmap').innerHTML = FASES_J().map(([f, nome, sub], fi) => {
       const lista = etapasDa(f), okN = lista.filter(e => e.status === 'ok').length;
       return `<section class="jfase">
         <header class="jfh">
@@ -2791,11 +2807,12 @@
     }).join('');
     if (etapaId) fillEtapa(etapas.find(e => e.id === etapaId));
   }
+  $('#jtroca').addEventListener('click', e => { const b = e.target.closest('[data-j]'); if (!b || b.dataset.j === jornadaAtual) return; jornadaAtual = b.dataset.j; renderJornada(); });
   $('#jmap').addEventListener('click', async e => {
     const c = e.target.closest('.jcard'); if (c) { openEtapa(c.dataset.id); return; }
     const add = e.target.closest('.jadd'); if (!add) return;
     const f = add.dataset.fase, ordem = Math.max(0, ...etapas.map(x => x.ordem)) + 1;
-    try { const n = await db.addEtapa({ fase: f, ordem, titulo: 'Nova etapa' }); etapas.push(n); renderJornada(); openEtapa(n.id); $('#j-titulo').select(); }
+    try { const n = await db.addEtapa({ jornada: jornadaAtual, fase: f, ordem, titulo: 'Nova etapa' }); etapas.push(n); renderJornada(); openEtapa(n.id); $('#j-titulo').select(); }
     catch (err) { fail(err, 'Não foi possível criar'); }
   });
 
@@ -2805,10 +2822,10 @@
     const foco = document.activeElement, dentro = $('#jsheet').contains(foco) && ['INPUT', 'TEXTAREA', 'SELECT'].includes(foco.tagName);
     $('#j-roteiro').innerHTML = temRoteiro(e) ? roteiroHtml() : '';
     $('#j-num').textContent = `Etapa ${numeroDe()[e.id]}
- · ${FASES.find(f => f[0] === e.fase)[1]}`;
+ · ${JORNADAS[e.jornada || 'membro'].fases.find(f => f[0] === e.fase)[1]}`;
     $('#j-since').textContent = e.atualizado_por ? `Atualizado por ${e.atualizado_por.split(' ')[0]} em ${new Date(e.updated_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '')}` : '';
     $('#j-status').innerHTML = Object.entries(JSTATUS).map(([k, l]) => `<button class="move${e.status === k ? ' cur' : ''}" data-k="status" data-v="${k}"><i class="jdot ${k}"></i>${l}</button>`).join('');
-    $('#j-fase').innerHTML = FASES.map(([k, l]) => `<button class="move${e.fase === k ? ' cur' : ''}" data-k="fase" data-v="${k}">${l}</button>`).join('');
+    $('#j-fase').innerHTML = JORNADAS[e.jornada || 'membro'].fases.map(([k, l]) => `<button class="move${e.fase === k ? ' cur' : ''}" data-k="fase" data-v="${k}">${l}</button>`).join('');
     $('#j-resp').innerHTML = JRESP.map(r => `<button class="move${e.responsavel === r ? ' cur' : ''}" data-k="responsavel" data-v="${r}">${r}</button>`).join('');
     const lista = etapasDa(e.fase), i = lista.findIndex(x => x.id === e.id);
     $('#j-up').disabled = i <= 0; $('#j-down').disabled = i === lista.length - 1;
@@ -2982,6 +2999,7 @@
   const KORDEM = ['enviado', 'preenchido', 'aceito', 'pago'];
   const contratosDe = id => contratos.filter(k => k.membro_id === id && k.status !== 'cancelado').sort((a, b) => a.criado_em < b.criado_em ? 1 : -1);
   const msgContrato = k => {
+    if (k.publico === 'convidado') { const pn = String(k.nome || '').trim().split(/\s+/)[0]; return k.status === 'enviado' ? `Fala, ${pn}. Que bom ter você no The Group a convite de ${String(k.convidado_por_nome || '').split(' ')[0]}. Segue o link dos seus termos de convidado: você preenche seus dados, lê e aceita ali mesmo. Leva uns 2 minutos:\n${CONTRATO_URL + k.token}` : `Fala, ${pn}. Seguem os seus termos de convidado do The Group. Dá uma lida e, se tiver qualquer dúvida, me chama aqui:\n${CONTRATO_URL + k.token}`; }
     if (k.publico === 'patrocinio') {
       const pc = byParc(k.parceiro_id), pn = String((pc && pc.contato_nome) || '').trim().split(/\s+/)[0], url = CONTRATO_URL_P + k.token;
       return k.status === 'enviado'
@@ -2994,7 +3012,7 @@
       ? `Fala, ${pn}. Segue o link para você preencher seus dados e ver o contrato ${ren ? 'de renovação ' : ''}do The Group. Leva uns 2 minutos:\n${url}`
       : `Fala, ${pn}. Segue o seu contrato ${ren ? 'de renovação ' : ''}do The Group. Dá uma lida com calma e, se tiver qualquer dúvida, me chama aqui:\n${url}`;
   };
-  const kPassos = k => `<span class="kpassos">${KORDEM.map((s, i) => `<i class="${KORDEM.indexOf(k.status) >= i ? 'on' : ''}" title="${KSTATUS[s]}"></i>`).join('')}</span>`;
+  const kPassos = k => `<span class="kpassos">${(k.publico === 'convidado' ? KORDEM.slice(0, 3) : KORDEM).map((s, i) => `<i class="${KORDEM.indexOf(k.status) >= i ? 'on' : ''}" title="${KSTATUS[s]}"></i>`).join('')}</span>`;
   // Pagamento combinado na call. Contratos antigos (antes de 15/11/2026) mostram a forma que tinham.
   const kForma = k => { if (k.meio) return `${MEIO_CURTO[k.meio] || k.meio}: ${k.condicoes || ''}`; const d = k.dados || {}; if (!d.forma) return ''; return d.forma === 'vista' ? `à vista ${rs(k.anual * (1 - k.desconto / 100))}` : `contrato antigo em 12x ${rs(k.anual / 12)}`; };
   const kPlano = k => `${rs(k.anual)}${kForma(k) ? ' · ' + kForma(k) : ''} (contrato ${k.numero})`;
@@ -3002,23 +3020,23 @@
     const ficha = k.membro_id ? byId(k.membro_id) : null;
     const quando = k.status === 'pago' && k.pago_em ? `pago em ${dataBR(k.pago_em.slice(0, 10))}` : k.aceito_em ? `aceito em ${dataBR(k.aceito_em.slice(0, 10))}` : k.preenchido_em ? `preenchido em ${dataBR(k.preenchido_em.slice(0, 10))}` : `criado em ${dataBR(k.criado_em.slice(0, 10))}`;
     return `<div class="arow krow" data-k="${k.id}">
-      <div class="anm" style="cursor:default"><b>${esc(k.nome)} <span class="knum">${esc(k.numero)}${k.tipo === 'renovacao' ? ' · renovação' : ''}${k.publico === 'patrocinio' ? ` · ${esc(COTA[k.cota]?.l || '')}, ${rs(k.anual)}` : ''}</span></b>
+      <div class="anm" style="cursor:default"><b>${esc(k.nome)} <span class="knum">${esc(k.numero)}${k.tipo === 'renovacao' ? ' · renovação' : ''}${k.publico === 'convidado' ? ` · convidado de ${esc(k.convidado_por_nome || '')}, até ${dataBR(kFimConv(k.inicio))}` : ''}${k.publico === 'patrocinio' ? ` · ${esc(COTA[k.cota]?.l || '')}, ${rs(k.anual)}` : ''}</span></b>
         <span>${kPassos(k)} <span class="atp k-${k.status}">${KSTATUS[k.status]}</span> ${quando}${kForma(k) ? ' · ' + kForma(k) : ''}${(() => { const s = kSchedule(k); return s && !s.vista ? ' · ' + kParcTxt(k, s, kProxima(s)) : ''; })()}${comFicha && ficha ? ` · <a href="#" data-open="${ficha.id}">ficha</a>` : ''}</span></div>
       <span class="aact">
         ${['enviado', 'preenchido'].includes(k.status) ? `<button class="abtn" data-kcopy="${k.id}">Copiar mensagem</button>` : ''}
         ${(() => { const s = kSchedule(k), px = s && !s.vista ? kProxima(s) : null; return px ? `<button class="abtn${px.dias <= 7 ? ' pri' : ''}" data-kparc="${k.id}">Recebi a ${px.n}ª</button>` : ''; })()}
         ${(() => { const s = kSchedule(k); return !comFicha && s && !s.vista && (s.semFech || s.pagas <= 1) ? `<button class="abtn" data-kprim="${k.id}" title="${s.semFech ? 'Volta a contar a 1ª parcela como paga no aceite' : 'Para quem deu uma entrada à parte: as 12 parcelas começam no próximo pagamento'}">${s.semFech ? '1ª parcela foi no fechamento' : '1ª parcela não foi no fechamento'}</button>` : ''; })()}
-        ${k.status === 'aceito' ? `<button class="abtn pri" data-kpago="${k.id}">Marcar pago</button>` : ''}
+        ${k.status === 'aceito' && k.publico !== 'convidado' ? `<button class="abtn pri" data-kpago="${k.id}">Marcar pago</button>` : ''}
         ${['aceito', 'pago'].includes(k.status) ? `<a class="abtn" href="${(k.publico === 'patrocinio' ? CONTRATO_URL_P : CONTRATO_URL) + k.token}" target="_blank" rel="noopener" title="Abre o contrato aceito, com o botão Baixar PDF">Ver e baixar PDF</a>` : ''}
-        ${['aceito', 'pago'].includes(k.status) && !k.membro_id && k.publico !== 'patrocinio' ? `<button class="abtn" data-kficha="${k.id}">Criar ficha</button>` : ''}
+        ${['aceito', 'pago'].includes(k.status) && !k.membro_id && !['patrocinio', 'convidado'].includes(k.publico) ? `<button class="abtn" data-kficha="${k.id}">Criar ficha</button>` : ''}
         ${['enviado', 'preenchido'].includes(k.status) ? `<button class="abtn" data-kcancel="${k.id}" title="Cancela o link">Cancelar</button>` : ''}
       </span></div>`;
   }
   function renderContratos(termos) {
     const bate = k => !termos.length || termos.every(t => norm(k.nome + ' ' + k.numero).includes(t));
     const l = contratos.filter(k => k.status !== 'cancelado' && bate(k));
-    const grupos = [['preenchido', 'Preenchidos, esperando o aceite'], ['enviado', 'Enviados, esperando os dados'], ['aceito', 'Aceitos, esperando o pagamento'], ['pago', 'Pagos']]
-      .map(([s, t]) => [s, t, l.filter(k => k.status === s).sort((a, b) => a.atualizado_em < b.atualizado_em ? 1 : -1)]).filter(g => g[2].length);
+    const grupos = [['preenchido', 'Preenchidos, esperando o aceite'], ['enviado', 'Enviados, esperando os dados'], ['aceito', 'Aceitos, esperando o pagamento'], ['pago', 'Pagos'], ['convidado', 'Termos de convidado aceitos']]
+      .map(([s, t]) => [s, t, l.filter(k => s === 'convidado' ? k.publico === 'convidado' && ['aceito', 'pago'].includes(k.status) : k.status === s && !(k.publico === 'convidado' && ['aceito', 'pago'].includes(k.status))).sort((a, b) => a.atualizado_em < b.atualizado_em ? 1 : -1)]).filter(g => g[2].length);
     $('#mcount').textContent = `Contratos gerados, esperando assinatura ou pagamento · ${l.length} ${l.length === 1 ? 'contrato' : 'contratos'} · o membro abre em contrato.ogrupo.com.br`;
     $('#mgrid').innerHTML = `<div style="margin-bottom:12px"><button class="btn sm" id="k-novo2">Novo contrato</button></div>` + (grupos.length ? grupos.map(([s, t, g]) => `<section class="agrp"><h3>${t} <span>${g.length}</span></h3>${g.map(k => kLinha(k, true)).join('')}</section>`).join('') : '<div class="empty">Nenhum contrato ainda</div>');
   }
@@ -3131,8 +3149,16 @@
   // Pagamento: sem mês a mês desde 15/11/2026. O meio e as condições são combinados na call.
   const K_TIPOS = { entrada: { anual: 30000, renovacao: 15000 }, renovacao: { anual: 15000, renovacao: 15000 } };
   let K_PADRAO = K_TIPOS.entrada;
+  // Termos do convidado (57-termos-convidado.sql): 3 meses a partir do início, sem valor nem pagamento.
+  const kFimConv = iso => { if (!iso) return ''; const d = new Date(iso + 'T12:00:00'); d.setMonth(d.getMonth() + 3); return kIso(d); };
+  function kConvFim() { const f = $('#kform'); $('#k-convfim').textContent = f.conv_inicio.value ? `O convite vai de ${dataBR(f.conv_inicio.value)} a ${dataBR(kFimConv(f.conv_inicio.value))} e termina sozinho.` : ''; $('#k-tipotxt').textContent = 'Termos de participação de quem entra pelo convite de um membro, por 3 meses. Gratuito.'; }
   function kTipo(t) {
     const f = $('#kform'); if (t) f.tipo.value = t; K_PADRAO = K_TIPOS[f.tipo.value] || K_TIPOS.entrada;
+    const cv = f.tipo.value === 'convidado';
+    $('#k-conv').hidden = !cv; $('#k-modowrap').hidden = cv; $('#k-valwrap').hidden = cv;
+    $('#k-mnomelbl').textContent = cv ? 'Nome do convidado' : 'Nome do membro';
+    $('#k-mtxt').textContent = cv ? 'O convidado recebe um link, preenche nome, CPF, e-mail e WhatsApp, lê os termos e aceita com o código que chega no e-mail. Sem valor e sem pagamento. A central avisa você no e-mail contato@ quando ele terminar.' : 'Ele recebe um link, preenche os próprios dados e já vê o contrato com o pagamento que vocês combinaram na call. Ele só vê, não muda. A central avisa você no e-mail contato@ quando ele terminar.';
+    if (cv) { f.modo.value = 'membro'; if (!f.convidado_por.options.length) f.convidado_por.innerHTML = '<option value="">Escolha</option>' + membros.filter(m => m.status === 'ativo').sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')).map(m => `<option value="${m.id}">${esc(m.nome)}</option>`).join(''); if (!f.conv_inicio.value) f.conv_inicio.value = hojeISO(); kConvFim(); kModo(); return; }
     $('#k-tipotxt').textContent = f.tipo.value === 'renovacao' ? 'Para quem já está no grupo e ainda não tem contrato. Sem o tudo incluso do primeiro ano. Assina uma vez; nos anos seguintes é só confirmar a renovação.' : 'Para quem está entrando no grupo. Primeiro ano com tudo incluso.';
     $('#k-inicio').hidden = f.tipo.value !== 'renovacao';
     if (f.tipo.value === 'renovacao' && !f.inicio.value) f.inicio.value = (kFicha && kFicha.vencimento) || hojeISO();
@@ -3161,6 +3187,12 @@
     const daApl = k => kApl && !f[k].dataset.ok && String(f[k].value).trim();
     const row = (k, v, hl) => `<div class="row${hl ? ' hl' : ''}"><span>${k}</span><b>${v}</b></div>`;
     const nota = k => daApl(k) ? ` <small style="color:var(--gold)">(da aplicação)</small>` : '';
+    if (p.publico === 'convidado') {
+      let rc = row('Tipo', 'Termos do convidado (3 meses)', true) + row('Convidado', esc(p.nome)) + row('WhatsApp', esc(p.telefone) + nota('mtel'), daApl('mtel'))
+        + row('Convidado por', esc(p.convidado_por_nome), true) + row('Período', `${kDataBr(p.inicio)} a ${kDataBr(kFimConv(p.inicio))}`, true) + row('Valor', 'Gratuito, sem pagamento');
+      const antC = kAnteriores(p); if (antC.length) rc += row('Cancela os anteriores', `${antC.map(k => esc(k.numero)).join(', ')} (o link deles para de abrir)`, true);
+      return `<h4>Confira antes de gerar</h4>${rc}<div class="acts"><button class="btn ghost-b" type="button" id="k-voltar">Voltar e corrigir</button><button class="btn" type="button" id="k-ok">Está certo, gerar link</button></div>`;
+    }
     let r = row('Tipo', p.tipo === 'renovacao' ? 'Renovação' : 'Entrada (novo membro)', p.tipo === 'renovacao');
     if (p.tipo === 'renovacao') { const fim = new Date(p.inicio + 'T12:00:00'); fim.setFullYear(fim.getFullYear() + 1); fim.setDate(fim.getDate() - 1); r += row('Vigência', `${kDataBr(p.inicio)} a ${kDataBr(kIso(fim))}`, true); }
     if (!d) {
@@ -3208,6 +3240,7 @@
     $('#k-gerar').textContent = adm ? 'Gerar link do contrato' : 'Gerar link do formulário';
   }
   $('#kform').addEventListener('change', kModo);
+  $('#kform').conv_inicio.addEventListener('input', kConvFim);
   document.querySelectorAll('#kform input[name=tipo]').forEach(x => x.addEventListener('change', () => kTipo()));
   $('#kform').cep.addEventListener('input', async e => {
     const c = e.target.value.replace(/\D/g, ''); if (c.length !== 8) return;
@@ -3218,6 +3251,13 @@
     e.preventDefault();
     const f = $('#kform'), adm = f.modo.value === 'admin', b = $('#k-gerar'); $('#k-erro').textContent = '';
     document.querySelectorAll('#kform .bad').forEach(x => x.classList.remove('bad'));
+    if (f.tipo.value === 'convidado') {
+      const falta = ['mnome', 'mtel', 'convidado_por', 'conv_inicio'].filter(k => !String(f[k].value).trim());
+      if (falta.length) { falta.forEach(k => f[k].classList.add('bad')); f[falta[0]].focus(); $('#k-erro').textContent = 'Preencha os campos marcados.'; return; }
+      const quem = membros.find(m => m.id === f.convidado_por.value);
+      kPend = { publico: 'convidado', tipo: 'convidado', modo: 'membro', convidado_por: f.convidado_por.value, convidado_por_nome: quem ? quem.nome : '', inicio: f.conv_inicio.value, nome: f.mnome.value.trim(), telefone: f.mtel.value.trim(), membro_id: kFicha ? kFicha.id : '' };
+      $('#k-conf').innerHTML = kResumo(kPend); $('#k-conf').hidden = false; b.hidden = true; $('#k-conf').scrollIntoView({ behavior: 'smooth', block: 'center' }); return;
+    }
     const pj = f.pagador.value !== 'cpf';
     const precisa = adm ? ['nome', 'cpf', 'nasc', 'nac', 'prof', 'cep', 'rua', 'numero', 'bairro', 'cidade', 'uf', 'email', 'tel', ...(pj ? ['cnpj', 'rs', 'endpj', 'rep_nome', 'rep_cpf', 'emailnf'] : [])] : ['mnome', 'mtel'];
     const falta = precisa.filter(k => !String(f[k].value).trim());
@@ -3310,7 +3350,7 @@
       { id: 'pa2', created_at: ago(12), updated_at: ago(3), marca: 'Charutaria Norte', razao_social: null, cnpj: null, contato_nome: 'Paulo', contato_whats: '(48) 97777-2222', contato_email: null, cota_interesse: 'apoiador', segmento: 'Bebida e charuto', status: 'negociando', inicio: null, nota: null },
       { id: 'pa3', created_at: ago(5), updated_at: ago(5), marca: 'CloudFunil', razao_social: null, cnpj: null, contato_nome: 'Marcos', contato_whats: null, contato_email: 'marcos@exemplo.com', cota_interesse: 'principal', segmento: 'SaaS', status: 'prospeccao', inicio: null, nota: 'Viu o site de parceiros. Retomar em dezembro.' },
     ];
-    const J = [{"fase": "antes", "ordem": 1, "titulo": "Aplicação", "descricao": "Quiz em aplicar.ogrupo.com.br. Recusa faturamento abaixo de 6 dígitos. O lead entra no painel.", "responsavel": "Automático", "ferramentas": "Quiz, Painel", "status": "ok", "contador": "apl_nova"}, {"fase": "antes", "ordem": 2, "titulo": "Curadoria", "descricao": "O Kayoan avalia o perfil e confirma com membros que a pessoa é confiável. Para entrar, precisa conhecer alguém lá dentro.", "responsavel": "Kayoan", "ferramentas": "Painel, WhatsApp", "status": "aberto", "contador": "apl_conversa"}, {"fase": "antes", "ordem": 3, "titulo": "Convite", "descricao": "Arte do convite e link da página de apresentação pelo WhatsApp. A página mostra tudo o que o grupo entrega e o valor: R$ 30 mil, com o pagamento combinado na call.", "responsavel": "Kayoan", "ferramentas": "WhatsApp, Página de apresentação", "status": "fazendo", "contador": null}, {"fase": "antes", "ordem": 4, "titulo": "Call", "descricao": "A pessoa marca 30 minutos no Cal.com pela própria página. A call serve para validar.", "responsavel": "Kayoan", "ferramentas": "Cal.com", "status": "ok", "contador": "apl_call"}, {"fase": "antes", "ordem": 5, "titulo": "Contrato e pagamento", "descricao": "Contrato pelo link (contrato.ogrupo.com.br), com o meio e as condições combinados na call: Pix, link de pagamento, cripto, Payoneer ou LootRush. Arrependimento em 7 dias.", "responsavel": "Kayoan", "ferramentas": "WhatsApp, Central, Contrato", "status": "aberto", "contador": "apl_aprovado"}, {"fase": "durante", "ordem": 6, "titulo": "Primeiro dia", "descricao": "Acesso ao app, apresentação no grupo e divulgação no Instagram do Kayoan e do The Group.", "responsavel": "Kayoan", "ferramentas": "App, Instagram", "status": "aberto", "contador": null}, {"fase": "durante", "ordem": 7, "titulo": "Primeiro mês", "descricao": "Um encontro com quem faz sentido para o novo membro.", "responsavel": "Kayoan", "ferramentas": "App, WhatsApp", "status": "aberto", "contador": null}, {"fase": "durante", "ordem": 8, "titulo": "Rotina", "descricao": "Encontros mensais regionais (mesa de até 6 pessoas), The House 2 vezes por ano, podcast, acompanhamento leve a cada 30 dias e profundo a cada 90. No primeiro ano os encontros são all inclusive, menos a passagem.", "responsavel": "Kayoan e Amanda", "ferramentas": "App, WhatsApp", "status": "aberto", "contador": "membros_ativos"}, {"fase": "durante", "ordem": 9, "titulo": "Cobrança", "descricao": "Só o que foi combinado na call: à vista ou parcelado. A Amanda acompanha quem atrasa e marca pago na central.", "responsavel": "Amanda", "ferramentas": "Central", "status": "aberto", "contador": null}, {"fase": "depois", "ordem": 10, "titulo": "Seu ano no The Group", "descricao": "Envio 60 dias antes do fim do contrato. Formato em aberto.", "responsavel": "Kayoan", "ferramentas": "WhatsApp", "status": "aberto", "contador": "vence_60"}, {"fase": "depois", "ordem": 11, "titulo": "Renovação", "descricao": "R$ 15 mil por ano, sem o all inclusive, com o pagamento combinado na conversa. Aviso de saída 30 dias antes.", "responsavel": "Kayoan e Amanda", "ferramentas": "WhatsApp, Contrato", "status": "aberto", "contador": "renovar"}, {"fase": "depois", "ordem": 12, "titulo": "Saída", "descricao": "Vira ex-membro na central e é desativado no app.", "responsavel": "Kayoan", "ferramentas": "Central, App", "status": "ok", "contador": "ex_membros"}].map((e, n) => ({ id: 'j' + n, created_at: ago(30), updated_at: ago(30), ajustar: null, atualizado_por: null, ...e }));
+    const J = [{"fase": "antes", "ordem": 1, "titulo": "Aplicação", "descricao": "Quiz em aplicar.ogrupo.com.br. Recusa faturamento abaixo de 6 dígitos. O lead entra no painel.", "responsavel": "Automático", "ferramentas": "Quiz, Painel", "status": "ok", "contador": "apl_nova"}, {"fase": "antes", "ordem": 2, "titulo": "Curadoria", "descricao": "O Kayoan avalia o perfil e confirma com membros que a pessoa é confiável. Para entrar, precisa conhecer alguém lá dentro.", "responsavel": "Kayoan", "ferramentas": "Painel, WhatsApp", "status": "aberto", "contador": "apl_conversa"}, {"fase": "antes", "ordem": 3, "titulo": "Convite", "descricao": "Arte do convite e link da página de apresentação pelo WhatsApp. A página mostra tudo o que o grupo entrega e o valor: R$ 30 mil, com o pagamento combinado na call.", "responsavel": "Kayoan", "ferramentas": "WhatsApp, Página de apresentação", "status": "fazendo", "contador": null}, {"fase": "antes", "ordem": 4, "titulo": "Call", "descricao": "A pessoa marca 30 minutos no Cal.com pela própria página. A call serve para validar.", "responsavel": "Kayoan", "ferramentas": "Cal.com", "status": "ok", "contador": "apl_call"}, {"fase": "antes", "ordem": 5, "titulo": "Contrato e pagamento", "descricao": "Contrato pelo link (contrato.ogrupo.com.br), com o meio e as condições combinados na call: Pix, link de pagamento, cripto, Payoneer ou LootRush. Arrependimento em 7 dias.", "responsavel": "Kayoan", "ferramentas": "WhatsApp, Central, Contrato", "status": "aberto", "contador": "apl_aprovado"}, {"fase": "durante", "ordem": 6, "titulo": "Primeiro dia", "descricao": "Acesso ao app, apresentação no grupo e divulgação no Instagram do Kayoan e do The Group.", "responsavel": "Kayoan", "ferramentas": "App, Instagram", "status": "aberto", "contador": null}, {"fase": "durante", "ordem": 7, "titulo": "Primeiro mês", "descricao": "Um encontro com quem faz sentido para o novo membro.", "responsavel": "Kayoan", "ferramentas": "App, WhatsApp", "status": "aberto", "contador": null}, {"fase": "durante", "ordem": 8, "titulo": "Rotina", "descricao": "Encontros mensais regionais (mesa de até 6 pessoas), The House 2 vezes por ano, podcast, acompanhamento leve a cada 30 dias e profundo a cada 90. No primeiro ano os encontros são all inclusive, menos a passagem.", "responsavel": "Kayoan e Amanda", "ferramentas": "App, WhatsApp", "status": "aberto", "contador": "membros_ativos"}, {"fase": "durante", "ordem": 9, "titulo": "Cobrança", "descricao": "Só o que foi combinado na call: à vista ou parcelado. A Amanda acompanha quem atrasa e marca pago na central.", "responsavel": "Amanda", "ferramentas": "Central", "status": "aberto", "contador": null}, {"fase": "depois", "ordem": 10, "titulo": "Seu ano no The Group", "descricao": "Envio 60 dias antes do fim do contrato. Formato em aberto.", "responsavel": "Kayoan", "ferramentas": "WhatsApp", "status": "aberto", "contador": "vence_60"}, {"fase": "depois", "ordem": 11, "titulo": "Renovação", "descricao": "R$ 15 mil por ano, sem o all inclusive, com o pagamento combinado na conversa. Aviso de saída 30 dias antes.", "responsavel": "Kayoan e Amanda", "ferramentas": "WhatsApp, Contrato", "status": "aberto", "contador": "renovar"}, {"fase": "depois", "ordem": 12, "titulo": "Saída", "descricao": "Vira ex-membro na central e é desativado no app.", "responsavel": "Kayoan", "ferramentas": "Central, App", "status": "ok", "contador": "ex_membros"}].concat([['antes', 'Gerar o convite', 'O Kayoan gera o convite no card do membro, a cada 3 meses por membro.', 'Kayoan', 'Central, WhatsApp'], ['antes', 'Aplicação do convidado', 'Aplica pelo quiz com o token; chega marcada "Convidado por Fulano".', 'Automático', 'Quiz, Central'], ['durante', 'Os 3 meses', 'Até 3 encontros regionais, um por mês.', 'Kayoan e Amanda', 'App, WhatsApp'], ['depois', 'Conversa e cobrança para virar membro', 'Uns 15 dias antes do fim, proposta de R$ 30 mil com pagamento combinado na call.', 'Kayoan', 'WhatsApp, Contrato'], ['depois', 'Fim dos 3 meses', 'Vira membro (quem convidou ganha +3 meses) ou sai.', 'Kayoan', 'Central, App']].map(([fase, titulo, descricao, responsavel, ferramentas], n) => ({ jornada: 'convidado', fase, ordem: 101 + n, titulo, descricao, responsavel, ferramentas, status: 'aberto', contador: null }))).map((e, n) => ({ id: 'j' + n, created_at: ago(30), updated_at: ago(30), ajustar: null, atualizado_por: null, ...e }));
     const carregaCofre = () => cofre || (cofre = fetch('/membros.json').then(r => r.ok ? r.json() : { membros: [] }).catch(() => ({ membros: [] })).then(d => {
       M = d.membros.map(({ conexoes, ...m }) => m);
       // Na prévia: mesmas regras da migração 35 (entrada tirada dos pagamentos e começo espalhado em 30 dias).
@@ -3358,7 +3398,8 @@
       addContato: b => { const c = { id: 'ct' + k++, created_at: new Date().toISOString(), data: hojeISO(), por: 'Kayoan Felipe', ...b }; CT.push(c); return wait({ ...c }); },
       delContato: id => { CT = CT.filter(c => c.id !== id); return wait(null); },
       contratos: async () => { await carregaCofre(); if (!K.length) { const ex = { nome: 'Rafael Exemplo', cpf: '529.982.247-25', email: 'rafael@exemplo.com', tel: '(48) 99999-1234', cidade: 'Florianópolis', uf: 'SC', pagador: 'cpf' }; K.push({ id: 'k1', criado_em: ago(6), atualizado_em: ago(1), token: 'aaaaaaaaaaaaaaa1', numero: 'TG-2026-001', modo: 'membro', status: 'aceito', membro_id: null, nome: 'Rafael Exemplo', telefone: ex.tel, anual: 30000, desconto: 0, renovacao: 15000, meio: 'link', condicoes: '10x no cartão pelo link', dados: ex, preenchido_em: ago(42), aceito_em: ago(40), parcelas_pagas: 1, recebimentos: [], pdf_path: null, pago_em: null }, { id: 'k2', criado_em: ago(2), atualizado_em: ago(2), token: 'aaaaaaaaaaaaaaa2', numero: 'TG-2026-002', modo: 'membro', status: 'enviado', membro_id: null, nome: 'Bianca Teste', telefone: '(11) 98888-7777', anual: 30000, desconto: 0, renovacao: 15000, meio: 'pix', condicoes: 'à vista até 20/11', dados: null, preenchido_em: null, aceito_em: null, pdf_path: null, pago_em: null }); } return K.map(x => ({ ...x })); },
-      criarContrato: p => { if (p.publico === 'patrocinio') { const pa = PA.find(x => x.id === p.parceiro_id); const x = { id: 'k' + k++, criado_em: new Date().toISOString(), atualizado_em: new Date().toISOString(), token: 'previap' + String(k).padStart(9, '0'), numero: 'TP-2026-' + String(K.filter(y => y.publico === 'patrocinio').length + 1).padStart(3, '0'), modo: 'membro', status: 'enviado', membro_id: null, tipo: 'entrada', publico: 'patrocinio', parceiro_id: pa.id, cota: p.cota, segmento: p.segmento, membro_beneficiado: p.membro_beneficiado || null, nome: pa.marca, telefone: pa.contato_whats, anual: +p.anual, desconto: 0, renovacao: 0, meio: p.meio, condicoes: p.condicoes, dados: null, preenchido_em: null, aceito_em: null, pdf_path: null, pago_em: null }; K.unshift(x); Object.assign(pa, { cota_interesse: p.cota, segmento: p.segmento, status: pa.status === 'ativo' ? 'ativo' : 'contrato_enviado' }); return wait({ id: x.id, token: x.token, numero: x.numero, status: x.status }); }
+      criarContrato: p => { if (p.publico === 'convidado') { const x = { id: 'k' + k++, criado_em: new Date().toISOString(), atualizado_em: new Date().toISOString(), token: 'previac' + String(k).padStart(9, '0'), numero: 'TC-2026-' + String(K.filter(y => y.publico === 'convidado').length + 1).padStart(3, '0'), modo: 'membro', status: 'enviado', membro_id: null, tipo: 'entrada', publico: 'convidado', inicio: p.inicio, convidado_por: p.convidado_por, convidado_por_nome: p.convidado_por_nome, nome: p.nome, telefone: p.telefone, anual: 0, desconto: 0, renovacao: 0, meio: null, condicoes: null, dados: null, preenchido_em: null, aceito_em: null, pdf_path: null, pago_em: null }; K.unshift(x); return wait({ id: x.id, token: x.token, numero: x.numero, status: x.status }); }
+        if (p.publico === 'patrocinio') { const pa = PA.find(x => x.id === p.parceiro_id); const x = { id: 'k' + k++, criado_em: new Date().toISOString(), atualizado_em: new Date().toISOString(), token: 'previap' + String(k).padStart(9, '0'), numero: 'TP-2026-' + String(K.filter(y => y.publico === 'patrocinio').length + 1).padStart(3, '0'), modo: 'membro', status: 'enviado', membro_id: null, tipo: 'entrada', publico: 'patrocinio', parceiro_id: pa.id, cota: p.cota, segmento: p.segmento, membro_beneficiado: p.membro_beneficiado || null, nome: pa.marca, telefone: pa.contato_whats, anual: +p.anual, desconto: 0, renovacao: 0, meio: p.meio, condicoes: p.condicoes, dados: null, preenchido_em: null, aceito_em: null, pdf_path: null, pago_em: null }; K.unshift(x); Object.assign(pa, { cota_interesse: p.cota, segmento: p.segmento, status: pa.status === 'ativo' ? 'ativo' : 'contrato_enviado' }); return wait({ id: x.id, token: x.token, numero: x.numero, status: x.status }); }
         const n = K.length + 1, adm = p.modo === 'admin'; const x = { id: 'k' + k++, criado_em: new Date().toISOString(), atualizado_em: new Date().toISOString(), token: 'previa' + String(k).padStart(10, '0'), numero: 'TG-2026-' + String(n).padStart(3, '0'), modo: p.modo, status: adm ? 'preenchido' : 'enviado', membro_id: p.membro_id || null, tipo: p.tipo || 'entrada', nome: adm ? p.dados.nome : p.nome, telefone: adm ? p.dados.tel : p.telefone, anual: +p.anual, desconto: 0, renovacao: +p.renovacao, meio: p.meio, condicoes: p.condicoes, dados: adm ? p.dados : null, preenchido_em: adm ? new Date().toISOString() : null, aceito_em: null, pdf_path: null, pago_em: null }; K.unshift(x); return wait({ id: x.id, token: x.token, numero: x.numero, status: x.status }); },
       parceiros: () => wait(PA.map(x => ({ ...x }))),
       // Prévia: 23 respostas inventadas do Raio-x, só para ver a tela.
