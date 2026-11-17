@@ -936,6 +936,8 @@
       <div class="venc" id="m-anel-desde"></div></details>
     <details class="fsec" id="fs-contrato"><summary>Contrato <span class="fsr" id="fsr-contrato"></span></summary>
       <div id="m-contrato"></div></details>
+    <details class="fsec" id="fs-convite"><summary>Convite de membro <span class="fsr" id="fsr-convite"></span></summary>
+      <div id="m-convite"></div></details>
     <details class="fsec" id="fs-tarefas"><summary>Tarefas <span class="fsr" id="fsr-tarefas"></span></summary>
       <div id="m-tarefas"></div>
       <form class="tadd" id="m-tadd"><input id="m-tnova" maxlength="280" placeholder="Nova tarefa para este membro" autocomplete="off"><button class="btn">Anotar</button></form></details>
@@ -1191,7 +1193,7 @@
   const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   const DEMO = LOCAL && new URLSearchParams(location.search).has('demo');
 
-  let session = null, apls = [], ideias = [], membros = [], conexoes = [], etapas = [], contatos = [], contratos = [], contratosP = [], parceiros = [], tarefas = [], tarefaId = null, atalhos = [], atalhoId = null, editAt = false, vagas = null, openId = null, ideaId = null, filtro = '';
+  let session = null, apls = [], ideias = [], membros = [], conexoes = [], etapas = [], contatos = [], contratos = [], contratosP = [], convitesM = [], parceiros = [], tarefas = [], tarefaId = null, atalhos = [], atalhoId = null, editAt = false, vagas = null, openId = null, ideaId = null, filtro = '';
   if (!DEMO) { try { session = JSON.parse(localStorage.getItem(STORE)); } catch {} }
   const save = s => { session = s; try { s ? localStorage.setItem(STORE, JSON.stringify(s)) : localStorage.removeItem(STORE); } catch {} };
 
@@ -1246,6 +1248,10 @@
     conexoes: () => api('membro_conexoes?select=*'),
     addMembro: b => api('membros', { method: 'POST', body: JSON.stringify(b) }).then(r => r[0]),
     patchMembro: (id, b) => api(`membros?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
+    // Convite de membro (migrações 54 e 60): um convite a cada 3 meses; recusado ou cancelado não conta.
+    convitesMembro: () => api('convites_membro?select=*&order=criado_em.desc'),
+    gerarConviteMembro: id => api('rpc/gerar_convite_membro', { method: 'POST', body: JSON.stringify({ p_membro: id }) }),
+    cancelarConviteMembro: id => api('rpc/cancelar_convite_membro', { method: 'POST', body: JSON.stringify({ p_convite: id }) }),
     delMembro: id => api(`membros?id=eq.${id}`, { method: 'DELETE' }),
     addConexao: b => api('membro_conexoes', { method: 'POST', body: JSON.stringify(b) }).then(r => r[0]),
     delConexao: id => api(`membro_conexoes?id=eq.${id}`, { method: 'DELETE' }),
@@ -1315,9 +1321,9 @@
   }
 
   async function loadAll() {
-    const [a, i, m, c, j, ct, k, at, tf, pa] = await Promise.all([db.apls(), db.ideias(), db.membros(), db.conexoes(), db.etapas(), db.contatos(), db.contratos().catch(() => []), db.atalhos().catch(() => null), db.tarefas().catch(() => []), db.parceiros().catch(() => [])]);
+    const [a, i, m, c, j, ct, k, at, tf, pa, cm] = await Promise.all([db.apls(), db.ideias(), db.membros(), db.conexoes(), db.etapas(), db.contatos(), db.contratos().catch(() => []), db.atalhos().catch(() => null), db.tarefas().catch(() => []), db.parceiros().catch(() => []), db.convitesMembro().catch(() => [])]);
     // Contratos de patrocínio ficam na aba Parceiros; o resto da central só vê os de membro.
-    apls = a; ideias = i; membros = m; conexoes = c; etapas = j; contatos = ct; contratos = k.filter(x => x.publico !== 'patrocinio'); contratosP = k.filter(x => x.publico === 'patrocinio'); tarefas = tf; parceiros = pa;
+    apls = a; ideias = i; membros = m; conexoes = c; etapas = j; contatos = ct; contratos = k.filter(x => x.publico !== 'patrocinio'); contratosP = k.filter(x => x.publico === 'patrocinio'); tarefas = tf; parceiros = pa; convitesM = cm;
     // Sem a tabela (migração 37 não rodada), mostra os atalhos fixos, sem edição.
     atalhos = at || ATALHOS.map(([titulo, sub, url], n) => ({ id: null, titulo, sub, url, ordem: n + 1 }));
     loadVagas();
@@ -2136,6 +2142,7 @@
     $('#m-pag').value = m.pagamentos || '';
     renderAcompFicha(m);
     renderContratoFicha(m);
+    renderConviteFicha(m);
     renderTarefasFicha(m);
     renderConexoes(m);
   }
@@ -3042,6 +3049,54 @@
     $('#mcount').textContent = `Contratos gerados, esperando assinatura ou pagamento · ${l.length} ${l.length === 1 ? 'contrato' : 'contratos'} · o membro abre em contrato.ogrupo.com.br`;
     $('#mgrid').innerHTML = `<div style="margin-bottom:12px"><button class="btn sm" id="k-novo2">Novo contrato</button></div>` + (grupos.length ? grupos.map(([s, t, g]) => `<section class="agrp"><h3>${t} <span>${g.length}</span></h3>${g.map(k => kLinha(k, true)).join('')}</section>`).join('') : '<div class="empty">Nenhum contrato ainda</div>');
   }
+  /* ---------- Convite de membro (54, 58, 60) ---------- */
+  // O Kayoan gera o link aqui e manda para o membro, que repassa para a pessoa que quer convidar.
+  const CONVITE_M_URL = 'https://convite.ogrupo.com.br/?t=';
+  const CMST = { gerado: 'Gerado, ainda não aberto', aberto: 'Aberto pelo convidado', aplicado: 'O convidado aplicou', aprovado: 'Aprovado na curadoria', recusado: 'Recusado na curadoria', ativo: 'Convidado no grupo', encerrado: 'Encerrado', cancelado: 'Cancelado' };
+  const convidaStatus = m => ['ativo', 'veterano', 'fundador'].includes(m.status);
+  const convitesDe = id => convitesM.filter(c => c.membro_id === id).sort((a, b) => a.criado_em < b.criado_em ? 1 : -1);
+  // Próxima data em que o membro pode gerar outro convite (null = pode agora).
+  function proximoConvite(m) {
+    const u = convitesDe(m.id).find(c => !['cancelado', 'recusado'].includes(c.status)); if (!u) return null;
+    const d = new Date(u.criado_em); d.setMonth(d.getMonth() + 3);
+    return d > new Date() ? d : null;
+  }
+  const msgConviteMembro = (m, c) => `Fala, ${String(m.nome || '').trim().split(/\s+/)[0]}. Aqui é o Kayoan.\n\nVocê tem um convite do The Group para trazer uma pessoa do mercado para passar 3 meses no grupo. Este é o link, que já leva o seu nome:\n\n${CONVITE_M_URL + c.token}\n\nMande para a pessoa que você quer convidar. Ela abre, faz a aplicação e eu cuido da curadoria. O link vale para uma pessoa só.`;
+  function renderConviteFicha(m) {
+    const l = convitesDe(m.id), pode = convidaStatus(m);
+    $('#fs-convite').hidden = !pode && !l.length;
+    const prox = proximoConvite(m), aberto = l.find(c => ['gerado', 'aberto'].includes(c.status));
+    const linha = c => `<div class="krow"><div class="anm" style="cursor:default"><b>${CMST[c.status] || c.status}</b><span>Gerado em ${dataBR(c.criado_em.slice(0, 10))}${c.aberturas ? ` · aberto ${c.aberturas} ${c.aberturas === 1 ? 'vez' : 'vezes'}` : ''}${c.inicio ? ` · de ${dataBR(c.inicio)}${c.fim ? ' a ' + dataBR(c.fim) : ''}` : ''}</span></div>
+      <div class="kbtns">${['gerado', 'aberto'].includes(c.status) ? `<button class="abtn pri" data-cmmsg="${c.id}">Copiar mensagem</button>${waLink(m.telefone) ? `<a class="abtn" href="${waLink(m.telefone)}?text=${encodeURIComponent(msgConviteMembro(m, c))}" target="_blank" rel="noopener">WhatsApp</a>` : ''}<button class="abtn" data-cmlink="${c.id}">Copiar link</button><button class="abtn" data-cmcancel="${c.id}">Cancelar</button>` : ''}</div></div>`;
+    let topo = '';
+    if (!pode) topo = '<div class="venc" style="margin:0 0 8px">Só ativos, veteranos e fundador convidam.</div>';
+    else if (m.pode_convidar === false) topo = '<div class="venc" style="margin:0 0 8px">Este membro perdeu o direito de convidar.</div>';
+    else if (prox) topo = `<div class="venc" style="margin:0 0 8px">Próximo convite a partir de ${dataBR(prox.toISOString().slice(0, 10))}.</div>`;
+    else topo = `<button class="move" data-cmnovo="${m.id}" style="margin-bottom:10px">Gerar convite</button>`;
+    const direito = pode ? `<div class="sec">Pode convidar</div><div class="moves"><button class="move${m.pode_convidar !== false ? ' cur' : ''}" data-cmdir="1">Sim</button><button class="move${m.pode_convidar === false ? ' cur' : ''}" data-cmdir="0">Não</button></div>` : '';
+    $('#m-convite').innerHTML = topo + (l.length ? l.slice(0, 4).map(linha).join('') : (pode ? '<div class="venc" style="margin:0 0 8px">Nenhum convite gerado ainda.</div>' : '')) + direito;
+    const el = $('#fsr-convite'); el.textContent = aberto ? 'link ativo' : l.length ? (CMST[l[0].status] || '').toLowerCase() : pode && m.pode_convidar !== false && !prox ? 'pode convidar' : '';
+  }
+  $('#m-convite').addEventListener('click', async e => {
+    const t = e.target.closest('[data-cmnovo],[data-cmmsg],[data-cmlink],[data-cmcancel],[data-cmdir]'); if (!t) return;
+    const m = byId(memId); if (!m) return;
+    const c = convitesM.find(x => x.id === (t.dataset.cmmsg || t.dataset.cmlink || t.dataset.cmcancel));
+    try {
+      if (t.dataset.cmnovo) {
+        if (!confirm(`Gerar um convite de ${m.nome}? O próximo só poderá ser gerado daqui a 3 meses, a não ser que este seja cancelado ou recusado na curadoria.`)) return;
+        t.disabled = true; await db.gerarConviteMembro(m.id); convitesM = await db.convitesMembro();
+        const novo = convitesDe(m.id)[0]; if (novo) copia(msgConviteMembro(m, novo), 'Convite gerado. Mensagem copiada');
+      }
+      if (t.dataset.cmmsg && c) copia(msgConviteMembro(m, c), 'Mensagem copiada');
+      if (t.dataset.cmlink && c) copia(CONVITE_M_URL + c.token);
+      if (t.dataset.cmcancel && c) {
+        if (!confirm(`Cancelar o convite de ${m.nome}? O link para de abrir e ${m.nome.split(' ')[0]} pode gerar outro na hora.`)) return;
+        await db.cancelarConviteMembro(c.id); convitesM = await db.convitesMembro(); toast('Convite cancelado');
+      }
+      if (t.dataset.cmdir) { const v = t.dataset.cmdir === '1'; if (v === (m.pode_convidar !== false)) return; await db.patchMembro(m.id, { pode_convidar: v }); m.pode_convidar = v; toast(v ? 'Pode convidar de novo' : 'Perdeu o direito de convidar'); }
+    } catch (err) { fail(err, err.message && err.message !== 'Erro' ? err.message : 'Não foi possível concluir'); }
+    renderConviteFicha(m);
+  });
   function renderContratoFicha(m) {
     const l = contratosDe(m.id);
     $('#m-contrato').innerHTML = (l.length ? l.map(k => kLinha(k, false)).join('') : '<div class="venc" style="margin:0 0 8px">Nenhum contrato ligado a esta ficha.</div>') +
@@ -3347,6 +3402,8 @@
     ].map(([texto, status, d], n) => ({ id: 'i' + n, created_at: ago(d), updated_at: ago(Math.max(0, d - 2)), texto, status, nota: null }));
     const wait = v => new Promise(r => setTimeout(() => r(v), 120));
     let k = 100, M = [], C = [], CT = [], K = [], cofre = null;
+    // Prévia: um convite de membro já aberto, para ver a seção na ficha.
+    const CM = [{ id: 'cm1', token: 'previa000001', membro_id: 'm2', membro_nome: 'Bruno Exemplo', status: 'aberto', criado_em: ago(5), aberturas: 2, inicio: null, fim: null }];
     const PA = [
       { id: 'pa1', created_at: ago(40), updated_at: ago(2), marca: 'Payflow', razao_social: 'Payflow Pagamentos Ltda', cnpj: '11222333000181', contato_nome: 'Renata Lima', contato_whats: '(11) 98888-1111', contato_email: 'renata@exemplo.com', cota_interesse: 'oficial', segmento: 'Financeiro e pagamentos', status: 'ativo', inicio: '2026-09-01', nota: 'Quer ativação de pôquer na próxima The House.' },
       { id: 'pa2', created_at: ago(12), updated_at: ago(3), marca: 'Charutaria Norte', razao_social: null, cnpj: null, contato_nome: 'Paulo', contato_whats: '(48) 97777-2222', contato_email: null, cota_interesse: 'apoiador', segmento: 'Bebida e charuto', status: 'negociando', inicio: null, nota: null },
@@ -3392,6 +3449,9 @@
       conexoes: async () => { await carregaCofre(); return C.map(x => ({ ...x })); },
       addMembro: b => { const m = { id: 'm' + k++, ...b }; M.push(m); return wait({ ...m }); },
       patchMembro: (id, b) => { Object.assign(M.find(x => x.id === id) || {}, b); return wait(null); },
+      convitesMembro: () => wait(CM.map(x => ({ ...x }))),
+      gerarConviteMembro: id => { const m = M.find(x => x.id === id); if (CM.some(c => c.membro_id === id && !['cancelado', 'recusado'].includes(c.status) && Date.now() - new Date(c.criado_em) < 90 * 864e5)) return Promise.reject(new Error('Este membro já tem um convite.')); const c = { id: 'cm' + k++, token: Math.random().toString(36).slice(2, 14).padEnd(12, '0'), membro_id: id, membro_nome: m.nome, status: 'gerado', criado_em: new Date().toISOString(), aberturas: 0, inicio: null, fim: null }; CM.unshift(c); return wait({ token: c.token, membro: m.nome }); },
+      cancelarConviteMembro: id => { const c = CM.find(x => x.id === id); if (c) c.status = 'cancelado'; return wait({ cancelado: !!c }); },
       delMembro: id => { M.splice(M.findIndex(x => x.id === id), 1); C = C.filter(c => c.de !== id && c.para !== id); return wait(null); },
       addConexao: b => { const c = { id: 'c' + k++, ...b }; C.push(c); return wait({ ...c }); },
       delConexao: id => { C = C.filter(c => c.id !== id); return wait(null); },
