@@ -271,6 +271,7 @@
   .pq-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
   .pq-head h2 { margin: 0; font-size: 18px; font-weight: 600; } .pq-head .muted { font-size: 12.5px; color: var(--muted); margin-top: 3px; } .pq-head .muted a { color: inherit; }
   .pq-acts { display: flex; gap: 8px; } .pq-acts .btn { white-space: nowrap; }
+  #pq-lista { overflow-x: auto; scrollbar-width: none; } #pq-lista::-webkit-scrollbar { display: none; } #pq-lista button { white-space: nowrap; }
   .pq-total { display: grid; grid-template-columns: minmax(0, 240px); margin-bottom: 12px; }
   .pq-qs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .pq-ops { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
@@ -1252,6 +1253,8 @@
     criarContrato: p => api('rpc/criar_contrato', { method: 'POST', body: JSON.stringify({ p }) }),
     parceiros: () => api('parceiros?select=*&order=marca'),
     raioX: () => api('pesquisa_raio_x?select=criado_em,trafego,plataformas,pagamento,conta_dolar,vende_fora&order=criado_em.asc'),
+    pesquisas: () => api('pesquisas?select=id,slug,titulo,sub,perguntas,aberta,criada_em,fechada_em&order=criada_em.desc'),
+    respostasPesquisa: id => api(`pesquisa_respostas?select=criado_em,respostas&pesquisa_id=eq.${id}&order=criado_em.asc`).then(l => l.map(r => ({ criado_em: r.criado_em, ...r.respostas }))),
     addParceiro: b => api('parceiros', { method: 'POST', body: JSON.stringify(b) }).then(r => r[0]),
     patchParceiro: (id, b) => api(`parceiros?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
     delParceiro: id => api(`parceiros?id=eq.${id}`, { method: 'DELETE' }),
@@ -2404,6 +2407,17 @@
         { k: 'vende_fora', t: 'Sua operação vende para fora do Brasil?', multi: false, op: [['sim', 'Sim'], ['nao', 'Não'], ['pretende', 'Pretendo vender']] },
       ] },
   ];
+  // Pesquisas semanais (52-pesquisas.sql): entram na frente do Raio-x, da mais nova para a mais antiga.
+  // A aberta é a que o link aplicar.ogrupo.com.br/pesquisa mostra. As perguntas vêm do banco, os gráficos se montam sozinhos.
+  let pqCarregou = false;
+  const pqDoBanco = x => ({ id: x.id, titulo: x.titulo, sub: x.sub || 'Pesquisa do grupo', aberta: x.aberta, fechada_em: x.fechada_em, arquivo: x.slug,
+    link: x.aberta ? 'https://aplicar.ogrupo.com.br/pesquisa' : '', fonte: () => db.respostasPesquisa(x.id),
+    perguntas: (x.perguntas || []).map(q => ({ k: q.k, t: q.t, multi: !!q.multi, op: q.op || [], ...(q.se ? { so: r => r[q.se.k] !== undefined && !(q.se.nao || []).includes(r[q.se.k]), soTxt: 'a quem essa pergunta se aplica' } : {}) })) });
+  async function carregaListaPesquisas() {
+    if (pqCarregou) return; pqCarregou = true;
+    try { const l = await db.pesquisas(); PESQUISAS.unshift(...l.map(pqDoBanco)); if (l.length) pqAtual = PESQUISAS[0].id; } catch {}
+    renderPesquisas();
+  }
   let pqAtual = PESQUISAS[0].id;
   const pqDados = {};
   async function carregaPesquisa(id, forca) {
@@ -2417,12 +2431,13 @@
   const pqPct = (n, d) => d ? Math.round(n / d * 100) : 0;
   function renderPesquisas() {
     if ($('#v-pesquisas').hidden) return;
+    if (!pqCarregou) { carregaListaPesquisas(); return; }
     const p = PESQUISAS.find(x => x.id === pqAtual), d = pqDados[pqAtual];
-    $('#pq-lista').innerHTML = PESQUISAS.length > 1 ? PESQUISAS.map(x => `<button class="${x.id === pqAtual ? 'cur' : ''}" data-pq="${x.id}" aria-pressed="${x.id === pqAtual}">${esc(x.titulo)}</button>`).join('') : '';
+    $('#pq-lista').innerHTML = PESQUISAS.length > 1 ? PESQUISAS.map(x => `<button class="${x.id === pqAtual ? 'cur' : ''}" data-pq="${x.id}" aria-pressed="${x.id === pqAtual}">${esc(x.titulo)}${x.aberta ? ' · aberta' : ''}</button>`).join('') : '';
     $('#pq-lista').hidden = PESQUISAS.length < 2;
     if (!d) { carregaPesquisa(pqAtual); return; }
     const rows = d.rows || [], total = rows.length, ult = rows.length ? rows[rows.length - 1].criado_em : null;
-    $('#pq-head').innerHTML = `<div><h2>${esc(p.titulo)}</h2><div class="muted">${esc(p.sub)} · anônima · <a href="${p.link}" target="_blank" rel="noopener">${p.link.replace('https://', '')}</a></div></div>
+    $('#pq-head').innerHTML = `<div><h2>${esc(p.titulo)}</h2><div class="muted">${esc(p.sub)} · anônima · ${(() => { const noAr = p.aberta || (p.id === 'raio-x' && !PESQUISAS.some(x => x.aberta)); return noAr ? `no ar em <a href="${p.link}" target="_blank" rel="noopener">${p.link.replace('https://', '')}</a>` : `encerrada${p.fechada_em ? ' em ' + dataCurta(p.fechada_em.slice(0, 10)) : ''}`; })()}</div></div>
       <div class="pq-acts"><button class="btn sm ghost-b" id="pq-atualizar" style="margin:0">${d.carregando ? 'Atualizando…' : 'Atualizar'}</button><button class="btn sm" id="pq-csv" style="margin:0"${total ? '' : ' disabled'}>Exportar CSV</button></div>`;
     $('#pq-total').innerHTML = `<div class="pk"><div class="l">Respostas</div><div class="n">${total}</div><div class="s">${ult ? 'Última em ' + new Date(ult).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : d.carregando ? 'Carregando…' : 'Nenhuma ainda'}</div></div>`;
     if (d.erro) { $('#pq-qs').innerHTML = `<div class="empty">${esc(d.erro)}</div>`; return; }
@@ -3311,6 +3326,9 @@
         const n = K.length + 1, adm = p.modo === 'admin'; const x = { id: 'k' + k++, criado_em: new Date().toISOString(), atualizado_em: new Date().toISOString(), token: 'previa' + String(k).padStart(10, '0'), numero: 'TG-2026-' + String(n).padStart(3, '0'), modo: p.modo, status: adm ? 'preenchido' : 'enviado', membro_id: p.membro_id || null, tipo: p.tipo || 'entrada', nome: adm ? p.dados.nome : p.nome, telefone: adm ? p.dados.tel : p.telefone, anual: +p.anual, desconto: 0, renovacao: +p.renovacao, meio: p.meio, condicoes: p.condicoes, dados: adm ? p.dados : null, preenchido_em: adm ? new Date().toISOString() : null, aceito_em: null, pdf_path: null, pago_em: null }; K.unshift(x); return wait({ id: x.id, token: x.token, numero: x.numero, status: x.status }); },
       parceiros: () => wait(PA.map(x => ({ ...x }))),
       // Prévia: 23 respostas inventadas do Raio-x, só para ver a tela.
+      pesquisas: () => wait([{ id: 'pq-demo', slug: 'nicho-e-atuacao', titulo: 'Nicho e atuação', sub: 'Exemplo de pesquisa semanal', aberta: true, criada_em: new Date().toISOString(), fechada_em: null,
+        perguntas: [{ k: 'nicho', t: 'Em qual nicho você roda hoje?', multi: true, op: [['nutra', 'Nutra'], ['info', 'Infoprodutos'], ['saas', 'SaaS e apps'], ['ecom', 'E-commerce'], ['outro', 'Outro']] }, { k: 'funcao', t: 'Qual é a sua função na operação?', multi: false, op: [['dono', 'Dono ou sócio'], ['gestor', 'Gestor de tráfego'], ['copy', 'Copywriter'], ['outro', 'Outra']] }] }]),
+      respostasPesquisa: () => wait(Array.from({ length: 9 }, (_, i) => ({ criado_em: new Date(Date.now() - (9 - i) * 36e5).toISOString(), nicho: [['nutra'], ['info', 'nutra'], ['saas'], ['info']][i % 4], funcao: ['dono', 'dono', 'gestor', 'copy'][i % 4] }))),
       raioX: () => { const t = ['ate50k', '50k-200k', '50k-200k', '200k-1m', '200k-1m', '200k-1m', '1m-5m', '1m-5m', '5m+', 'nao_roda'], pl = [['meta'], ['meta', 'google'], ['meta', 'google', 'tiktok'], ['meta', 'tiktok']], pg = [['cartao_br'], ['cartao_br', 'cartao_internacional'], ['cartao_internacional'], ['cartao_br', 'pix_boleto']], cd = [['nao_usa'], ['wise'], ['slash'], ['mercury', 'wise'], ['payoneer'], ['nao_usa']], vf = ['nao', 'sim', 'pretende', 'nao'];
         return wait(Array.from({ length: 23 }, (_, i) => { const tr = t[i % t.length]; return { criado_em: new Date(Date.now() - (23 - i) * 36e5).toISOString(), trafego: tr, plataformas: tr === 'nao_roda' ? [] : pl[i % pl.length], pagamento: tr === 'nao_roda' ? [] : pg[i % pg.length], conta_dolar: cd[i % cd.length], vende_fora: vf[i % vf.length] }; })); },
       addParceiro: b => { const x = { id: 'pa' + k++, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), razao_social: null, cnpj: null, contato_nome: null, contato_whats: null, contato_email: null, cota_interesse: null, segmento: null, inicio: null, nota: null, ...b }; PA.push(x); return wait({ ...x }); },
