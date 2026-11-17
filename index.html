@@ -3115,7 +3115,7 @@
     const d = new Date(u.criado_em); d.setMonth(d.getMonth() + 3);
     return d > new Date() ? d : null;
   }
-  const msgConviteMembro = (m, c) => `Fala, ${String(m.nome || '').trim().split(/\s+/)[0]}. Aqui é o Kayoan.\n\nVocê tem um convite do The Group para trazer uma pessoa do mercado para passar 3 meses no grupo. Este é o link, que já leva o seu nome:\n\n${CONVITE_M_URL + c.token}\n\nMande para a pessoa que você quer convidar. Ela abre, faz a aplicação e eu cuido da curadoria. O link vale para uma pessoa só.`;
+  const msgConviteMembro = (m, c) => `Fala, ${String(m.nome || '').trim().split(/\s+/)[0]}. Aqui é o Kayoan.\n\nVocê tem um convite para trazer uma pessoa do mercado para fazer parte do The Group. Este é o link, que já leva o seu nome:\n\n${CONVITE_M_URL + c.token}\n\nMande para a pessoa que você quer convidar. Ela abre, faz a aplicação e eu cuido da curadoria. O link vale para uma pessoa só.`;
   // Convidado: nome e WhatsApp vêm da aplicação que ele fez pelo link (aplicacao_id, migração 55).
   const aplDoConvite = c => c.aplicacao_id ? apls.find(a => a.id === c.aplicacao_id) : null;
   const convidadoNome = c => (aplDoConvite(c) || {}).nome || '';
