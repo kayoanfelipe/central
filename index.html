@@ -1601,7 +1601,7 @@
   const fail = (e, t) => { toast(e.message === 'auth' ? 'Entre de novo' : t); if (e.message === 'auth') showLogin(); };
 
   // Convite (mesmo comportamento do painel do quiz): o mais recente da pessoa e o texto do selo.
-  const CONVITE_URL = 'https://convite.ogrupo.com.br/?c=';
+  const CONVITE_URL = 'https://convite.ogrupo.com.br/acesso/?c=';
   const conviteDe = r => (r.convites && r.convites[0]) || null;
   const dataHora = iso => { const d = new Date(iso); return `${d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} às ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`; };
   const seloConvite = r => {
