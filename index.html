@@ -786,7 +786,7 @@
     <div class="brand"><span class="logo"></span><span>Central</span></div>
     <nav class="nav" id="nav">
       <a href="#hoje" data-v="hoje"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 9.5 10 4l6.5 5.5V16a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1z"/><path d="M8 17v-4.5h4V17"/></svg><span class="nl">Hoje</span></a>
-      <a href="#aplicacoes" data-v="aplicacoes" data-grupo="aplicacoes pesquisas"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="4" height="12" rx="1.2"/><rect x="8.5" y="4" width="4" height="8" rx="1.2"/><rect x="14" y="4" width="3" height="10" rx="1.2"/></svg><span class="nl">Formulários</span><span class="dot" hidden></span></a>
+      <a href="#aplicacoes" data-v="aplicacoes" data-grupo="aplicacoes convidados pesquisas"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="4" height="12" rx="1.2"/><rect x="8.5" y="4" width="4" height="8" rx="1.2"/><rect x="14" y="4" width="3" height="10" rx="1.2"/></svg><span class="nl">Formulários</span><span class="dot" hidden></span></a>
       <a href="#membros" data-v="membros"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><circle cx="7.5" cy="7.5" r="2.6"/><path d="M2.8 16c.6-2.6 2.4-4 4.7-4s4.1 1.4 4.7 4"/><circle cx="14" cy="8" r="2"/><path d="M13 12.2c2.1-.2 3.6 1.1 4.2 3.8"/></svg><span class="nl">Membros</span></a>
       <a href="#parceiros" data-v="parceiros"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 7.5h13v8a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1z"/><path d="M7.5 7.5V5.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2"/><path d="M3.5 11.5h13"/></svg><span class="nl">Parceiros</span></a>
       <a href="#tarefas" data-v="tarefas"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><rect x="3.5" y="3.5" width="13" height="13" rx="2.5"/><path d="M6.8 10.2l2.2 2.2 4.4-4.6"/></svg><span class="nl">Tarefas</span><span class="dot" hidden></span></a>
@@ -813,7 +813,7 @@
 
     <section id="v-aplicacoes" hidden>
       <h1 class="page">Formulários</h1>
-      <div class="fsub seg" role="tablist" aria-label="Formulários"><a href="#aplicacoes">Aplicações</a><a href="#pesquisas">Pesquisas</a></div>
+      <div class="fsub seg" role="tablist" aria-label="Formulários"><a href="#aplicacoes">Aplicações</a><a href="#convidados">Convidados</a><a href="#pesquisas">Pesquisas</a></div>
       <div class="seg bseg" id="filter" role="group" aria-label="Como chegou"></div>
       <div class="colnav" id="colnav" aria-label="Colunas"></div>
       <div class="board" id="board"></div>
@@ -866,7 +866,7 @@
 
     <section id="v-pesquisas" hidden>
       <h1 class="page">Formulários</h1>
-      <div class="fsub seg" role="tablist" aria-label="Formulários"><a href="#aplicacoes">Aplicações</a><a href="#pesquisas">Pesquisas</a></div>
+      <div class="fsub seg" role="tablist" aria-label="Formulários"><a href="#aplicacoes">Aplicações</a><a href="#convidados">Convidados</a><a href="#pesquisas">Pesquisas</a></div>
       <div class="seg" id="pq-lista" role="group" aria-label="Pesquisa" style="margin-bottom:16px" hidden></div>
       <div class="pq-head" id="pq-head"></div>
       <div class="pq-total" id="pq-total"></div>
@@ -1183,8 +1183,8 @@
   const FUNCAO = { dono: 'Dono de operação', head: 'Head de operação', copywriter: 'Copywriter', trafego: 'Gestor de tráfego', outra: 'Outra função' };
   const NICHO = { nutra: 'Nutracêuticos', info: 'Infoprodutos', saas: 'SaaS e apps', outro: 'Outro' };
   const CANAL = { indicacao: 'Indicação', instagram: 'Instagram', evento: 'Evento', outro: 'Outro caminho' };
-  const FAT = { '6': '6 dígitos+ (R$ 100 mil+)', '7': '7 dígitos+ (R$ 1 milhão+)', '8': '8 dígitos+ (R$ 10 milhões+)' };
-  const FAT_CURTO = { '6': '6 dígitos', '7': '7 dígitos', '8': '8 dígitos+' };
+  const FAT = { inicio: 'Ainda é iniciante', '6': '6 dígitos+ (R$ 100 mil+)', '7': '7 dígitos+ (R$ 1 milhão+)', '8': '8 dígitos+ (R$ 10 milhões+)' };
+  const FAT_CURTO = { inicio: 'iniciante', '6': '6 dígitos', '7': '7 dígitos', '8': '8 dígitos+' };
   const NIVEL = { principal: 'Principal', oficiais: 'Oficiais', apoiadores: 'Apoiadores' };
   const SETA = '<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 11 11 5M6 5h5v5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
@@ -1334,12 +1334,15 @@
   /* ---------------- Navegação ---------------- */
   const VIEWS = ['hoje', 'aplicacoes', 'membros', 'parceiros', 'tarefas', 'pesquisas', 'jornada', 'ideias'];
   const TITULO = { hoje: 'Central', aplicacoes: 'Aplicações', membros: 'Membros', parceiros: 'Parceiros', tarefas: 'Tarefas', pesquisas: 'Pesquisas', receber: 'Receber', jornada: 'Jornada do membro', ideias: 'Ideias' };
+  // #convidados: mesmo quadro de Aplicações, só com quem aplicou pelo convite de um membro (convite_membro_id, migração 55).
+  let aplModo = 'membro';
   function route() {
-    const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'hoje';
+    const h = location.hash.slice(1); aplModo = h === 'convidados' ? 'convidado' : 'membro';
+    const v = h === 'convidados' ? 'aplicacoes' : VIEWS.includes(h) ? h : 'hoje';
     VIEWS.forEach(k => { $('#v-' + k).hidden = k !== v; });
     document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('cur', a.dataset.v === v || (a.dataset.grupo || '').split(' ').includes(v)));
-    document.querySelectorAll('.fsub a').forEach(a => a.classList.toggle('cur', a.getAttribute('href') === '#' + v));
-    document.title = TITULO[v] + ' · The Group';
+    document.querySelectorAll('.fsub a').forEach(a => a.classList.toggle('cur', a.getAttribute('href') === '#' + (h === 'convidados' ? h : v)));
+    document.title = (h === 'convidados' ? 'Convidados' : TITULO[v]) + ' · The Group';
     renderAll();
   }
   window.addEventListener('hashchange', () => { close(); route(); window.scrollTo(0, 0); });
@@ -1562,13 +1565,19 @@
 
   /* ---------------- Aplicações ---------------- */
   const foraDR = r => r.atua_dr === false;
+  // Aplicação de convidado: veio do link de convite de um membro. Não recebe o convite de acesso nem vai para a call.
+  const ehConvidado = r => !!r.convite_membro_id;
+  const quemConvidou = r => r.convidado_por_nome || r.indicado_por || (convitesM.find(c => c.id === r.convite_membro_id) || {}).membro_nome || 'um membro';
+  const CONTRIB = { trafego: 'Tráfego', copy: 'Copy', oferta: 'Oferta e funil', tech: 'Tecnologia e produto', operacao: 'Operação e gestão', outro: 'Outro' };
   function renderBoard() {
     // Fora de DR: quem respondeu "Ainda não" no quiz (47-aplicacao-segmento.sql). O chip só aparece se houver alguém.
-    const chips = [['', 'Todas'], ['indicacao', 'Indicação'], ['instagram', 'Instagram'], ['evento', 'Evento'], ['outro', 'Outro'], ...(apls.some(foraDR) || filtro === 'foradr' ? [['foradr', 'Fora de DR']] : [])];
+    const cv = aplModo === 'convidado';
+    const chips = cv ? [] : [['', 'Todas'], ['indicacao', 'Indicação'], ['instagram', 'Instagram'], ['evento', 'Evento'], ['outro', 'Outro'], ...(apls.some(foraDR) || filtro === 'foradr' ? [['foradr', 'Fora de DR']] : [])];
     $('#filter').innerHTML = chips.map(([k, l]) => `<button class="${filtro === k ? 'cur' : ''}" data-f="${k}" aria-pressed="${filtro === k}">${l}</button>`).join('');
     const canalDe = r => ['indicacao', 'instagram', 'evento'].includes(r.canal) ? r.canal : 'outro';
-    const vis = apls.filter(r => !filtro || (filtro === 'foradr' ? foraDR(r) : canalDe(r) === filtro));
-    $('#board').innerHTML = COLS.map(([k, label]) => {
+    const vis = apls.filter(r => ehConvidado(r) === cv && (cv || !filtro || (filtro === 'foradr' ? foraDR(r) : canalDe(r) === filtro)));
+    $('#filter').hidden = cv;
+    $('#board').innerHTML = COLS.filter(([k]) => !cv || k !== 'call').map(([k, label]) => {
       // Quem acabou de ser movido fica no topo da coluna (updated_at muda a cada mudança no cartão).
       const list = vis.filter(r => r.status === k).sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
       return `<section class="col" data-col="${k}">
@@ -1576,10 +1585,10 @@
         <div class="cards">${list.length ? list.map(r => `
           <button class="card" draggable="true" data-id="${r.id}">
             <div class="name"><span>${esc(r.nome)}</span><span class="when">${when(r.created_at)}</span></div>
-            <div class="sub">${r.canal === 'indicacao' && r.indicado_por ? 'Indicação de ' + esc(r.indicado_por) : esc(CANAL[r.canal] || 'Outro caminho')}</div>
-            ${['nova', 'conversa', 'call'].includes(r.status) ? callHtml(r) : ''}
+            <div class="sub">${ehConvidado(r) ? 'Convidado por ' + esc(quemConvidou(r)) : r.canal === 'indicacao' && r.indicado_por ? 'Indicação de ' + esc(r.indicado_por) : esc(CANAL[r.canal] || 'Outro caminho')}</div>
+            ${!ehConvidado(r) && ['nova', 'conversa', 'call'].includes(r.status) ? callHtml(r) : ''}
             ${kStApl(r) ? `<div class="kst${kStApl(r).ok ? ' ok' : ''}"><i></i>${kStApl(r).txt}</div>` : ''}
-            ${linkDe(r) ? `<span class="clink" title="${esc(linkDe(r))}"><span class="cl-url">Link do convite</span><span class="cl-copy" role="button" tabindex="0" data-copy="${esc(linkDe(r))}">Copiar</span></span>` : ''}
+            ${linkDe(r) && !ehConvidado(r) ? `<span class="clink" title="${esc(linkDe(r))}"><span class="cl-url">Link do convite</span><span class="cl-copy" role="button" tabindex="0" data-copy="${esc(linkDe(r))}">Copiar</span></span>` : ''}
             <div class="tags">${foraDR(r) ? `<span class="tag fdr" title="Ainda não atua com resposta direta">Fora de DR${r.segmento ? ' · ' + esc(r.segmento) : ''}</span>` : ''}${seloConvite(r) ? `<span class="tag convite">${esc(seloConvite(r))}</span>` : ''}${r.membro_id && byId(r.membro_id) ? '<span class="tag">Ficha de membro</span>' : ''}${(conviteDe(r)?.aberturas || 0) > 1 ? `<span class="tag convite${conviteDe(r).aberturas > 2 ? ' muito' : ''}">Abriu ${conviteDe(r).aberturas} vezes</span>` : ''}</div>
           </button>`).join('') : '<div class="empty">Nada por aqui</div>'}</div>
       </section>`;
@@ -1683,6 +1692,7 @@
     cal.searchParams.set('metadata[apl]', r.id); // o Cal.com devolve no aviso e a central acha a aplicação certa
     const chamada = `Oi, ${r.nome.split(' ')[0]}. Aqui é o Kayoan, do The Group. Escolha o melhor horário para a nossa conversa por aqui: ${cal.toString()}`;
     const cv = conviteDe(r), vale = !!linkDe(r);
+    if (ehConvidado(r)) return fillAplConvidado(r, wa);
     $('#d-link').innerHTML = r.status === 'recusado'
       ? `<div class="lk-off">${cv ? 'O link do convite está desativado porque a aplicação está em Não selecionado. Se mover o cartão de volta, ele volta a abrir.' : 'Aplicação em Não selecionado.'}</div>`
       : vale
@@ -1719,6 +1729,42 @@
     $('#d-moves').innerHTML = COLS.map(([k, l]) => `<button class="move${r.status === k ? ' cur' : ''}" data-to="${k}">${l}</button>`).join('');
     if (document.activeElement !== $('#d-nota')) $('#d-nota').value = r.nota || '';
   }
+  // Ficha da aplicação de convidado: sem convite de acesso e sem call. Mostra o convite do membro e leva aos termos de convidado.
+  function fillAplConvidado(r, wa) {
+    const c = convitesM.find(x => x.id === r.convite_membro_id), k = contratoDaApl(r), termos = k && k.publico === 'convidado' ? k : null;
+    const sitTermos = !termos ? 'Ainda não gerados' : ['aceito', 'pago'].includes(termos.status) ? `Aceitos (${esc(termos.numero)})` : `${esc(KSTATUS[termos.status] || termos.status)} (${esc(termos.numero)})`;
+    $('#d-link').innerHTML = `<div class="lk-k">Convite de membro</div><div class="lk-off" style="margin-top:6px">Aplicou pelo link de convite de <b>${esc(quemConvidou(r))}</b>${c ? ` · ${esc((CMST[c.status] || c.status).toLowerCase())}` : ''}. Não precisa do convite de acesso: o próximo passo, se aprovado, são os termos de convidado (3 meses, sem pagamento).</div>`;
+    const bZap = p => `<a${p ? ' class="primary"' : ''} href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>`;
+    const bTermos = p => termos ? `<a${p ? ' class="primary"' : ''} href="#" id="d-termos-ver">Ver termos na lista de contratos</a>` : `<a${p ? ' class="primary"' : ''} href="#" id="d-termos">Gerar termos de convidado</a>`;
+    const bMembroQ = c && c.membro_id ? `<a href="#" id="d-quemconv">Ficha de ${esc(String(quemConvidou(r)).split(' ')[0])}</a>` : '';
+    $('#d-quick').innerHTML = r.status === 'recusado' ? bZap(true)
+      : ['aprovado', 'entrou'].includes(r.status) ? bTermos(!termos || !['aceito', 'pago'].includes(termos.status)) + bZap(false) + bMembroQ
+      : bZap(true) + bMembroQ;
+    const items = [
+      ['Convidado por', esc(quemConvidou(r)), true],
+      ['O que pode trazer', (r.contribuicao || []).map(x => CONTRIB[x] || x).join(', ') || '-'],
+      ['Função', funcao(r)],
+      ['Mercado', NICHO[r.nicho] || r.nicho || '-'],
+      ['Faturamento por mês', FAT[r.faturamento] || r.faturamento || '-'],
+      ['Termos de convidado', sitTermos, true],
+      ['Instagram', `<a href="${igUrl(r.instagram)}" target="_blank" rel="noopener">@${esc(r.instagram)}</a>`, true],
+      ['WhatsApp', `<a href="https://wa.me/${wa}" target="_blank" rel="noopener">${esc(phone(r.whatsapp))}</a>`, true],
+      ['E-mail', `<a href="mailto:${esc(r.email)}">${esc(r.email)}</a>`, true],
+    ];
+    $('#d-list').innerHTML = items.map(([k, v, html]) => `<div class="row"><dt>${k}</dt><dd>${html ? v : esc(v)}</dd></div>`).join('');
+    $('#d-origem').innerHTML = Object.entries(ORIGEM).map(([k, l]) => `<button class="move${r.origem_lead === k ? ' cur' : ''}" data-o="${k}">${l}</button>`).join('');
+    $('#d-moves').innerHTML = COLS.filter(([k]) => k !== 'call').map(([k, l]) => `<button class="move${r.status === k ? ' cur' : ''}" data-to="${k}">${l}</button>`).join('');
+    if (document.activeElement !== $('#d-nota')) $('#d-nota').value = r.nota || '';
+  }
+  // Termos de convidado a partir da aplicação: Novo contrato já no tipo Convidado, com quem convidou, nome e WhatsApp.
+  function abrirTermosConvidado(r) {
+    abrirNovoContrato(null, r);
+    const f = $('#kform'), c = convitesM.find(x => x.id === r.convite_membro_id);
+    f.tipo.value = 'convidado'; kTipo();
+    if (c && [...f.convidado_por.options].some(o => o.value === c.membro_id)) f.convidado_por.value = c.membro_id;
+    if (!f.conv_inicio.value) f.conv_inicio.value = hojeISO(); kConvFim();
+    $('#k-para').textContent = `Termos de convidado para ${r.nome}, da aplicação. Convite de ${quemConvidou(r)}.`;
+  }
   $('#d-moves').addEventListener('click', e => { const b = e.target.closest('.move'); if (b && openId) move(openId, b.dataset.to); });
   // Enviar convite: abre a janela antes (senão o celular bloqueia), cria ou reaproveita o token e manda pelo WhatsApp.
   // Link visível: copiar (no cartão e na ficha) e criar sem abrir o WhatsApp.
@@ -1734,6 +1780,9 @@
   $('#d-quick').addEventListener('click', async e => {
     if (e.target.closest('#d-membro')) { e.preventDefault(); const r = apls.find(x => x.id === openId); if (!r) return; const f = r.membro_id ? byId(r.membro_id) : null; if (f) openMembro(f.id); else cadastrarMembroDaApl(r); return; }
     if (e.target.closest('#d-contrato')) { e.preventDefault(); const r = apls.find(x => x.id === openId); if (r) abrirNovoContrato(null, r); return; }
+    if (e.target.closest('#d-termos')) { e.preventDefault(); const r = apls.find(x => x.id === openId); if (r) abrirTermosConvidado(r); return; }
+    if (e.target.closest('#d-termos-ver')) { e.preventDefault(); close(); mfiltro = 'contratos'; location.hash = '#membros'; return; }
+    if (e.target.closest('#d-quemconv')) { e.preventDefault(); const r = apls.find(x => x.id === openId), c = r && convitesM.find(x => x.id === r.convite_membro_id); if (c) openMembro(c.membro_id); return; }
     if (!e.target.closest('#d-convite')) return;
     e.preventDefault();
     const r = apls.find(x => x.id === openId); if (!r) return;
@@ -2027,6 +2076,7 @@
     const f = r.membro_id ? byId(r.membro_id) : null;
     if (f) return kSt(f);
     const k = contratoDaApl(r); if (!k) return null;
+    if (k.publico === 'convidado') return ['aceito', 'pago'].includes(k.status) ? { ok: true, txt: 'Termos de convidado aceitos' } : { ok: false, txt: 'Termos de convidado não aceitos' };
     return k.status === 'pago' ? { ok: true, txt: 'Contrato assinado e pago' } : k.status === 'aceito' ? { ok: true, txt: 'Contrato assinado' } : { ok: false, txt: 'Contrato não assinado' };
   }
   function kSt(m) {
@@ -3409,7 +3459,7 @@
       for (const a of ant) { try { await db.patchContrato(a.id, { status: 'cancelado' }); } catch (e2) { toast(`Não deu para cancelar o ${a.numero}. Cancele na lista.`); } }
       await recarregaContratos();
       const k = contratos.find(x => x.id === r.id) || { ...r, nome: adm ? p.dados.nome : p.nome, modo: p.modo };
-      $('#k-res').innerHTML = `<div class="lk-msg"><div class="lk-k">Mensagem para ${esc(String(k.nome).split(' ')[0])} (contrato ${esc(r.numero)})</div><div class="lk-txt">${esc(msgContrato(k))}</div>
+      $('#k-res').innerHTML = `<div class="lk-msg"><div class="lk-k">Mensagem para ${esc(String(k.nome).split(' ')[0])} (${k.publico === 'convidado' ? 'termos' : 'contrato'} ${esc(r.numero)})</div><div class="lk-txt">${esc(msgContrato(k))}</div>
         <button class="lk-btn lk-btn2" type="button" data-kmsg="${k.id}">Copiar mensagem</button> <a class="abtn" style="margin-left:6px" href="${CONTRATO_URL + r.token}" target="_blank" rel="noopener">Abrir como o membro vê</a></div>`;
       $('#k-res').scrollIntoView({ behavior: 'smooth', block: 'center' });
       kConfFecha(); $('#k-gerar').hidden = true;
@@ -3440,6 +3490,8 @@
       ['Letícia Ramos', 'leticiaramos', '+5562995678901', 'leticia@exemplo.com', 'head', 'nutra', '7', 'outro', null, 'aprovado', 'mesa', 12],
       ['Felipe Dias', 'felipedias', '+5585996789012', 'felipe@exemplo.com', 'copywriter', 'info', '6', 'instagram', null, 'recusado', 'conteudo', 15],
     ].map(([nome, instagram, whatsapp, email, funcao, nicho, faturamento, canal, indicado_por, status, origem_lead, d], n) => ({
+      // Prévia: Juliana (a2) e Letícia (a6) aplicaram pelo convite de um membro.
+      convite_membro_id: n === 2 ? 'cm3' : n === 6 ? 'cm2' : null, convidado_por_nome: n === 2 ? 'Ana Membro' : n === 6 ? 'Carla Veterana' : null, contribuicao: n === 2 ? ['trafego', 'oferta'] : n === 6 ? ['copy'] : null,
       id: 'a' + n, created_at: ago(d, n), nome, instagram, whatsapp, email, funcao, funcao_outra: null, nicho, faturamento, canal, indicado_por, origem: n % 3 ? 'site' : 'app', status, origem_lead, nota: null, atua_dr: n !== 1, segmento: n === 1 ? 'e-commerce e drop' : null,
       convites: n === 3 ? [{ token: 'k3m9xq2v7tpa', criado_em: ago(3), expira_em: '2099-12-31T23:59:59-03:00', aberto_em: ago(2, 5), ultima_abertura: ago(1), aberturas: 3 }]
         : n === 4 ? [{ token: 'r8w2nd5yq1zc', criado_em: ago(5), expira_em: '2099-12-31T23:59:59-03:00', aberto_em: null, ultima_abertura: null, aberturas: 0 }]
