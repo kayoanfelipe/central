@@ -1382,7 +1382,7 @@
     const ativos = membros.filter(m => ['ativo', 'fundador'].includes(m.status));
     const novos = membros.filter(m => m.entrada && mesDe(m.entrada) === mesAt && m.status !== 'removido').length;
     const aplMes = apls.filter(r => { const d = new Date(r.created_at); return d.getFullYear() * 12 + d.getMonth() === mesAt; }).length;
-    const conv = membros.filter(m => m.status === 'convidado').length;
+    const conv = membros.filter(m => m.status === 'convidado').length, vet = membros.filter(m => m.status === 'veterano').length;
     const meses = Array.from({ length: 12 }, (_, i) => mesAt - 11 + i);
     const ent = meses.map(k => membros.filter(m => m.entrada && mesDe(m.entrada) === k).length);
     const maxE = Math.max(1, ...ent), totE = ent.reduce((s, x) => s + x, 0);
@@ -1394,7 +1394,7 @@
     const ring = (pct, label, sub) => `<div class="pring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="trk" cx="18" cy="18" r="15.915"/><circle class="val" cx="18" cy="18" r="15.915" stroke-dasharray="${Math.max(pct, 0.5)} ${100 - Math.max(pct, 0.5)}"/></svg><div><b>${pct}%</b><span>${label}</span><small>${sub}</small></div></div>`;
     const kpi = (l, n, s, gold) => `<div class="pk"><div class="l">${l}</div><div class="n${gold ? ' gold' : ''}">${n}</div><div class="s">${s}</div></div>`;
     $('#pano').innerHTML =
-      kpi('Membros ativos', ativos.length, `${conv} convidados à parte`) +
+      kpi('Membros ativos', ativos.length, `${vet} ${vet === 1 ? 'veterano' : 'veteranos'} · ${conv} ${conv === 1 ? 'convidado' : 'convidados'} à parte`) +
       kpi(`Entraram em ${MESES_LONGO[h.getMonth()]}`, novos, 'novos membros no mês', novos > 0) +
       kpi(`Aplicações em ${MESES_LONGO[h.getMonth()]}`, aplMes, `${apls.filter(r => r.status === 'nova').length} esperando resposta`) +
       (() => { const c = contaFase('atrasado'), r = membros.filter(m => precisaRenovar(m) && diasAte(m.vencimento) < 0).length, pc = kCobrancas().filter(x => x.px && x.px.dias < 0).length; return kpi('Pendências atrasadas', c + r + pc, `${c} ${c === 1 ? 'contato' : 'contatos'} · ${r} ${r === 1 ? 'renovação' : 'renovações'}${pc ? ` · ${pc} ${pc === 1 ? 'parcela' : 'parcelas'}` : ''}`); })() +
@@ -1940,11 +1940,12 @@
   });
 
   /* ---------------- Membros ---------------- */
-  const STATUS = { ativo: 'Ativo', convidado: 'Convidado', fundador: 'Fundador', removido: 'Ex-membro' };
+  const STATUS = { ativo: 'Ativo', veterano: 'Veterano', convidado: 'Convidado', fundador: 'Fundador', removido: 'Ex-membro' };
   const RENOV = { pendente: 'Em conversa', pago: 'Renovou', remover: 'Não vai renovar' };
   const ANEL = { 'falta medida': 'Falta medida', 'em produção': 'Em produção', 'entregue': 'Entregue' };
   // Quem aparece (status) e o que a equipe tem para fazer (filas de trabalho).
-  const MQUEM = [['atuais', 'Ativos'], ['convidado', 'Convidados'], ['ex', 'Ex-membros'], ['todos', 'Todos']];
+  // Veteranos: quem está desde o começo, sem pagar (58-veteranos.sql). Convidados: quem entra pelo convite de membro, por 3 meses.
+  const MQUEM = [['atuais', 'Ativos'], ['veterano', 'Veteranos'], ['convidado', 'Convidados'], ['ex', 'Ex-membros'], ['todos', 'Todos']];
   const MFAZER = [['chamar', 'Acompanhamento'], ['renov', 'Renovações'], ['cobrar', 'Cobranças'], ['aneis', 'Anéis'], ['contratos', 'Contratos']];
   const MFILTROS = [...MQUEM, ...MFAZER];
   let mfiltro = 'atuais', mbusca = '', memId = null;
@@ -1992,6 +1993,7 @@
     return membros.filter(m => {
       if (!termos.length || mfiltro !== 'atuais') {
         if (mfiltro === 'atuais' && !['ativo', 'fundador'].includes(m.status)) return false;
+        if (mfiltro === 'veterano' && m.status !== 'veterano') return false;
         if (mfiltro === 'convidado' && m.status !== 'convidado') return false;
         if (mfiltro === 'ex' && m.status !== 'removido') return false;
         if (mfiltro === 'vencer') { const d = diasAte(m.vencimento); if (!atual(m) || d === null || d < 0 || d > 30) return false; }
@@ -3158,7 +3160,7 @@
     $('#k-conv').hidden = !cv; $('#k-modowrap').hidden = cv; $('#k-valwrap').hidden = cv;
     $('#k-mnomelbl').textContent = cv ? 'Nome do convidado' : 'Nome do membro';
     $('#k-mtxt').textContent = cv ? 'O convidado recebe um link, preenche nome, CPF, e-mail e WhatsApp, lê os termos e aceita com o código que chega no e-mail. Sem valor e sem pagamento. A central avisa você no e-mail contato@ quando ele terminar.' : 'Ele recebe um link, preenche os próprios dados e já vê o contrato com o pagamento que vocês combinaram na call. Ele só vê, não muda. A central avisa você no e-mail contato@ quando ele terminar.';
-    if (cv) { f.modo.value = 'membro'; if (!f.convidado_por.options.length) f.convidado_por.innerHTML = '<option value="">Escolha</option>' + membros.filter(m => m.status === 'ativo').sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')).map(m => `<option value="${m.id}">${esc(m.nome)}</option>`).join(''); if (!f.conv_inicio.value) f.conv_inicio.value = hojeISO(); kConvFim(); kModo(); return; }
+    if (cv) { f.modo.value = 'membro'; if (!f.convidado_por.options.length) f.convidado_por.innerHTML = '<option value="">Escolha</option>' + membros.filter(m => ['ativo', 'veterano', 'fundador'].includes(m.status)).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')).map(m => `<option value="${m.id}">${esc(m.nome)}</option>`).join(''); if (!f.conv_inicio.value) f.conv_inicio.value = hojeISO(); kConvFim(); kModo(); return; }
     $('#k-tipotxt').textContent = f.tipo.value === 'renovacao' ? 'Para quem já está no grupo e ainda não tem contrato. Sem o tudo incluso do primeiro ano. Assina uma vez; nos anos seguintes é só confirmar a renovação.' : 'Para quem está entrando no grupo. Primeiro ano com tudo incluso.';
     $('#k-inicio').hidden = f.tipo.value !== 'renovacao';
     if (f.tipo.value === 'renovacao' && !f.inicio.value) f.inicio.value = (kFicha && kFicha.vencimento) || hojeISO();
