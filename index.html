@@ -2438,7 +2438,7 @@
     if (!d) { carregaPesquisa(pqAtual); return; }
     const rows = d.rows || [], total = rows.length, ult = rows.length ? rows[rows.length - 1].criado_em : null;
     $('#pq-head').innerHTML = `<div><h2>${esc(p.titulo)}</h2><div class="muted">${esc(p.sub)} · anônima · ${(() => { const noAr = p.aberta || (p.id === 'raio-x' && !PESQUISAS.some(x => x.aberta)); return noAr ? `no ar em <a href="${p.link}" target="_blank" rel="noopener">${p.link.replace('https://', '')}</a>` : `encerrada${p.fechada_em ? ' em ' + dataCurta(p.fechada_em.slice(0, 10)) : ''}`; })()}</div></div>
-      <div class="pq-acts"><button class="btn sm ghost-b" id="pq-atualizar" style="margin:0">${d.carregando ? 'Atualizando…' : 'Atualizar'}</button><button class="btn sm" id="pq-csv" style="margin:0"${total ? '' : ' disabled'}>Exportar CSV</button></div>`;
+      <div class="pq-acts"><button class="btn sm ghost-b" id="pq-atualizar" style="margin:0">${d.carregando ? 'Atualizando…' : 'Atualizar'}</button><button class="btn sm ghost-b" id="pq-pdf" style="margin:0"${total ? '' : ' disabled'}>Exportar PDF</button><button class="btn sm" id="pq-csv" style="margin:0"${total ? '' : ' disabled'}>Exportar CSV</button></div>`;
     $('#pq-total').innerHTML = `<div class="pk"><div class="l">Respostas</div><div class="n">${total}</div><div class="s">${ult ? 'Última em ' + new Date(ult).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : d.carregando ? 'Carregando…' : 'Nenhuma ainda'}</div></div>`;
     if (d.erro) { $('#pq-qs').innerHTML = `<div class="empty">${esc(d.erro)}</div>`; return; }
     if (!total) { $('#pq-qs').innerHTML = `<div class="empty">${d.carregando ? 'Carregando…' : 'Aguardando respostas. Assim que alguém responder, o resultado aparece aqui.'}</div>`; return; }
@@ -2450,9 +2450,45 @@
         <div class="pq-ops">${linhas.map(x => `<div class="pq-op${x.n && x.n === max ? ' mx' : ''}"><span class="lb">${esc(x.l)}</span><span class="tr"><i style="width:${pqPct(x.n, base)}%"></i></span><b>${pqPct(x.n, base)}%</b><small>${x.n}</small></div>`).join('')}</div></div>`;
     }).join('');
   }
+  // PDF do resultado: mesmo desenho dos gráficos da aba, sempre em fundo claro (para ler, mandar e imprimir).
+  // A biblioteca html2pdf só é baixada no primeiro clique.
+  let html2pdfPronto = null;
+  const carregaHtml2pdf = () => html2pdfPronto || (html2pdfPronto = new Promise((ok, erro) => { const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'; sc.onload = ok; sc.onerror = () => { html2pdfPronto = null; erro(new Error('lib')); }; document.head.appendChild(sc); }));
+  async function pesquisaPdf(b) {
+    const p = PESQUISAS.find(x => x.id === pqAtual), rows = pqDados[pqAtual]?.rows || []; if (!p || !rows.length) return;
+    b.disabled = true; b.textContent = 'Gerando…';
+    try {
+      await carregaHtml2pdf();
+      const ult = rows[rows.length - 1].criado_em, pct = (n, d) => d ? Math.round(n / d * 100) : 0;
+      const quando = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'America/Sao_Paulo' });
+      const blocos = p.perguntas.map(q => {
+        const vale = q.so ? rows.filter(q.so) : rows, base = vale.length;
+        const ls = q.op.map(([v, l]) => ({ l, n: vale.filter(r => q.multi ? (r[q.k] || []).includes(v) : r[q.k] === v).length })), max = Math.max(...ls.map(x => x.n));
+        return `<div style="background:#f6f6f6;border-radius:16px;padding:16px 18px;margin-bottom:12px;page-break-inside:avoid">
+          <div style="display:flex;justify-content:space-between;gap:12px;font-size:13px;font-weight:500;color:#111"><span>${esc(q.t)}</span><span style="color:#8a8a8a;font-weight:400;font-size:11px;white-space:nowrap">${q.so ? `${base} ${q.soTxt}` : `${base} ${base === 1 ? 'resposta' : 'respostas'}`}${q.multi ? ' · mais de uma resposta' : ''}</span></div>
+          ${ls.map(x => `<div style="display:grid;grid-template-columns:42% 1fr 40px 26px;gap:10px;align-items:center;font-size:12px;margin-top:9px">
+            <span style="color:#474747">${esc(x.l)}</span>
+            <span style="height:8px;background:#fff;border-radius:4px;overflow:hidden;display:block"><i style="display:block;height:8px;width:${pct(x.n, base)}%;background:${x.n && x.n === max ? '#b88a44' : '#9a9a9a'};border-radius:4px"></i></span>
+            <b style="text-align:right;color:#111">${pct(x.n, base)}%</b><span style="text-align:right;color:#8a8a8a;font-size:11px">${x.n}</span></div>`).join('')}
+        </div>`;
+      }).join('');
+      const doc = document.createElement('div');
+      doc.style.cssText = 'width:720px;background:#fff;color:#111;font-family:Poppins,Arial,sans-serif;padding:8px 4px';
+      doc.innerHTML = `<div style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#b88a44;font-weight:600">The Group · Pesquisa</div>
+        <h1 style="font-size:26px;font-weight:600;letter-spacing:-.5px;margin:8px 0 4px">${esc(p.titulo)}</h1>
+        <div style="font-size:12px;color:#8a8a8a">${esc(p.sub)} · anônima · exportado em ${quando}</div>
+        <div style="display:flex;gap:12px;margin:18px 0 16px">
+          <div style="background:#f6f6f6;border-radius:16px;padding:14px 18px;min-width:180px"><div style="font-size:11.5px;color:#474747">Respostas</div><div style="font-size:32px;font-weight:600;letter-spacing:-1px">${rows.length}</div><div style="font-size:10.5px;color:#8a8a8a">Última em ${new Date(ult).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</div></div>
+        </div>${blocos}
+        <div style="font-size:10px;color:#8a8a8a;margin-top:14px">Respostas anônimas. Nas perguntas com mais de uma resposta, a soma passa de 100%.</div>`;
+      await html2pdf().set({ margin: [12, 12, 14, 12], filename: `${p.arquivo}-${hojeISO()}.pdf`, image: { type: 'jpeg', quality: .95 }, html2canvas: { scale: 2, backgroundColor: '#ffffff' }, jsPDF: { unit: 'mm', format: 'a4' }, pagebreak: { mode: ['css'], avoid: ['div[style*="page-break-inside"]'] } }).from(doc).save();
+    } catch { toast('Não foi possível gerar o PDF agora. Tente de novo.'); }
+    b.disabled = false; b.textContent = 'Exportar PDF';
+  }
   $('#pq-lista').addEventListener('click', e => { const b = e.target.closest('[data-pq]'); if (b) { pqAtual = b.dataset.pq; renderPesquisas(); } });
   $('#v-pesquisas').addEventListener('click', e => {
     if (e.target.closest('#pq-atualizar')) { carregaPesquisa(pqAtual, true); return; }
+    if (e.target.closest('#pq-pdf')) { pesquisaPdf(e.target.closest('#pq-pdf')); return; }
     if (!e.target.closest('#pq-csv')) return;
     // CSV: uma linha por resposta, com os rótulos, sem nada que identifique a pessoa.
     const p = PESQUISAS.find(x => x.id === pqAtual), rows = pqDados[pqAtual]?.rows || [];
