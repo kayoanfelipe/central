@@ -1252,6 +1252,8 @@
     convitesMembro: () => api('convites_membro?select=*&order=criado_em.desc'),
     gerarConviteMembro: id => api('rpc/gerar_convite_membro', { method: 'POST', body: JSON.stringify({ p_membro: id }) }),
     cancelarConviteMembro: id => api('rpc/cancelar_convite_membro', { method: 'POST', body: JSON.stringify({ p_convite: id }) }),
+    patchConvite: (id, b) => api(`convites_membro?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
+    bonusConvite: id => api('rpc/convite_membro_bonus', { method: 'POST', body: JSON.stringify({ p_convite: id }) }),
     delMembro: id => api(`membros?id=eq.${id}`, { method: 'DELETE' }),
     addConexao: b => api('membro_conexoes', { method: 'POST', body: JSON.stringify(b) }).then(r => r[0]),
     delConexao: id => api(`membro_conexoes?id=eq.${id}`, { method: 'DELETE' }),
@@ -2043,13 +2045,14 @@
   const MICONE = { chamar: IC_MSG, renov: IC('<path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3M19.5 4.5v4.5H15"/>'), cobrar: IC('<rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 10h16M9 3v4M15 3v4"/>'), aneis: IC('<circle cx="12" cy="14.5" r="5.5"/><path d="M9.5 4.5h5L13 8.5h-2z"/>'), contratos: IC_DOC };
   function marcaSel() { document.querySelectorAll('#mgrid .mrow').forEach(r => r.classList.toggle('sel', r.dataset.id === memId)); }
   function renderMembros() {
-    $('#mfilter').innerHTML = MQUEM.map(([k, l]) => `<button class="${mfiltro === k ? 'cur' : ''}" data-f="${k}" aria-pressed="${mfiltro === k}">${k === 'ex' ? 'Ex-membros' : l}</button>`).join('');
+    $('#mfilter').innerHTML = MQUEM.map(([k, l]) => `<button class="${mfiltro === k ? 'cur' : ''}" data-f="${k}" aria-pressed="${mfiltro === k}">${k === 'ex' ? 'Ex-membros' : l}${k === 'convidado' && convitesM.some(c => c.status === 'ativo') ? ` <span class="n">${convitesM.filter(c => c.status === 'ativo').length}</span>` : ''}</button>`).join('');
     $('#mfazer').innerHTML = MFAZER.filter(([k]) => k !== 'cobrar' || kCobrancas().length || mfiltro === 'cobrar').map(([k, l]) => `<button class="mlist${mfiltro === k ? ' cur' : ''}${filaAtrasada(k) ? ' warn' : ''}" data-f="${k}" aria-pressed="${mfiltro === k}"${filaAtrasada(k) ? ` aria-label="${l}: ${contaFiltro(k)}, com atraso" title="Tem item atrasado"` : ''}><span class="ic">${MICONE[k]}</span><span class="n">${contaFiltro(k)}</span><span class="l">${l}</span></button>`).join('');
     $('#mgrid').classList.remove('mlv');
     const termos = norm(mbusca).split(/\s+/).filter(Boolean);
     if (mfiltro === 'contratos') { $('#mgrid').classList.add('alist'); renderContratos(termos); if (memId) fillMembro(byId(memId)); return; }
     if (mfiltro === 'cobrar') { $('#mgrid').classList.add('alist'); renderCobrancas(termos); if (memId) fillMembro(byId(memId)); return; }
     if (mfiltro === 'renov') { $('#mgrid').classList.add('alist'); renderRenovacoes(termos); if (memId) fillMembro(byId(memId)); return; }
+    if (mfiltro === 'convidado') { $('#mgrid').classList.add('alist'); renderConvidados(termos); if (memId) fillMembro(byId(memId)); return; }
     if (mfiltro === 'chamar' || mfiltro === 'aneis') { $('#mgrid').classList.add('alist'); renderAcompanhamento(termos); if (memId) fillMembro(byId(memId)); return; }
     $('#mgrid').classList.remove('alist'); $('#mgrid').classList.add('mlv');
     const list = filtrarMembros();
@@ -2974,6 +2977,7 @@
     } catch (e) { fail(e, 'Não foi possível registrar'); }
   }
   $('#mgrid').addEventListener('click', e => {
+    const cm = e.target.closest('[data-cmlib],[data-cmfim],[data-cmbonus]'); if (cm) { e.stopPropagation(); cmAcao(cm); return; }
     const ch = e.target.closest('[data-chamei]'); if (ch) { e.stopPropagation(); const p = proximoContato(byId(ch.dataset.chamei)); registraContato(ch.dataset.chamei, p ? p.tipo : 'mensal'); return; }
     const an = e.target.closest('[data-anel]'); if (an) { e.stopPropagation(); salvaMembro(an.dataset.anel, 'anel', an.dataset.v).then(() => toast(`Anel: ${ANEL[an.dataset.v].toLowerCase()}`)); return; }
     // O link "ficha" da lista de contratos é <a href="#">: sem o preventDefault, a página voltava para o Hoje.
@@ -3062,12 +3066,64 @@
     return d > new Date() ? d : null;
   }
   const msgConviteMembro = (m, c) => `Fala, ${String(m.nome || '').trim().split(/\s+/)[0]}. Aqui é o Kayoan.\n\nVocê tem um convite do The Group para trazer uma pessoa do mercado para passar 3 meses no grupo. Este é o link, que já leva o seu nome:\n\n${CONVITE_M_URL + c.token}\n\nMande para a pessoa que você quer convidar. Ela abre, faz a aplicação e eu cuido da curadoria. O link vale para uma pessoa só.`;
+  // Convidado: nome e WhatsApp vêm da aplicação que ele fez pelo link (aplicacao_id, migração 55).
+  const aplDoConvite = c => c.aplicacao_id ? apls.find(a => a.id === c.aplicacao_id) : null;
+  const convidadoNome = c => (aplDoConvite(c) || {}).nome || '';
+  const somaMeses = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setMonth(d.getMonth() + n); return d.toISOString().slice(0, 10); };
+  // Ações depois da curadoria: liberar os 3 meses, encerrar e dar +3 meses para quem convidou (convite_membro_bonus).
+  const cmBotoes = c => (c.status === 'aprovado' ? `<button class="abtn pri" data-cmlib="${c.id}">Liberar acesso</button>` : '')
+    + (c.status === 'ativo' ? `<button class="abtn" data-cmfim="${c.id}">Encerrar</button>` : '')
+    + (['ativo', 'encerrado'].includes(c.status) && !c.bonus_em ? `<button class="abtn${c.status === 'encerrado' ? ' pri' : ''}" data-cmbonus="${c.id}">Virou membro: +3 meses para ${esc(String(c.membro_nome || '').split(' ')[0])}</button>` : '');
+  async function cmAcao(t) {
+    const c = convitesM.find(x => x.id === (t.dataset.cmlib || t.dataset.cmfim || t.dataset.cmbonus)); if (!c) return;
+    const quem = convidadoNome(c) || 'o convidado', pn = String(c.membro_nome || '').split(' ')[0];
+    try {
+      if (t.dataset.cmlib) {
+        const ini = hojeISO(), fim = somaMeses(ini, 3);
+        if (!confirm(`Liberar o acesso de ${quem} hoje? Os 3 meses vão de ${dataBR(ini)} a ${dataBR(fim)}.`)) return;
+        await db.patchConvite(c.id, { status: 'ativo', inicio: ini, fim }); Object.assign(c, { status: 'ativo', inicio: ini, fim }); toast(`Acesso de ${quem.split(' ')[0]} liberado até ${dataBR(fim)}`);
+      }
+      if (t.dataset.cmfim) {
+        if (!confirm(`Encerrar o convite de ${quem}? Os 3 meses acabam hoje.`)) return;
+        await db.patchConvite(c.id, { status: 'encerrado' }); c.status = 'encerrado'; toast('Convite encerrado');
+      }
+      if (t.dataset.cmbonus) {
+        const m = byId(c.membro_id), base = m && m.vencimento ? m.vencimento : hojeISO();
+        if (!confirm(`${quem} virou membro? ${c.membro_nome} ganha +3 meses: a renovação passa para ${dataBR(somaMeses(base, 3))}. Isso só pode ser feito uma vez por convite.`)) return;
+        const r = await db.bonusConvite(c.id); membros = await db.membros(); convitesM = await db.convitesMembro();
+        toast(`+3 meses para ${pn}. Renovação em ${dataBR((r && r.vencimento) || somaMeses(base, 3))}`);
+      }
+    } catch (err) { fail(err, err.message && err.message !== 'Erro' ? err.message : 'Não foi possível concluir'); }
+    renderMembros(); if (memId) fillMembro(byId(memId));
+  }
+  // Membros › Convidados: quem entra pelo convite de um membro, por 3 meses.
+  function renderConvidados(termos) {
+    const bate = c => !termos.length || termos.every(t => norm(convidadoNome(c) + ' ' + c.membro_nome).includes(t));
+    const l = convitesM.filter(c => c.status !== 'cancelado' && bate(c));
+    const dFim = c => diasAte(c.fim);
+    const g = [['atrasado', 'Terminam em até 15 dias', l.filter(c => c.status === 'ativo' && c.fim && dFim(c) <= 15).sort((a, b) => a.fim < b.fim ? -1 : 1)],
+      ['ativo', 'No grupo', l.filter(c => c.status === 'ativo' && !(c.fim && dFim(c) <= 15)).sort((a, b) => (a.fim || '9') < (b.fim || '9') ? -1 : 1)],
+      ['aprovado', 'Aprovados na curadoria, falta liberar o acesso', l.filter(c => c.status === 'aprovado')],
+      ['andamento', 'Convites em andamento', l.filter(c => ['gerado', 'aberto', 'aplicado'].includes(c.status))],
+      ['encerrado', 'Encerrados', l.filter(c => ['encerrado', 'recusado'].includes(c.status))]].filter(x => x[2].length);
+    const antigos = membros.filter(m => m.status === 'convidado' && (!termos.length || termos.every(t => norm(m.nome).includes(t))));
+    const nAtivos = l.filter(c => c.status === 'ativo').length;
+    $('#mcount').textContent = `Quem entra pelo convite de um membro e passa 3 meses no grupo · ${nAtivos} ${nAtivos === 1 ? 'no grupo' : 'no grupo agora'} · o convite é gerado na ficha do membro`;
+    const linha = c => {
+      const a = aplDoConvite(c), wa = a ? waLink(a.whatsapp) : '', d = dFim(c);
+      const sit = c.status === 'ativo' && c.fim ? `<span class="${d < 0 ? 'late' : ''}">${d < 0 ? `Terminou há ${-d} ${-d === 1 ? 'dia' : 'dias'}` : d === 0 ? 'Termina hoje' : `Termina em ${d} ${d === 1 ? 'dia' : 'dias'}`}</span> · de ${dataBR(c.inicio)} a ${dataBR(c.fim)}` : (CMST[c.status] || c.status) + (c.aberturas && ['gerado', 'aberto'].includes(c.status) ? ` · aberto ${c.aberturas} ${c.aberturas === 1 ? 'vez' : 'vezes'}` : '');
+      return `<div class="arow"><button class="anm" data-open="${c.membro_id}"><b>${esc(convidadoNome(c) || 'Convite ainda sem convidado')}</b><span>Convidado por ${esc(c.membro_nome)} · ${sit}${c.bonus_em ? ' · +3 meses já dados' : ''}</span></button>
+        <span class="aact">${wa ? `<a class="abtn" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ''}${cmBotoes(c)}</span></div>`;
+    };
+    $('#mgrid').innerHTML = (g.length ? g.map(([k, t, xs]) => `<section class="agrp${k === 'atrasado' ? ' atrasado' : ''}"><h3>${t} <span>${xs.length}</span></h3>${xs.map(linha).join('')}</section>`).join('') : '<div class="empty" style="grid-column:1/-1">Nenhum convidado de membro ainda. O convite é gerado na ficha do membro, em Convite de membro.</div>')
+      + (antigos.length ? `<section class="agrp"><h3>Fichas com status Convidado <span>${antigos.length}</span></h3>${antigos.map(m => `<div class="arow"><button class="anm" data-open="${m.id}"><b>${esc(m.nome)}</b><span>Ficha antiga marcada como Convidado</span></button></div>`).join('')}</section>` : '');
+  }
   function renderConviteFicha(m) {
     const l = convitesDe(m.id), pode = convidaStatus(m);
     $('#fs-convite').hidden = !pode && !l.length;
     const prox = proximoConvite(m), aberto = l.find(c => ['gerado', 'aberto'].includes(c.status));
-    const linha = c => `<div class="krow"><div class="anm" style="cursor:default"><b>${CMST[c.status] || c.status}</b><span>Gerado em ${dataBR(c.criado_em.slice(0, 10))}${c.aberturas ? ` · aberto ${c.aberturas} ${c.aberturas === 1 ? 'vez' : 'vezes'}` : ''}${c.inicio ? ` · de ${dataBR(c.inicio)}${c.fim ? ' a ' + dataBR(c.fim) : ''}` : ''}</span></div>
-      <div class="kbtns">${['gerado', 'aberto'].includes(c.status) ? `<button class="abtn pri" data-cmmsg="${c.id}">Copiar mensagem</button>${waLink(m.telefone) ? `<a class="abtn" href="${waLink(m.telefone)}?text=${encodeURIComponent(msgConviteMembro(m, c))}" target="_blank" rel="noopener">WhatsApp</a>` : ''}<button class="abtn" data-cmlink="${c.id}">Copiar link</button><button class="abtn" data-cmcancel="${c.id}">Cancelar</button>` : ''}</div></div>`;
+    const linha = c => `<div class="krow"><div class="anm" style="cursor:default"><b>${CMST[c.status] || c.status}${convidadoNome(c) ? ` · ${esc(convidadoNome(c))}` : ''}</b><span>${c.bonus_em ? `+3 meses dados em ${dataBR(c.bonus_em.slice(0, 10))} · ` : ''}Gerado em ${dataBR(c.criado_em.slice(0, 10))}${c.aberturas ? ` · aberto ${c.aberturas} ${c.aberturas === 1 ? 'vez' : 'vezes'}` : ''}${c.inicio ? ` · de ${dataBR(c.inicio)}${c.fim ? ' a ' + dataBR(c.fim) : ''}` : ''}</span></div>
+      <div class="kbtns">${['gerado', 'aberto'].includes(c.status) ? `<button class="abtn pri" data-cmmsg="${c.id}">Copiar mensagem</button>${waLink(m.telefone) ? `<a class="abtn" href="${waLink(m.telefone)}?text=${encodeURIComponent(msgConviteMembro(m, c))}" target="_blank" rel="noopener">WhatsApp</a>` : ''}<button class="abtn" data-cmlink="${c.id}">Copiar link</button><button class="abtn" data-cmcancel="${c.id}">Cancelar</button>` : cmBotoes(c)}</div></div>`;
     let topo = '';
     if (!pode) topo = '<div class="venc" style="margin:0 0 8px">Só ativos, veteranos e fundador convidam.</div>';
     else if (m.pode_convidar === false) topo = '<div class="venc" style="margin:0 0 8px">Este membro perdeu o direito de convidar.</div>';
@@ -3078,6 +3134,7 @@
     const el = $('#fsr-convite'); el.textContent = aberto ? 'link ativo' : l.length ? (CMST[l[0].status] || '').toLowerCase() : pode && m.pode_convidar !== false && !prox ? 'pode convidar' : '';
   }
   $('#m-convite').addEventListener('click', async e => {
+    const ac = e.target.closest('[data-cmlib],[data-cmfim],[data-cmbonus]'); if (ac) { cmAcao(ac); return; }
     const t = e.target.closest('[data-cmnovo],[data-cmmsg],[data-cmlink],[data-cmcancel],[data-cmdir]'); if (!t) return;
     const m = byId(memId); if (!m) return;
     const c = convitesM.find(x => x.id === (t.dataset.cmmsg || t.dataset.cmlink || t.dataset.cmcancel));
@@ -3403,7 +3460,9 @@
     const wait = v => new Promise(r => setTimeout(() => r(v), 120));
     let k = 100, M = [], C = [], CT = [], K = [], cofre = null;
     // Prévia: um convite de membro já aberto, para ver a seção na ficha.
-    const CM = [{ id: 'cm1', token: 'previa000001', membro_id: 'm2', membro_nome: 'Bruno Exemplo', status: 'aberto', criado_em: ago(5), aberturas: 2, inicio: null, fim: null }];
+    const CM = [{ id: 'cm1', token: 'previa000001', membro_id: 'm2', membro_nome: 'Bruno Exemplo', status: 'aberto', criado_em: ago(5), aberturas: 2, inicio: null, fim: null },
+      { id: 'cm2', token: 'previa000002', membro_id: 'mx0', membro_nome: 'Carla Veterana', status: 'ativo', criado_em: ago(85), aberturas: 3, aplicacao_id: 'a6', inicio: ago(80).slice(0, 10), fim: new Date(Date.now() + 10 * 864e5).toISOString().slice(0, 10), bonus_em: null },
+      { id: 'cm3', token: 'previa000003', membro_id: 'm1', membro_nome: 'Ana Membro', status: 'aprovado', criado_em: ago(10), aberturas: 1, aplicacao_id: 'a2', inicio: null, fim: null, bonus_em: null }];
     const PA = [
       { id: 'pa1', created_at: ago(40), updated_at: ago(2), marca: 'Payflow', razao_social: 'Payflow Pagamentos Ltda', cnpj: '11222333000181', contato_nome: 'Renata Lima', contato_whats: '(11) 98888-1111', contato_email: 'renata@exemplo.com', cota_interesse: 'oficial', segmento: 'Financeiro e pagamentos', status: 'ativo', inicio: '2026-09-01', nota: 'Quer ativação de pôquer na próxima The House.' },
       { id: 'pa2', created_at: ago(12), updated_at: ago(3), marca: 'Charutaria Norte', razao_social: null, cnpj: null, contato_nome: 'Paulo', contato_whats: '(48) 97777-2222', contato_email: null, cota_interesse: 'apoiador', segmento: 'Bebida e charuto', status: 'negociando', inicio: null, nota: null },
@@ -3452,6 +3511,8 @@
       convitesMembro: () => wait(CM.map(x => ({ ...x }))),
       gerarConviteMembro: id => { const m = M.find(x => x.id === id); if (CM.some(c => c.membro_id === id && !['cancelado', 'recusado'].includes(c.status) && Date.now() - new Date(c.criado_em) < 90 * 864e5)) return Promise.reject(new Error('Este membro já tem um convite.')); const c = { id: 'cm' + k++, token: Math.random().toString(36).slice(2, 14).padEnd(12, '0'), membro_id: id, membro_nome: m.nome, status: 'gerado', criado_em: new Date().toISOString(), aberturas: 0, inicio: null, fim: null }; CM.unshift(c); return wait({ token: c.token, membro: m.nome }); },
       cancelarConviteMembro: id => { const c = CM.find(x => x.id === id); if (c) c.status = 'cancelado'; return wait({ cancelado: !!c }); },
+      patchConvite: (id, b) => { Object.assign(CM.find(x => x.id === id) || {}, b); return wait(null); },
+      bonusConvite: id => { const c = CM.find(x => x.id === id), m = M.find(x => x.id === c.membro_id); const d = new Date((m.vencimento || new Date().toISOString().slice(0, 10)) + 'T12:00:00'); d.setMonth(d.getMonth() + 3); m.vencimento = d.toISOString().slice(0, 10); c.bonus_em = new Date().toISOString(); return wait({ vencimento: m.vencimento }); },
       delMembro: id => { M.splice(M.findIndex(x => x.id === id), 1); C = C.filter(c => c.de !== id && c.para !== id); return wait(null); },
       addConexao: b => { const c = { id: 'c' + k++, ...b }; C.push(c); return wait({ ...c }); },
       delConexao: id => { C = C.filter(c => c.id !== id); return wait(null); },
