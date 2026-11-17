@@ -3215,7 +3215,8 @@
   $('#k-novo').addEventListener('click', () => abrirNovoContrato());
 
   /* ---------------- Atualizar ---------------- */
-  $('#refresh').addEventListener('click', () => loadAll().then(() => { renderAll(); toast('Atualizado'); }).catch(e => fail(e, 'Não foi possível atualizar')));
+  // Atualizar recarrega a página inteira: traz tudo de novo, inclusive as respostas das pesquisas. O login fica salvo.
+  $('#refresh').addEventListener('click', () => location.reload());
   setInterval(() => {
     const typing = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName);
     if ((session || DEMO) && !document.hidden && !openId && !ideaId && !memId && !etapaId && !typing && !$('#app').hidden) loadAll().then(renderAll).catch(() => {});
