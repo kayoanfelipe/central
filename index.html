@@ -1749,7 +1749,8 @@
       : bZap(true) + bMembroQ;
     const items = [
       ['Convidado por', esc(quemConvidou(r)), true],
-      ['O que pode trazer', (r.contribuicao || []).map(x => CONTRIB[x] || x).join(', ') || '-'],
+      // 66-convidado-contribuicao-aberta.sql: resposta aberta (contribuicao_texto); as antigas têm as opções (contribuicao).
+      ['O que pode trazer', r.contribuicao_texto || (r.contribuicao || []).map(x => CONTRIB[x] || x).join(', ') || '-'],
       papelOuFuncao(r),
       ['Mercado', mercadosTxt(r)],
       ['Faturamento por mês', FAT[r.faturamento] || r.faturamento || '-'],
@@ -3500,7 +3501,7 @@
       ['Felipe Dias', 'felipedias', '+5585996789012', 'felipe@exemplo.com', 'copywriter', 'info', '6', 'instagram', null, 'recusado', 'conteudo', 15],
     ].map(([nome, instagram, whatsapp, email, funcao, nicho, faturamento, canal, indicado_por, status, origem_lead, d], n) => ({
       // Prévia: Juliana (a2) e Letícia (a6) aplicaram pelo convite de um membro.
-      mercados: n === 0 ? ['nutra', 'app'] : n === 2 ? ['saas'] : null, papel: n === 0 ? 'Sócia e responsável pelo tráfego' : n === 2 ? 'Fundadora e CEO' : null, convite_membro_id: n === 2 ? 'cm3' : n === 6 ? 'cm2' : null, convidado_por_nome: n === 2 ? 'Ana Membro' : n === 6 ? 'Carla Veterana' : null, contribuicao: n === 2 ? ['trafego', 'oferta'] : n === 6 ? ['copy'] : null,
+      mercados: n === 0 ? ['nutra', 'app'] : n === 2 ? ['saas'] : null, papel: n === 0 ? 'Sócia e responsável pelo tráfego' : n === 2 ? 'Fundadora e CEO' : null, convite_membro_id: n === 2 ? 'cm3' : n === 6 ? 'cm2' : null, convidado_por_nome: n === 2 ? 'Ana Membro' : n === 6 ? 'Carla Veterana' : null, contribuicao_texto: n === 6 ? 'Rede de afiliados no Nutra e experiência em escalar ofertas no Brasil e no México.' : null, contribuicao: n === 2 ? ['trafego', 'oferta'] : n === 6 ? ['copy'] : null,
       id: 'a' + n, created_at: ago(d, n), nome, instagram, whatsapp, email, funcao, funcao_outra: null, nicho, faturamento, canal, indicado_por, origem: n % 3 ? 'site' : 'app', status, origem_lead, nota: null, atua_dr: n !== 1, segmento: n === 1 ? 'e-commerce e drop' : null,
       convites: n === 3 ? [{ token: 'k3m9xq2v7tpa', criado_em: ago(3), expira_em: '2099-12-31T23:59:59-03:00', aberto_em: ago(2, 5), ultima_abertura: ago(1), aberturas: 3 }]
         : n === 4 ? [{ token: 'r8w2nd5yq1zc', criado_em: ago(5), expira_em: '2099-12-31T23:59:59-03:00', aberto_em: null, ultima_abertura: null, aberturas: 0 }]
