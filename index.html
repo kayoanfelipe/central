@@ -3110,7 +3110,9 @@
   const convidaStatus = m => ['ativo', 'veterano', 'fundador'].includes(m.status);
   const convitesDe = id => convitesM.filter(c => c.membro_id === id).sort((a, b) => a.criado_em < b.criado_em ? 1 : -1);
   // Próxima data em que o membro pode gerar outro convite (null = pode agora).
+  // O fundador gera quantos convites quiser, sem esperar 3 meses, com um link aberto por vez: o novo cancela o anterior não usado (62-fundador-convites-livres.sql).
   function proximoConvite(m) {
+    if (m.status === 'fundador') return null;
     const u = convitesDe(m.id).find(c => !['cancelado', 'recusado'].includes(c.status)); if (!u) return null;
     const d = new Date(u.criado_em); d.setMonth(d.getMonth() + 3);
     return d > new Date() ? d : null;
@@ -3178,9 +3180,9 @@
     if (!pode) topo = '<div class="venc" style="margin:0 0 8px">Só ativos, veteranos e fundador convidam.</div>';
     else if (m.pode_convidar === false) topo = '<div class="venc" style="margin:0 0 8px">Este membro perdeu o direito de convidar.</div>';
     else if (prox) topo = `<div class="venc" style="margin:0 0 8px">Próximo convite a partir de ${dataBR(prox.toISOString().slice(0, 10))}.</div>`;
-    else topo = `<button class="move" data-cmnovo="${m.id}" style="margin-bottom:10px">Gerar convite</button>`;
+    else topo = `<button class="move" data-cmnovo="${m.id}" style="margin-bottom:10px">${m.status === 'fundador' && aberto ? 'Gerar link novo' : 'Gerar convite'}</button>`;
     const direito = pode ? `<div class="sec">Pode convidar</div><div class="moves"><button class="move${m.pode_convidar !== false ? ' cur' : ''}" data-cmdir="1">Sim</button><button class="move${m.pode_convidar === false ? ' cur' : ''}" data-cmdir="0">Não</button></div>` : '';
-    $('#m-convite').innerHTML = topo + (l.length ? l.slice(0, 4).map(linha).join('') : (pode ? '<div class="venc" style="margin:0 0 8px">Nenhum convite gerado ainda.</div>' : '')) + direito;
+    $('#m-convite').innerHTML = topo + (l.length ? l.slice(0, m.status === 'fundador' ? 100 : 4).map(linha).join('') : (pode ? '<div class="venc" style="margin:0 0 8px">Nenhum convite gerado ainda.</div>' : '')) + direito;
     const el = $('#fsr-convite'); el.textContent = aberto ? 'link ativo' : l.length ? (CMST[l[0].status] || '').toLowerCase() : pode && m.pode_convidar !== false && !prox ? 'pode convidar' : '';
   }
   $('#m-convite').addEventListener('click', async e => {
@@ -3190,7 +3192,7 @@
     const c = convitesM.find(x => x.id === (t.dataset.cmmsg || t.dataset.cmlink || t.dataset.cmcancel));
     try {
       if (t.dataset.cmnovo) {
-        if (!confirm(`Gerar um convite de ${m.nome}? O próximo só poderá ser gerado daqui a 3 meses, a não ser que este seja cancelado ou recusado na curadoria.`)) return;
+        if (!confirm(m.status === 'fundador' ? (convitesDe(m.id).some(c => ['gerado', 'aberto'].includes(c.status)) ? 'Gerar um link novo? O link anterior, que ainda não virou aplicação, para de abrir.' : 'Gerar um link de convite? Como fundador, você pode trocar de link quando quiser, sem esperar 3 meses.') : `Gerar um convite de ${m.nome}? O próximo só poderá ser gerado daqui a 3 meses, a não ser que este seja cancelado ou recusado na curadoria.`)) return;
         t.disabled = true; await db.gerarConviteMembro(m.id); convitesM = await db.convitesMembro();
         const novo = convitesDe(m.id)[0]; if (novo) copia(msgConviteMembro(m, novo), 'Convite gerado. Mensagem copiada');
       }
@@ -3561,7 +3563,7 @@
       addMembro: b => { const m = { id: 'm' + k++, ...b }; M.push(m); return wait({ ...m }); },
       patchMembro: (id, b) => { Object.assign(M.find(x => x.id === id) || {}, b); return wait(null); },
       convitesMembro: () => wait(CM.map(x => ({ ...x }))),
-      gerarConviteMembro: id => { const m = M.find(x => x.id === id); if (CM.some(c => c.membro_id === id && !['cancelado', 'recusado'].includes(c.status) && Date.now() - new Date(c.criado_em) < 90 * 864e5)) return Promise.reject(new Error('Este membro já tem um convite.')); const c = { id: 'cm' + k++, token: Math.random().toString(36).slice(2, 14).padEnd(12, '0'), membro_id: id, membro_nome: m.nome, status: 'gerado', criado_em: new Date().toISOString(), aberturas: 0, inicio: null, fim: null }; CM.unshift(c); return wait({ token: c.token, membro: m.nome }); },
+      gerarConviteMembro: id => { const m = M.find(x => x.id === id); if (m.status === 'fundador') CM.filter(c => c.membro_id === id && ['gerado', 'aberto'].includes(c.status)).forEach(c => { c.status = 'cancelado'; }); if (m.status !== 'fundador' && CM.some(c => c.membro_id === id && !['cancelado', 'recusado'].includes(c.status) && Date.now() - new Date(c.criado_em) < 90 * 864e5)) return Promise.reject(new Error('Este membro já tem um convite.')); const c = { id: 'cm' + k++, token: Math.random().toString(36).slice(2, 14).padEnd(12, '0'), membro_id: id, membro_nome: m.nome, status: 'gerado', criado_em: new Date().toISOString(), aberturas: 0, inicio: null, fim: null }; CM.unshift(c); return wait({ token: c.token, membro: m.nome }); },
       cancelarConviteMembro: id => { const c = CM.find(x => x.id === id); if (c) c.status = 'cancelado'; return wait({ cancelado: !!c }); },
       patchConvite: (id, b) => { Object.assign(CM.find(x => x.id === id) || {}, b); return wait(null); },
       bonusConvite: id => { const c = CM.find(x => x.id === id), m = M.find(x => x.id === c.membro_id); const d = new Date((m.vencimento || new Date().toISOString().slice(0, 10)) + 'T12:00:00'); d.setMonth(d.getMonth() + 3); m.vencimento = d.toISOString().slice(0, 10); c.bonus_em = new Date().toISOString(); return wait({ vencimento: m.vencimento }); },
