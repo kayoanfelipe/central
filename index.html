@@ -1387,6 +1387,10 @@
     return m ? `(${m[1]}) ${m[2]}-${m[3]}` : w;
   };
   const funcao = r => r.funcao === 'outra' && r.funcao_outra ? r.funcao_outra : (FUNCAO[r.funcao] || r.funcao);
+  // Quiz novo (63-aplicacao-mercado.sql): mercados (vários) e papel na operação. Aplicação antiga usa nicho e função.
+  const mercadosDe = r => Array.isArray(r.mercados) && r.mercados.length ? r.mercados : (r.nicho && r.nicho !== 'outro' ? [r.nicho] : []);
+  const mercadosTxt = r => mercadosDe(r).map(k => NICHO[k] || k).join(', ') || NICHO[r.nicho] || r.nicho || '-';
+  const papelOuFuncao = r => r.papel ? ['Papel na operação', r.papel] : ['Função', funcao(r)];
 
   /* ---------------- Hoje ---------------- */
   /* Painel do Hoje: como o grupo está, sem nada de financeiro. */
@@ -1591,7 +1595,7 @@
             ${!ehConvidado(r) && ['nova', 'conversa', 'call'].includes(r.status) ? callHtml(r) : ''}
             ${kStApl(r) ? `<div class="kst${kStApl(r).ok ? ' ok' : ''}"><i></i>${kStApl(r).txt}</div>` : ''}
             ${linkDe(r) && !ehConvidado(r) ? `<span class="clink" title="${esc(linkDe(r))}"><span class="cl-url">Link do convite</span><span class="cl-copy" role="button" tabindex="0" data-copy="${esc(linkDe(r))}">Copiar</span></span>` : ''}
-            <div class="tags">${NICHO[r.nicho] && r.nicho !== 'outro' ? `<span class="tag">${esc(NICHO[r.nicho])}</span>` : ''}${seloConvite(r) && !ehConvidado(r) ? `<span class="tag convite">${esc(seloConvite(r))}</span>` : ''}${r.membro_id && byId(r.membro_id) ? '<span class="tag">Ficha de membro</span>' : ''}${(conviteDe(r)?.aberturas || 0) > 1 ? `<span class="tag convite${conviteDe(r).aberturas > 2 ? ' muito' : ''}">Abriu ${conviteDe(r).aberturas} vezes</span>` : ''}</div>
+            <div class="tags">${mercadosDe(r).map(k => `<span class="tag">${esc(NICHO[k] || k)}</span>`).join('')}${seloConvite(r) && !ehConvidado(r) ? `<span class="tag convite">${esc(seloConvite(r))}</span>` : ''}${r.membro_id && byId(r.membro_id) ? '<span class="tag">Ficha de membro</span>' : ''}${(conviteDe(r)?.aberturas || 0) > 1 ? `<span class="tag convite${conviteDe(r).aberturas > 2 ? ' muito' : ''}">Abriu ${conviteDe(r).aberturas} vezes</span>` : ''}</div>
           </button>`).join('') : '<div class="empty">Nada por aqui</div>'}</div>
       </section>`;
     }).join('');
@@ -1716,8 +1720,8 @@
       : bMembro(true) + bContrato(false) + bZap;
 
     const items = [
-      ['Função', funcao(r)],
-      ['Mercado', NICHO[r.nicho] || r.nicho || '-'],
+      papelOuFuncao(r),
+      ['Mercado', mercadosTxt(r)],
       ['Faturamento por mês', FAT[r.faturamento] || r.faturamento],
       ['Como chegou', r.canal === 'indicacao' && r.indicado_por ? `Indicação de ${r.indicado_por}` : (CANAL[r.canal] || r.canal || '-')],
       ['Instagram', `<a href="${igUrl(r.instagram)}" target="_blank" rel="noopener">@${esc(r.instagram)}</a>`, true],
@@ -1744,8 +1748,8 @@
     const items = [
       ['Convidado por', esc(quemConvidou(r)), true],
       ['O que pode trazer', (r.contribuicao || []).map(x => CONTRIB[x] || x).join(', ') || '-'],
-      ['Função', funcao(r)],
-      ['Mercado', NICHO[r.nicho] || r.nicho || '-'],
+      papelOuFuncao(r),
+      ['Mercado', mercadosTxt(r)],
       ['Faturamento por mês', FAT[r.faturamento] || r.faturamento || '-'],
       ['Termos de convidado', sitTermos, true],
       ['Instagram', `<a href="${igUrl(r.instagram)}" target="_blank" rel="noopener">@${esc(r.instagram)}</a>`, true],
@@ -3257,7 +3261,7 @@
         renderAll(); toast('Aplicação ligada à ficha'); openMembro(existe.id); return;
       }
       const hoje = new Date().toLocaleDateString('pt-BR');
-      const info = [`Aplicação de ${new Date(r.created_at).toLocaleDateString('pt-BR')}: ${funcao(r)} · ${NICHO[r.nicho] || r.nicho || ''} · faturamento ${FAT_CURTO[r.faturamento] || r.faturamento || ''} · Instagram @${igUser(r.instagram)}`,
+      const info = [`Aplicação de ${new Date(r.created_at).toLocaleDateString('pt-BR')}: ${r.papel || funcao(r)} · ${mercadosTxt(r)} · faturamento ${FAT_CURTO[r.faturamento] || r.faturamento || ''} · Instagram @${igUser(r.instagram)}`,
         r.canal === 'indicacao' && r.indicado_por ? `Indicação de ${r.indicado_por}` : r.origem_lead ? `Origem: ${ORIGEM[r.origem_lead] || r.origem_lead}` : '',
         r.nota ? `Anotações da aplicação: ${r.nota}` : ''].filter(Boolean).join('\n');
       const b = { nome: k ? k.nome : r.nome, status: 'ativo', email: (d.email || r.email || '').toLowerCase() || null, telefone: d.tel || (k && k.telefone) || phone(r.whatsapp) || null,
@@ -3494,7 +3498,7 @@
       ['Felipe Dias', 'felipedias', '+5585996789012', 'felipe@exemplo.com', 'copywriter', 'info', '6', 'instagram', null, 'recusado', 'conteudo', 15],
     ].map(([nome, instagram, whatsapp, email, funcao, nicho, faturamento, canal, indicado_por, status, origem_lead, d], n) => ({
       // Prévia: Juliana (a2) e Letícia (a6) aplicaram pelo convite de um membro.
-      convite_membro_id: n === 2 ? 'cm3' : n === 6 ? 'cm2' : null, convidado_por_nome: n === 2 ? 'Ana Membro' : n === 6 ? 'Carla Veterana' : null, contribuicao: n === 2 ? ['trafego', 'oferta'] : n === 6 ? ['copy'] : null,
+      mercados: n === 0 ? ['nutra', 'marca'] : n === 2 ? ['saas'] : null, papel: n === 0 ? 'Sócia e responsável pelo tráfego' : n === 2 ? 'Fundadora e CEO' : null, convite_membro_id: n === 2 ? 'cm3' : n === 6 ? 'cm2' : null, convidado_por_nome: n === 2 ? 'Ana Membro' : n === 6 ? 'Carla Veterana' : null, contribuicao: n === 2 ? ['trafego', 'oferta'] : n === 6 ? ['copy'] : null,
       id: 'a' + n, created_at: ago(d, n), nome, instagram, whatsapp, email, funcao, funcao_outra: null, nicho, faturamento, canal, indicado_por, origem: n % 3 ? 'site' : 'app', status, origem_lead, nota: null, atua_dr: n !== 1, segmento: n === 1 ? 'e-commerce e drop' : null,
       convites: n === 3 ? [{ token: 'k3m9xq2v7tpa', criado_em: ago(3), expira_em: '2099-12-31T23:59:59-03:00', aberto_em: ago(2, 5), ultima_abertura: ago(1), aberturas: 3 }]
         : n === 4 ? [{ token: 'r8w2nd5yq1zc', criado_em: ago(5), expira_em: '2099-12-31T23:59:59-03:00', aberto_em: null, ultima_abertura: null, aberturas: 0 }]
