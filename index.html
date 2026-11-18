@@ -1184,8 +1184,10 @@
   const IDEIA = [['fazer', 'Pra fazer'], ['fazendo', 'Fazendo'], ['feito', 'Feito']];
   const NEXT = { fazer: ['fazendo', 'Começar'], fazendo: ['feito', 'Concluir'] };
   const FUNCAO = { dono: 'Dono de operação', head: 'Head de operação', copywriter: 'Copywriter', trafego: 'Gestor de tráfego', outra: 'Outra função' };
-  // Os 4 mercados do The Group (posicionamento de 18/11/2026). 'outro' fica para aplicações antigas.
-  const NICHO = { info: 'Infoproduto', nutra: 'Nutra', saas: 'SaaS e aplicativos', marca: 'Marca própria', outro: 'Outro' };
+  // nicho: campo do quiz antigo (aplicações até 18/11/2026). 'saas' era "SaaS e aplicativos".
+  const NICHO = { info: 'Infoproduto', nutra: 'Nutra', saas: 'SaaS e aplicativos', outro: 'Outro' };
+  // mercados: os 4 mercados do The Group (64-mercados-saas-app.sql): info, nutra, saas, app.
+  const MERC = { info: 'Infoproduto', nutra: 'Nutra', saas: 'SaaS', app: 'Aplicativos' };
   const CANAL = { indicacao: 'Indicação', instagram: 'Instagram', evento: 'Evento', outro: 'Outro caminho' };
   const FAT = { inicio: 'Ainda é iniciante', '6': '6 dígitos+ (R$ 100 mil+)', '7': '7 dígitos+ (R$ 1 milhão+)', '8': '8 dígitos+ (R$ 10 milhões+)' };
   const FAT_CURTO = { inicio: 'iniciante', '6': '6 dígitos', '7': '7 dígitos', '8': '8 dígitos+' };
@@ -1388,8 +1390,8 @@
   };
   const funcao = r => r.funcao === 'outra' && r.funcao_outra ? r.funcao_outra : (FUNCAO[r.funcao] || r.funcao);
   // Quiz novo (63-aplicacao-mercado.sql): mercados (vários) e papel na operação. Aplicação antiga usa nicho e função.
-  const mercadosDe = r => Array.isArray(r.mercados) && r.mercados.length ? r.mercados : (r.nicho && r.nicho !== 'outro' ? [r.nicho] : []);
-  const mercadosTxt = r => mercadosDe(r).map(k => NICHO[k] || k).join(', ') || NICHO[r.nicho] || r.nicho || '-';
+  const mercadosDe = r => Array.isArray(r.mercados) && r.mercados.length ? r.mercados.map(k => MERC[k] || k) : (r.nicho && r.nicho !== 'outro' ? [NICHO[r.nicho] || r.nicho] : []);
+  const mercadosTxt = r => mercadosDe(r).join(', ') || NICHO[r.nicho] || r.nicho || '-';
   const papelOuFuncao = r => r.papel ? ['Papel na operação', r.papel] : ['Função', funcao(r)];
 
   /* ---------------- Hoje ---------------- */
@@ -1595,7 +1597,7 @@
             ${!ehConvidado(r) && ['nova', 'conversa', 'call'].includes(r.status) ? callHtml(r) : ''}
             ${kStApl(r) ? `<div class="kst${kStApl(r).ok ? ' ok' : ''}"><i></i>${kStApl(r).txt}</div>` : ''}
             ${linkDe(r) && !ehConvidado(r) ? `<span class="clink" title="${esc(linkDe(r))}"><span class="cl-url">Link do convite</span><span class="cl-copy" role="button" tabindex="0" data-copy="${esc(linkDe(r))}">Copiar</span></span>` : ''}
-            <div class="tags">${mercadosDe(r).map(k => `<span class="tag">${esc(NICHO[k] || k)}</span>`).join('')}${seloConvite(r) && !ehConvidado(r) ? `<span class="tag convite">${esc(seloConvite(r))}</span>` : ''}${r.membro_id && byId(r.membro_id) ? '<span class="tag">Ficha de membro</span>' : ''}${(conviteDe(r)?.aberturas || 0) > 1 ? `<span class="tag convite${conviteDe(r).aberturas > 2 ? ' muito' : ''}">Abriu ${conviteDe(r).aberturas} vezes</span>` : ''}</div>
+            <div class="tags">${mercadosDe(r).map(l => `<span class="tag">${esc(l)}</span>`).join('')}${seloConvite(r) && !ehConvidado(r) ? `<span class="tag convite">${esc(seloConvite(r))}</span>` : ''}${r.membro_id && byId(r.membro_id) ? '<span class="tag">Ficha de membro</span>' : ''}${(conviteDe(r)?.aberturas || 0) > 1 ? `<span class="tag convite${conviteDe(r).aberturas > 2 ? ' muito' : ''}">Abriu ${conviteDe(r).aberturas} vezes</span>` : ''}</div>
           </button>`).join('') : '<div class="empty">Nada por aqui</div>'}</div>
       </section>`;
     }).join('');
@@ -3498,7 +3500,7 @@
       ['Felipe Dias', 'felipedias', '+5585996789012', 'felipe@exemplo.com', 'copywriter', 'info', '6', 'instagram', null, 'recusado', 'conteudo', 15],
     ].map(([nome, instagram, whatsapp, email, funcao, nicho, faturamento, canal, indicado_por, status, origem_lead, d], n) => ({
       // Prévia: Juliana (a2) e Letícia (a6) aplicaram pelo convite de um membro.
-      mercados: n === 0 ? ['nutra', 'marca'] : n === 2 ? ['saas'] : null, papel: n === 0 ? 'Sócia e responsável pelo tráfego' : n === 2 ? 'Fundadora e CEO' : null, convite_membro_id: n === 2 ? 'cm3' : n === 6 ? 'cm2' : null, convidado_por_nome: n === 2 ? 'Ana Membro' : n === 6 ? 'Carla Veterana' : null, contribuicao: n === 2 ? ['trafego', 'oferta'] : n === 6 ? ['copy'] : null,
+      mercados: n === 0 ? ['nutra', 'app'] : n === 2 ? ['saas'] : null, papel: n === 0 ? 'Sócia e responsável pelo tráfego' : n === 2 ? 'Fundadora e CEO' : null, convite_membro_id: n === 2 ? 'cm3' : n === 6 ? 'cm2' : null, convidado_por_nome: n === 2 ? 'Ana Membro' : n === 6 ? 'Carla Veterana' : null, contribuicao: n === 2 ? ['trafego', 'oferta'] : n === 6 ? ['copy'] : null,
       id: 'a' + n, created_at: ago(d, n), nome, instagram, whatsapp, email, funcao, funcao_outra: null, nicho, faturamento, canal, indicado_por, origem: n % 3 ? 'site' : 'app', status, origem_lead, nota: null, atua_dr: n !== 1, segmento: n === 1 ? 'e-commerce e drop' : null,
       convites: n === 3 ? [{ token: 'k3m9xq2v7tpa', criado_em: ago(3), expira_em: '2099-12-31T23:59:59-03:00', aberto_em: ago(2, 5), ultima_abertura: ago(1), aberturas: 3 }]
         : n === 4 ? [{ token: 'r8w2nd5yq1zc', criado_em: ago(5), expira_em: '2099-12-31T23:59:59-03:00', aberto_em: null, ultima_abertura: null, aberturas: 0 }]
