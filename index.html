@@ -829,7 +829,7 @@
     </section>
 
     <section id="v-membros" hidden>
-      <div class="mhead"><h1 class="page">Membros</h1><span style="display:flex;gap:8px"><button class="btn sm ghost-b" id="k-novo">Novo contrato</button><button class="btn sm" id="m-novo">Novo membro</button></span></div>
+      <div class="mhead"><h1 class="page">Membros</h1><span style="display:flex;gap:8px"><button class="btn sm ghost-b" type="button" data-medit="">Mensagens</button><button class="btn sm ghost-b" id="k-novo">Novo contrato</button><button class="btn sm" id="m-novo">Novo membro</button></span></div>
       <div class="input search"><input id="mbusca" type="search" placeholder="Buscar por nome, cidade, mercado, plataforma…" autocomplete="off"></div>
       <div class="mlists" id="mfazer" aria-label="Para fazer"></div>
       <div class="mlhead"><div class="seg" id="mfilter" role="group" aria-label="Quem aparece"></div><div class="mcount" id="mcount"></div></div>
@@ -1142,6 +1142,22 @@
   </div>
 </aside>
 
+<aside class="sheet" id="xsheet" aria-hidden="true">
+  <div class="head">
+    <div><h3>Mensagens prontas</h3><div class="since">Edite o texto. Os campos entre chaves são trocados na hora de copiar.</div></div>
+    <button class="x" id="x-fechar" aria-label="Fechar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="body">
+    <label class="fld" style="display:block;margin-top:6px"><span>Mensagem</span><select id="x-chave" class="sel" style="width:100%"></select></label>
+    <div class="venc" id="x-vars" style="margin:10px 0"></div>
+    <textarea id="x-texto" maxlength="4000" style="min-height:240px;width:100%"></textarea>
+    <div class="venc" id="x-info" style="margin-top:6px"></div>
+    <div class="msg" id="x-erro"></div>
+    <div class="lk-acts" style="margin-top:12px"><button class="btn sm" type="button" id="x-salvar">Salvar</button><button class="btn sm ghost-b" type="button" id="x-padrao">Voltar ao padrão</button></div>
+    <div class="lk-k" style="margin-top:20px">Como fica, com um exemplo</div>
+    <div class="lk-txt" id="x-previa" style="white-space:pre-wrap"></div>
+  </div>
+</aside>
 <aside class="sheet" id="asheet" aria-hidden="true">
   <div class="head">
     <div><h3 id="a-tit">Novo atalho</h3></div>
@@ -1288,6 +1304,9 @@
     raioX: () => api('pesquisa_raio_x?select=criado_em,trafego,plataformas,pagamento,conta_dolar,vende_fora&order=criado_em.asc'),
     pesquisas: () => api('pesquisas?select=id,slug,titulo,sub,perguntas,aberta,criada_em,fechada_em&order=criada_em.desc'),
     theboys: () => api('theboys_aplicacoes?select=*&order=criado_em.desc'),
+    mensagens: () => api('mensagens_modelo?select=*'),
+    salvaMensagem: (chave, texto) => api('mensagens_modelo', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=representation' }, body: JSON.stringify({ chave, texto }) }),
+    apagaMensagem: chave => api(`mensagens_modelo?chave=eq.${chave}`, { method: 'DELETE' }),
     respostasPesquisa: id => api(`pesquisa_respostas?select=criado_em,respostas&pesquisa_id=eq.${id}&order=criado_em.asc`).then(l => l.map(r => ({ criado_em: r.criado_em, ...r.respostas }))),
     addParceiro: b => api('parceiros', { method: 'POST', body: JSON.stringify(b) }).then(r => r[0]),
     patchParceiro: (id, b) => api(`parceiros?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
@@ -1349,6 +1368,7 @@
     apls = a; ideias = i; membros = m; conexoes = c; etapas = j; contatos = ct; contratos = k.filter(x => x.publico !== 'patrocinio'); contratosP = k.filter(x => x.publico === 'patrocinio'); tarefas = tf; parceiros = pa; convitesM = cm;
     // Sem a tabela (migração 37 não rodada), mostra os atalhos fixos, sem edição.
     atalhos = at || ATALHOS.map(([titulo, sub, url], n) => ({ id: null, titulo, sub, url, ordem: n + 1 }));
+    try { modelosEdit = Object.fromEntries((await db.mensagens()).map(x => [x.chave, x])); } catch { modelosEdit = {}; }
     loadVagas();
   }
 
@@ -1666,10 +1686,30 @@
   const MSG_PADRAO = 'Fala, {primeiro nome}. Aqui é o Kayoan, do The Group.\n\nSeu perfil passou pela curadoria e você foi selecionado para conhecer o grupo de perto. Preparei um convite pessoal para você:\n\n{link do convite}\n\nLá está tudo: como o grupo funciona e o que você vai ter lá dentro. Depois de ver, me responde aqui e a gente segue a conversa.\n\nO link é só seu, então peço que não repasse.';
   const MSG_INDICACAO = 'Fala, {primeiro nome}. Aqui é o Kayoan, do The Group. {quem indicou} me falou de você e o seu perfil passou pela curadoria.\n\nSeparei um convite pessoal para você conhecer o grupo:\n\n{link do convite}\n\nLá está tudo: como o grupo funciona e o que você vai ter lá dentro. Depois de ver, me responde aqui e a gente segue a conversa.\n\nO link é só seu, então peço que não repasse.';
   const indicadoPor = r => r.canal === 'indicacao' && r.indicado_por ? r.indicado_por.trim() : '';
-  const mensagemConvite = (r, link) => (indicadoPor(r) ? MSG_INDICACAO : MSG_PADRAO)
-    .replace('{primeiro nome}', r.nome.trim().split(/\s+/)[0])
-    .replace('{quem indicou}', indicadoPor(r))
-    .replace('{link do convite}', link);
+  /* ---------- Mensagens prontas editáveis (71-mensagens-modelo.sql) ----------
+     O texto padrão fica aqui. Quando o Kayoan edita, o texto novo vai para mensagens_modelo e vale no lugar do padrão.
+     Os campos entre chaves são trocados na hora de copiar. */
+  const RENOV_RESTO = '\n\nA renovação deste ano é de R$ 15 mil para todos os membros. Para quem entra hoje, o primeiro ano é R$ 30 mil.\n\nA forma de pagamento a gente combina numa conversa rápida: à vista, parcelado no cartão, como ficar melhor para você.\n\nDepois te mando um link, você confere seus dados, lê o contrato e aceita ali mesmo, com um código que chega no seu e-mail. Leva uns 3 minutos.\n\nQual o melhor horário para a gente conversar?';
+  const MODELOS = {
+    convite_aplicacao: { t: 'Aplicação: convite de acesso', vars: ['primeiro nome', 'link do convite'], padrao: MSG_PADRAO },
+    convite_indicacao: { t: 'Aplicação: convite de acesso, quando veio por indicação', vars: ['primeiro nome', 'quem indicou', 'link do convite'], padrao: MSG_INDICACAO },
+    convite_membro: { t: 'Membro: convite de membro (para ele repassar)', vars: ['primeiro nome', 'link'], padrao: 'Fala, {primeiro nome}. Aqui é o Kayoan.\n\nVocê tem um convite para trazer uma pessoa do mercado para fazer parte do The Group. Este é o link, que já leva o seu nome:\n\n{link}\n\nMande para a pessoa que você quer convidar. Ela abre, faz a aplicação e eu cuido da curadoria. O link vale para uma pessoa só.' },
+    renov_vence: { t: 'Renovação: primeiro contato, antes de vencer', vars: ['primeiro nome', 'data'], padrao: 'Fala, {primeiro nome}. Tudo certo?\n\nSeu ano no The Group vence em {data}, e quero te explicar como funciona a renovação.' + RENOV_RESTO },
+    renov_venceu: { t: 'Renovação: primeiro contato, depois de vencer', vars: ['primeiro nome', 'data'], padrao: 'Fala, {primeiro nome}. Tudo certo?\n\nSeu ano no The Group venceu em {data}, e quero acertar com você a renovação.' + RENOV_RESTO },
+    renov_lembrete: { t: 'Renovação: lembrete, se não responder', vars: ['primeiro nome'], padrao: '{primeiro nome}, passando para lembrar da sua renovação no The Group: R$ 15 mil pelo próximo ano, e a forma de pagamento a gente combina. Quer marcar uma conversa rápida para fechar?' },
+    contrato_link: { t: 'Contrato: link para preencher os dados', vars: ['primeiro nome', 'contrato', 'link'], padrao: 'Fala, {primeiro nome}. Segue o link para você preencher seus dados e ver o {contrato} do The Group. Leva uns 2 minutos:\n{link}' },
+    contrato_reenvio: { t: 'Contrato: reenviar o contrato', vars: ['primeiro nome', 'contrato', 'link'], padrao: 'Fala, {primeiro nome}. Segue o seu {contrato} do The Group. Dá uma lida com calma e, se tiver qualquer dúvida, me chama aqui:\n{link}' },
+    contrato_assinatura: { t: 'Contrato: lembrete de assinatura', vars: ['primeiro nome', 'contrato', 'link'], padrao: 'Fala, {primeiro nome}. Passando para lembrar do seu {contrato} do The Group. É só abrir o link, conferir e aceitar com o código que chega no seu e-mail:\n{link}' },
+    parcela: { t: 'Cobrança: lembrete de parcela', vars: ['primeiro nome', 'parcela', 'valor', 'vencimento'], padrao: 'Fala, {primeiro nome}. Passando para lembrar da {parcela} parcela do seu contrato do The Group, de {valor}, com vencimento em {vencimento}. Qualquer dúvida, me chama aqui.' },
+    termos_link: { t: 'Convidado: link dos termos', vars: ['primeiro nome', 'quem convidou', 'link'], padrao: 'Fala, {primeiro nome}. Que bom ter você no The Group a convite de {quem convidou}. Segue o link dos seus termos de convidado: você preenche seus dados, lê e aceita ali mesmo. Leva uns 2 minutos:\n{link}' },
+    termos_reenvio: { t: 'Convidado: reenviar os termos', vars: ['primeiro nome', 'link'], padrao: 'Fala, {primeiro nome}. Seguem os seus termos de convidado do The Group. Dá uma lida e, se tiver qualquer dúvida, me chama aqui:\n{link}' },
+  };
+  let modelosEdit = {};
+  const msg = (chave, v) => { let t = (modelosEdit[chave] && modelosEdit[chave].texto) || MODELOS[chave].padrao; for (const [k, x] of Object.entries(v || {})) t = t.split('{' + k + '}').join(x == null ? '' : String(x)); return t; };
+  const primeiroNome = n => String(n || '').trim().split(/\s+/)[0];
+  const mensagemConvite = (r, link) => indicadoPor(r)
+    ? msg('convite_indicacao', { 'primeiro nome': primeiroNome(r.nome), 'quem indicou': indicadoPor(r), 'link do convite': link })
+    : msg('convite_aplicacao', { 'primeiro nome': primeiroNome(r.nome), 'link do convite': link });
   async function copia(texto, aviso = 'Link copiado') {
     try { await navigator.clipboard.writeText(texto); }
     catch {
@@ -1729,7 +1769,7 @@
       ? `<div class="lk-off">${cv ? 'O link do convite está desativado porque a aplicação está em Não selecionado. Se mover o cartão de volta, ele volta a abrir.' : 'Aplicação em Não selecionado.'}</div>`
       : vale
         ? `<div class="lk-k">Link do convite</div><div class="lk-row"><span class="lk-url">${esc(linkDe(r))}</span><button class="lk-btn" data-copy="${esc(linkDe(r))}">Copiar</button></div>
-           <div class="lk-msg"><div class="lk-k">Mensagem${indicadoPor(r) ? ' (indicação)' : ''}</div><div class="lk-txt">${esc(mensagemConvite(r, linkDe(r)))}</div><button class="lk-btn lk-btn2" data-copymsg="1">Copiar mensagem</button></div>
+           <div class="lk-msg"><div class="lk-k">Mensagem${indicadoPor(r) ? ' (indicação)' : ''}</div><div class="lk-txt">${esc(mensagemConvite(r, linkDe(r)))}</div><button class="lk-btn lk-btn2" data-copymsg="1">Copiar mensagem</button> <button class="lk-btn lk-btn2" type="button" data-medit="${indicadoPor(r) ? 'convite_indicacao' : 'convite_aplicacao'}">Editar</button></div>
            <div class="lk-tip">Mande a arte do convite antes da mensagem.</div>`
         : `<div class="lk-k">Link do convite</div><div class="lk-row"><span class="lk-url muted">Ainda não foi criado</span><button class="lk-btn" id="d-criar">Criar link</button></div>`;
     const fichaApl = r.membro_id ? byId(r.membro_id) : null, destaque = !fichaApl && ['aprovado', 'entrou'].includes(r.status);
@@ -2165,17 +2205,17 @@
   // Mensagens de renovação na ficha: mesma janela da lista de Renovações (até 30 dias ou vencido), menos quem já renovou.
   const precisaRenovMsg = m => naJanelaRenov(m) && m.renovacao !== 'pago';
   function renovTexto(m, tipo) {
-    const pn = String(m.nome || '').trim().split(/\s+/)[0], d = diasAte(m.vencimento), data = m.vencimento ? dataCurta(m.vencimento) : '';
-    if (tipo === 'lembrete') return `${pn}, passando para lembrar da sua renovação no The Group: R$ 15 mil pelo próximo ano, e a forma de pagamento a gente combina. Quer marcar uma conversa rápida para fechar?`;
-    return `Fala, ${pn}. Tudo certo?\n\n` + (d < 0 ? `Seu ano no The Group venceu em ${data}, e quero acertar com você a renovação.` : `Seu ano no The Group vence em ${data}, e quero te explicar como funciona a renovação.`)
-      + `\n\nA renovação deste ano é de R$ 15 mil para todos os membros. Para quem entra hoje, o primeiro ano é R$ 30 mil.\n\nA forma de pagamento a gente combina numa conversa rápida: à vista, parcelado no cartão, como ficar melhor para você.\n\nDepois te mando um link, você confere seus dados, lê o contrato e aceita ali mesmo, com um código que chega no seu e-mail. Leva uns 3 minutos.\n\nQual o melhor horário para a gente conversar?`;
+    const pn = primeiroNome(m.nome), d = diasAte(m.vencimento), data = m.vencimento ? dataCurta(m.vencimento) : '';
+    if (tipo === 'lembrete') return msg('renov_lembrete', { 'primeiro nome': pn });
+    return msg(d < 0 ? 'renov_venceu' : 'renov_vence', { 'primeiro nome': pn, data });
   }
+
   const renovWa = (m, tipo) => `${waLink(m.telefone)}?text=${encodeURIComponent(renovTexto(m, tipo))}`;
   function renovMsgHtml(m) {
     if (!precisaRenovMsg(m)) return '';
     const pend = contratos.find(k => ['enviado', 'preenchido'].includes(k.status) && (k.membro_id === m.id || norm(k.nome).trim() === norm(m.nome).trim()));
     const bloco = (tipo, titulo) => `<div class="lk-msg"><div class="lk-k">${titulo}</div><div class="lk-txt">${esc(renovTexto(m, tipo))}</div>
-      <div class="lk-acts"><button class="lk-btn lk-btn2" type="button" data-rcopy="${tipo}">Copiar</button>${waLink(m.telefone) ? `<a class="lk-btn lk-btn2" href="${esc(renovWa(m, tipo))}" target="_blank" rel="noopener">Enviar pelo WhatsApp</a>` : ''}</div></div>`;
+      <div class="lk-acts"><button class="lk-btn lk-btn2" type="button" data-rcopy="${tipo}">Copiar</button><button class="lk-btn lk-btn2" type="button" data-medit="${tipo === 'lembrete' ? 'renov_lembrete' : diasAte(m.vencimento) < 0 ? 'renov_venceu' : 'renov_vence'}">Editar</button>${waLink(m.telefone) ? `<a class="lk-btn lk-btn2" href="${esc(renovWa(m, tipo))}" target="_blank" rel="noopener">Enviar pelo WhatsApp</a>` : ''}</div></div>`;
     return (pend ? `<div class="venc" style="margin-top:10px">O contrato ${esc(pend.numero)} já foi gerado e ainda não foi assinado. Cobre a assinatura com o Copiar mensagem do contrato, acima.</div>` : '')
       + bloco('primeiro', 'Mensagem de renovação: primeiro contato') + bloco('lembrete', 'Lembrete, se não responder em 3 a 5 dias')
       + (pend ? '' : `<button class="move" type="button" data-rcontrato="1" style="margin-top:10px">Gerar contrato de renovação</button>`);
@@ -2552,6 +2592,42 @@
         ${wa ? `<div class="aact" style="margin-top:8px"><a class="abtn" href="${wa}" target="_blank" rel="noopener">WhatsApp · ${esc(phone(r.whatsapp))}</a></div>` : ''}</div>`;
     }).join('') : '<div class="empty">Nenhuma aplicação do The Boys ainda.</div>';
   }
+  /* ---------- Editor das mensagens prontas ---------- */
+  const MSG_EXEMPLO = { 'primeiro nome': 'Rafael', 'link do convite': 'https://convite.ogrupo.com.br/acesso/?c=exemplo', link: 'https://contrato.ogrupo.com.br/?c=exemplo', 'quem indicou': 'Ana Souza', 'quem convidou': 'Ana', data: '12/01', contrato: 'contrato', parcela: '2ª', valor: 'R$ 2.500,00', vencimento: '10/12' };
+  function abrirMensagens(chave) {
+    $('#x-chave').innerHTML = Object.entries(MODELOS).map(([k, m]) => `<option value="${k}">${esc(m.t)}${modelosEdit[k] ? ' · editada' : ''}</option>`).join('');
+    $('#x-chave').value = MODELOS[chave] ? chave : Object.keys(MODELOS)[0];
+    xMostra(); sheetOn($('#xsheet')); $('#xsheet .body').scrollTop = 0;
+  }
+  function xMostra() {
+    const k = $('#x-chave').value, m = MODELOS[k], e = modelosEdit[k];
+    $('#x-texto').value = e ? e.texto : m.padrao;
+    $('#x-vars').innerHTML = 'Campos que você pode usar: ' + m.vars.map(v => `<b>{${esc(v)}}</b>`).join(' · ');
+    $('#x-info').textContent = e ? `Editada${e.atualizado_por ? ' por ' + e.atualizado_por : ''} em ${new Date(e.atualizado_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}.` : 'Texto padrão da central.';
+    $('#x-padrao').hidden = !e; $('#x-erro').textContent = ''; xPrevia();
+  }
+  function xPrevia() { let t = $('#x-texto').value; for (const [k, x] of Object.entries(MSG_EXEMPLO)) t = t.split('{' + k + '}').join(x); $('#x-previa').textContent = t; }
+  function xAtualiza() { renderAll(); if (memId && byId(memId)) fillMembro(byId(memId)); }
+  $('#x-chave').addEventListener('change', xMostra);
+  $('#x-texto').addEventListener('input', xPrevia);
+  $('#x-fechar').addEventListener('click', () => { const x = $('#xsheet'); x.classList.remove('on'); x.setAttribute('aria-hidden', 'true'); if (!document.querySelector('.sheet.on')) $('#scrim').classList.remove('on'); });
+  $('#x-salvar').addEventListener('click', async () => {
+    const k = $('#x-chave').value, t = $('#x-texto').value.trim(), m = MODELOS[k];
+    if (!t) { $('#x-erro').textContent = 'Escreva a mensagem.'; return; }
+    const sem = m.vars.filter(v => /link/.test(v) && m.padrao.includes('{' + v + '}') && !t.includes('{' + v + '}'));
+    if (sem.length && !confirm(`A mensagem ficou sem ${sem.map(v => '{' + v + '}').join(', ')}, e o link não vai junto. Salvar assim mesmo?`)) return;
+    const b = $('#x-salvar'); b.disabled = true;
+    try { const r = await db.salvaMensagem(k, t); modelosEdit[k] = (r && r[0]) || { chave: k, texto: t, atualizado_em: new Date().toISOString() }; abrirMensagens(k); xAtualiza(); toast('Mensagem salva'); }
+    catch (e) { fail(e, 'Não foi possível salvar'); }
+    b.disabled = false;
+  });
+  $('#x-padrao').addEventListener('click', async () => {
+    const k = $('#x-chave').value; if (!confirm('Voltar esta mensagem para o texto padrão da central?')) return;
+    try { await db.apagaMensagem(k); delete modelosEdit[k]; abrirMensagens(k); xAtualiza(); toast('A mensagem voltou ao padrão'); }
+    catch (e) { fail(e, 'Não foi possível voltar ao padrão'); }
+  });
+  // Qualquer botão com data-medit abre o editor naquela mensagem.
+  document.addEventListener('click', e => { const b = e.target.closest('[data-medit]'); if (!b) return; e.preventDefault(); e.stopPropagation(); abrirMensagens(b.dataset.medit); }, true);
   function renderPesquisas() {
     if ($('#v-pesquisas').hidden) return;
     if (!pqCarregou) { carregaListaPesquisas(); return; }
@@ -2694,7 +2770,7 @@
     return contratos.map(k => { const s = kSchedule(k); return s && !s.vista ? { k, s, px: kProxima(s) } : null; }).filter(Boolean);
   }
   // Fila de cobranças: só contratos antigos, assinados em 12 parcelas antes de 15/11/2026.
-  const lembreteParcela = x => `Fala, ${String(x.k.nome || '').trim().split(/\s+/)[0]}. Passando para lembrar da ${x.px.n}ª parcela do seu contrato do The Group, de ${rs2(x.s.valor)}, com vencimento em ${dataCurta(x.px.data)}. Qualquer dúvida, me chama aqui.`;
+  const lembreteParcela = x => msg('parcela', { 'primeiro nome': primeiroNome(x.k.nome), parcela: `${x.px.n}ª`, valor: rs2(x.s.valor), vencimento: dataCurta(x.px.data) });
   function renderCobrancas(termos) {
     const bate = x => !termos.length || termos.every(t => norm(x.k.nome).includes(t));
     const l = kCobrancas().filter(x => x.px && bate(x)).sort((a, b) => a.px.dias - b.px.dias);
@@ -3033,7 +3109,7 @@
     return false;
   }
   // Contrato já enviado e ainda não assinado: lembrete com o link do contrato.
-  const lembreteAssinatura = k => { const pn = String(k.nome || '').trim().split(/\s+/)[0]; return `Fala, ${pn}. Passando para lembrar do seu contrato ${k.tipo === 'renovacao' ? 'de renovação ' : ''}do The Group. É só abrir o link, conferir e aceitar com o código que chega no seu e-mail:\n${CONTRATO_URL + k.token}`; };
+  const lembreteAssinatura = k => msg('contrato_assinatura', { 'primeiro nome': primeiroNome(k.nome), contrato: k.tipo === 'renovacao' ? 'contrato de renovação' : 'contrato', link: CONTRATO_URL + k.token });
   function renderRenovacoes(termos) {
     const bate = m => !termos.length || termos.every(t => norm(m.nome).includes(t));
     const l = membros.filter(m => naJanelaRenov(m) && bate(m)).sort((a, b) => a.vencimento < b.vencimento ? -1 : 1);
@@ -3118,7 +3194,7 @@
   const KORDEM = ['enviado', 'preenchido', 'aceito', 'pago'];
   const contratosDe = id => contratos.filter(k => k.membro_id === id && k.status !== 'cancelado').sort((a, b) => a.criado_em < b.criado_em ? 1 : -1);
   const msgContrato = k => {
-    if (k.publico === 'convidado') { const pn = String(k.nome || '').trim().split(/\s+/)[0]; return k.status === 'enviado' ? `Fala, ${pn}. Que bom ter você no The Group a convite de ${String(k.convidado_por_nome || '').split(' ')[0]}. Segue o link dos seus termos de convidado: você preenche seus dados, lê e aceita ali mesmo. Leva uns 2 minutos:\n${CONTRATO_URL + k.token}` : `Fala, ${pn}. Seguem os seus termos de convidado do The Group. Dá uma lida e, se tiver qualquer dúvida, me chama aqui:\n${CONTRATO_URL + k.token}`; }
+    if (k.publico === 'convidado') return k.status === 'enviado' ? msg('termos_link', { 'primeiro nome': primeiroNome(k.nome), 'quem convidou': primeiroNome(k.convidado_por_nome), link: CONTRATO_URL + k.token }) : msg('termos_reenvio', { 'primeiro nome': primeiroNome(k.nome), link: CONTRATO_URL + k.token });
     if (k.publico === 'patrocinio') {
       const pc = byParc(k.parceiro_id), pn = String((pc && pc.contato_nome) || '').trim().split(/\s+/)[0], url = CONTRATO_URL_P + k.token;
       return k.status === 'enviado'
@@ -3127,9 +3203,7 @@
     }
     const pn = String(k.nome || '').trim().split(/\s+/)[0], url = CONTRATO_URL + k.token;
     const ren = k.tipo === 'renovacao';
-    return k.modo === 'membro' && k.status === 'enviado'
-      ? `Fala, ${pn}. Segue o link para você preencher seus dados e ver o contrato ${ren ? 'de renovação ' : ''}do The Group. Leva uns 2 minutos:\n${url}`
-      : `Fala, ${pn}. Segue o seu contrato ${ren ? 'de renovação ' : ''}do The Group. Dá uma lida com calma e, se tiver qualquer dúvida, me chama aqui:\n${url}`;
+    return msg(k.modo === 'membro' && k.status === 'enviado' ? 'contrato_link' : 'contrato_reenvio', { 'primeiro nome': pn, contrato: ren ? 'contrato de renovação' : 'contrato', link: url });
   };
   const kPassos = k => `<span class="kpassos">${(k.publico === 'convidado' ? KORDEM.slice(0, 3) : KORDEM).map((s, i) => `<i class="${KORDEM.indexOf(k.status) >= i ? 'on' : ''}" title="${KSTATUS[s]}"></i>`).join('')}</span>`;
   // Pagamento combinado na call. Contratos antigos (antes de 15/11/2026) mostram a forma que tinham.
@@ -3173,7 +3247,7 @@
     const d = new Date(u.criado_em); d.setMonth(d.getMonth() + 3);
     return d > new Date() ? d : null;
   }
-  const msgConviteMembro = (m, c) => `Fala, ${String(m.nome || '').trim().split(/\s+/)[0]}. Aqui é o Kayoan.\n\nVocê tem um convite para trazer uma pessoa do mercado para fazer parte do The Group. Este é o link, que já leva o seu nome:\n\n${CONVITE_M_URL + c.token}\n\nMande para a pessoa que você quer convidar. Ela abre, faz a aplicação e eu cuido da curadoria. O link vale para uma pessoa só.`;
+  const msgConviteMembro = (m, c) => msg('convite_membro', { 'primeiro nome': primeiroNome(m.nome), link: CONVITE_M_URL + c.token });
   // Convidado: nome e WhatsApp vêm da aplicação que ele fez pelo link (aplicacao_id, migração 55).
   const aplDoConvite = c => c.aplicacao_id ? apls.find(a => a.id === c.aplicacao_id) : null;
   const convidadoNome = c => (aplDoConvite(c) || {}).nome || '';
@@ -3238,7 +3312,8 @@
     else if (prox) topo = `<div class="venc" style="margin:0 0 8px">Próximo convite a partir de ${dataBR(prox.toISOString().slice(0, 10))}.</div>`;
     else topo = `<button class="move" data-cmnovo="${m.id}" style="margin-bottom:10px">${m.status === 'fundador' && aberto ? 'Gerar outro link' : 'Gerar convite'}</button>`;
     const direito = pode ? `<div class="sec">Pode convidar</div><div class="moves"><button class="move${m.pode_convidar !== false ? ' cur' : ''}" data-cmdir="1">Sim</button><button class="move${m.pode_convidar === false ? ' cur' : ''}" data-cmdir="0">Não</button></div>` : '';
-    $('#m-convite').innerHTML = topo + (l.length ? l.slice(0, m.status === 'fundador' ? 100 : 4).map(linha).join('') : (pode ? '<div class="venc" style="margin:0 0 8px">Nenhum convite gerado ainda.</div>' : '')) + direito;
+    const editar = pode ? '<div style="margin-top:8px"><button class="lk-btn lk-btn2" type="button" data-medit="convite_membro">Editar a mensagem do convite</button></div>' : '';
+    $('#m-convite').innerHTML = topo + (l.length ? l.slice(0, m.status === 'fundador' ? 100 : 4).map(linha).join('') : (pode ? '<div class="venc" style="margin:0 0 8px">Nenhum convite gerado ainda.</div>' : '')) + direito + editar;
     const el = $('#fsr-convite'); el.textContent = aberto ? 'link ativo' : l.length ? (CMST[l[0].status] || '').toLowerCase() : pode && m.pode_convidar !== false && !prox ? 'pode convidar' : '';
   }
   $('#m-convite').addEventListener('click', async e => {
@@ -3576,7 +3651,7 @@
       ['Lista de convidados da The House', 'feito', 20],
     ].map(([texto, status, d], n) => ({ id: 'i' + n, created_at: ago(d), updated_at: ago(Math.max(0, d - 2)), texto, status, nota: null }));
     const wait = v => new Promise(r => setTimeout(() => r(v), 120));
-    let k = 100, M = [], C = [], CT = [], K = [], cofre = null;
+    let k = 100, M = [], C = [], CT = [], K = [], cofre = null, ME = {};
     // Prévia: um convite de membro já aberto, para ver a seção na ficha.
     const CM = [{ id: 'cm1', token: 'previa000001', membro_id: 'm2', membro_nome: 'Bruno Exemplo', status: 'aberto', criado_em: ago(5), aberturas: 2, inicio: null, fim: null },
       { id: 'cm2', token: 'previa000002', membro_id: 'mx0', membro_nome: 'Carla Veterana', status: 'ativo', criado_em: ago(85), aberturas: 3, aplicacao_id: 'a6', inicio: ago(80).slice(0, 10), fim: new Date(Date.now() + 10 * 864e5).toISOString().slice(0, 10), bonus_em: null },
@@ -3627,6 +3702,9 @@
       addMembro: b => { const m = { id: 'm' + k++, ...b }; M.push(m); return wait({ ...m }); },
       patchMembro: (id, b) => { Object.assign(M.find(x => x.id === id) || {}, b); return wait(null); },
       convitesMembro: () => wait(CM.map(x => ({ ...x }))),
+      mensagens: () => wait(Object.values(ME).map(x => ({ ...x }))),
+      salvaMensagem: (chave, texto) => { ME[chave] = { chave, texto, atualizado_em: new Date().toISOString(), atualizado_por: 'previa@exemplo.com' }; return wait([{ ...ME[chave] }]); },
+      apagaMensagem: chave => { delete ME[chave]; return wait(null); },
       theboys: () => wait([
         { id: 'tb1', criado_em: ago(0, 2), nome: 'Rafael Exemplo', whatsapp: '11988887777', email: 'rafael@exemplo.com', instagram: 'rafaelexemplo', respostas: { o_que_tem_feito: 'Comecei a rodar tráfego para infoproduto há 8 meses, com um produto próprio.', o_que_mais_quer: 'Ter gente do meu nível do lado' }, origem: 'tsl-interativa' },
         { id: 'tb2', criado_em: ago(3), nome: 'Bia Teste', whatsapp: '21977776666', email: null, instagram: null, respostas: { o_que_tem_feito: 'Copy para lançamentos.', o_que_mais_quer: 'Escalar a minha operação' }, origem: 'tsl-interativa' }]),
