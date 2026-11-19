@@ -1668,7 +1668,7 @@
     if (!r || r.status === status) return;
     const before = r.status, antes = r.updated_at; r.status = status; r.updated_at = new Date().toISOString(); renderAll();
     try { await db.patchApl(id, { status }); toast(`Movido para ${COLS.find(c => c[0] === status)[1]}`);
-      if (status === 'entrou' && !(r.membro_id && byId(r.membro_id)) && confirm(`${r.nome} entrou no grupo. Cadastrar como membro agora? A ficha já sai com os dados da aplicação e do contrato.`)) cadastrarMembroDaApl(r); }
+      if (status === 'entrou' && !(r.membro_id && byId(r.membro_id)) && confirm(ehConvidado(r) ? `${r.nome} entrou no grupo como convidado. Criar a ficha de convidado agora? Ela sai com 3 meses de convite, sem renovação.` : `${r.nome} entrou no grupo. Cadastrar como membro agora? A ficha já sai com os dados da aplicação e do contrato.`)) cadastrarMembroDaApl(r); }
     catch (e) { r.status = before; r.updated_at = antes; renderAll(); fail(e, 'Não foi possível mover'); }
   }
   async function setOrigem(id, origem_lead) {
@@ -2031,6 +2031,7 @@
   const dataBR = iso => new Date(iso + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/\./g, '');
   const venceTxt = m => {
     const d = diasAte(m.vencimento); if (d === null) return '';
+    if (m.status === 'convidado') return d < 0 ? `Convite terminou há ${-d} ${-d === 1 ? 'dia' : 'dias'}` : `Convite até ${dataBR(m.vencimento)}`;
     if (d < 0) return `Renovação atrasada há ${-d} ${-d === 1 ? 'dia' : 'dias'}`;
     if (d === 0) return 'Renova hoje';
     if (d <= 30) return `Renova em ${d} ${d === 1 ? 'dia' : 'dias'}`;
@@ -2203,7 +2204,7 @@
     $('#m-mais').innerHTML = CAMPOS_MAIS.map(campoHtml(m)).join('');
     $('#m-anel-tam').innerHTML = `<label class="fld" style="max-width:220px"><span>Tamanho do anel</span><input data-k="anel_tamanho" type="text" value="${esc(m.anel_tamanho ?? '')}" placeholder="Ex.: 22"></label>`;
     // Renovação só aparece quando importa: vence em até 60 dias, já venceu ou já tem uma marcação.
-    $('#m-renov-box').hidden = !(m.renovacao || (atual(m) && diasAte(m.vencimento) !== null && diasAte(m.vencimento) <= 60));
+    $('#m-renov-box').hidden = m.status === 'convidado' || !(m.renovacao || (atual(m) && diasAte(m.vencimento) !== null && diasAte(m.vencimento) <= 60));
     $('#m-renov-msg').innerHTML = renovMsgHtml(m);
     $('#m-venc').textContent = atual(m) ? venceTxt(m) : '';
     $('#m-renov').innerHTML = Object.entries(RENOV).map(([k, l]) => `<button class="move${m.renovacao === k ? ' cur' : ''}" data-k="renovacao" data-v="${k}">${l}</button>`).join('');
@@ -2224,8 +2225,8 @@
     if (atual(m) && m.vencimento) {
       const fim = new Date(m.vencimento + 'T12:00:00'), ini = new Date(fim); ini.setMonth(ini.getMonth() - periodo(m));
       const pct = Math.max(0, Math.min(100, (Date.now() - ini) / (fim - ini) * 100)), cls = d < 0 ? 'late' : d <= 30 ? 'soon' : '';
-      const alvo = m.renovacao || d <= 60 ? 'fs-renov' : 'fs-dados';
-      linhas.push(`<button type="button" class="rr yr" data-go="${alvo}"><span class="rl"><span>Ano no grupo</span><span class="v ${cls}">${d < 0 ? `Venceu há ${-d} ${-d === 1 ? 'dia' : 'dias'}` : d === 0 ? 'Vence hoje' : `Faltam ${d} ${d === 1 ? 'dia' : 'dias'}`}</span></span><span class="ybar ${cls}"><i style="width:${pct.toFixed(1)}%"></i></span><span class="ydates"><span>${MESES[ini.getMonth()]} ${ini.getFullYear()}</span><span>${MESES[fim.getMonth()]} ${fim.getFullYear()}</span></span></button>`);
+      const alvo = m.status !== 'convidado' && (m.renovacao || d <= 60) ? 'fs-renov' : 'fs-dados';
+      linhas.push(`<button type="button" class="rr yr" data-go="${alvo}"><span class="rl"><span>${m.status === 'convidado' ? 'Convite de 3 meses' : 'Ano no grupo'}</span><span class="v ${cls}">${d < 0 ? `${m.status === 'convidado' ? 'Terminou' : 'Venceu'} há ${-d} ${-d === 1 ? 'dia' : 'dias'}` : d === 0 ? (m.status === 'convidado' ? 'Termina hoje' : 'Vence hoje') : `Faltam ${d} ${d === 1 ? 'dia' : 'dias'}`}</span></span><span class="ybar ${cls}"><i style="width:${pct.toFixed(1)}%"></i></span><span class="ydates"><span>${MESES[ini.getMonth()]} ${ini.getFullYear()}</span><span>${MESES[fim.getMonth()]} ${fim.getFullYear()}</span></span></button>`);
     }
     if (p) linhas.push(`<button type="button" class="rr" data-go="fs-acomp"><span>Próximo contato</span><span class="v${p.dias < 0 ? ' late' : ''}">${prazoTxt(p)}</span></button>`);
     if (anelTxt) linhas.push(`<button type="button" class="rr" data-go="fs-anel"><span>Anel</span><span class="v">${anelTxt.charAt(0).toUpperCase() + anelTxt.slice(1)}</span></button>`);
@@ -2593,7 +2594,7 @@
   const MESES_LONGO = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
   let rMes = 0, meta = { on: false, n: 10 };
   try { meta = { ...meta, ...JSON.parse(localStorage.getItem('tg-central-meta')) }; } catch {}
-  const periodo = m => /semestral/i.test(m.plano || '') ? 6 : 12;
+  const periodo = m => m.status === 'convidado' ? 3 : /semestral/i.test(m.plano || '') ? 6 : 12;
   function cobranca(m, y, mo) {
     if (m.status !== 'ativo' || m.renovacao === 'remover') return null;
     // Contrato assinado e mensal: cada mês tem a sua parcela, no dia do contrato. Depois da 12ª, segue a regra da renovação.
@@ -3185,7 +3186,7 @@
         <span class="aact">${wa ? `<a class="abtn" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ''}${cmBotoes(c)}</span></div>`;
     };
     $('#mgrid').innerHTML = (g.length ? g.map(([k, t, xs]) => `<section class="agrp${k === 'atrasado' ? ' atrasado' : ''}"><h3>${t} <span>${xs.length}</span></h3>${xs.map(linha).join('')}</section>`).join('') : '<div class="empty" style="grid-column:1/-1">Nenhum convidado de membro ainda. O convite é gerado na ficha do membro, em Convite de membro.</div>')
-      + (antigos.length ? `<section class="agrp"><h3>Fichas com status Convidado <span>${antigos.length}</span></h3>${antigos.map(m => `<div class="arow"><button class="anm" data-open="${m.id}"><b>${esc(m.nome)}</b><span>Ficha antiga marcada como Convidado</span></button></div>`).join('')}</section>` : '');
+      + (antigos.length ? `<section class="agrp"><h3>Fichas de convidado <span>${antigos.length}</span></h3>${antigos.map(m => `<div class="arow"><button class="anm" data-open="${m.id}"><b>${esc(m.nome)}</b><span>${esc(venceTxt(m) || 'Convidado')}${m.plano ? ' · ' + esc(m.plano) : ''}</span></button></div>`).join('')}</section>` : '');
   }
   function renderConviteFicha(m) {
     const l = convitesDe(m.id), pode = convidaStatus(m);
@@ -3278,14 +3279,22 @@
         r.nota ? `Anotações da aplicação: ${r.nota}` : ''].filter(Boolean).join('\n');
       const b = { nome: k ? k.nome : r.nome, status: 'ativo', email: (d.email || r.email || '').toLowerCase() || null, telefone: d.tel || (k && k.telefone) || phone(r.whatsapp) || null,
         cidade: d.cidade ? `${d.cidade}/${d.uf}` : null, entrada: hojeISO(), informacoes: info.slice(0, 8000) };
-      if (k) {
+      // Convidado de membro: ficha com status Convidado e 3 meses, sem renovação, anel ou acompanhamento de membro.
+      const cvm = ehConvidado(r) ? convitesM.find(c => c.id === r.convite_membro_id) : null;
+      if (ehConvidado(r)) {
+        const ini = (k && k.publico === 'convidado' && k.inicio) || hojeISO(), fim = somaMeses(ini, 3);
+        Object.assign(b, { status: 'convidado', plano: `Convidado (3 meses) · convite de ${quemConvidou(r)}${k && k.publico === 'convidado' ? ` (termos ${k.numero})` : ''}`,
+          entrada: ini, vencimento: fim, valor_renovacao: null, ltv: null, pode_convidar: false,
+          pagamentos: `- ${dataBR(ini)} · ${k && k.publico === 'convidado' ? `termos de convidado ${k.numero} ${['aceito', 'pago'].includes(k.status) ? 'aceitos' : 'enviados'}` : 'convidado'} · sem pagamento · até ${dataBR(fim)}` });
+        if (cvm && ['aplicado', 'aprovado'].includes(cvm.status)) { await db.patchConvite(cvm.id, { status: 'ativo', inicio: ini, fim }); Object.assign(cvm, { status: 'ativo', inicio: ini, fim }); }
+      } else if (k) {
         Object.assign(b, { plano: kPlano(k), valor_renovacao: Number(k.renovacao), vencimento: kVenc(k), entrada: kDiaPago(k),
           ltv: k.status === 'pago' ? Number(k.anual) : null, pagamentos: kLinhaPag(k) });
       }
       const m = await db.addMembro(b); membros.push(m);
       await db.patchApl(r.id, { status: 'entrou', membro_id: m.id }); Object.assign(r, { status: 'entrou', membro_id: m.id, updated_at: new Date().toISOString() });
       if (k && !k.membro_id) { await db.patchContrato(k.id, { membro_id: m.id }); k.membro_id = m.id; }
-      renderAll(); toast(k ? `Membro cadastrado com o contrato ${k.numero}` : 'Membro cadastrado'); openMembro(m.id);
+      renderAll(); toast(ehConvidado(r) ? `Ficha de convidado criada, até ${dataBR(m.vencimento || b.vencimento)}` : k ? `Membro cadastrado com o contrato ${k.numero}` : 'Membro cadastrado'); openMembro(m.id);
     } catch (e) { fail(e, 'Não foi possível cadastrar'); }
   }
   // Mesma regra do banco (50-contrato-pago-ficha.sql): pago = a vigência começa no dia do pagamento (Brasília);
