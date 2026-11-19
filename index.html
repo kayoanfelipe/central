@@ -273,6 +273,9 @@
   .pq-acts { display: flex; gap: 8px; } .pq-acts .btn { white-space: nowrap; }
   #pq-lista { overflow-x: auto; scrollbar-width: none; } #pq-lista::-webkit-scrollbar { display: none; } #pq-lista button { white-space: nowrap; }
   .pq-total { display: grid; grid-template-columns: minmax(0, 240px); margin-bottom: 12px; }
+  .tbr { margin: 10px 0 0; display: grid; gap: 8px; }
+  .tbr dt { font-size: 11.5px; color: var(--ink-2); margin-bottom: 2px; }
+  .tbr dd { margin: 0; font-size: 14px; color: var(--ink); white-space: pre-wrap; word-break: break-word; }
   .pq-qs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .pq-ops { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
   .pq-op { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 40px 26px; gap: 10px; align-items: center; font-size: 13px; }
@@ -599,6 +602,9 @@
   .seg { display: inline-flex; background: var(--col); border-radius: 10px; padding: 2px; gap: 2px; max-width: 100%; }
   .seg button { appearance: none; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 13px; font-weight: 500; padding: 6px 16px; border-radius: 8px; cursor: pointer; white-space: nowrap; transition: background-color .15s; }
   .fsub { display: flex; width: fit-content; margin: -10px 0 22px; }
+  .fsub { max-width: 100%; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .fsub::-webkit-scrollbar { display: none; }
+  @media (max-width: 420px) { .fsub a { padding: 7px 12px; } }
   .fsub a { text-decoration: none; color: var(--ink); font-size: 13.5px; font-weight: 500; padding: 7px 18px; border-radius: 8px; white-space: nowrap; }
   .fsub a.cur { background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.04); }
   .seg button.cur { background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.04); }
@@ -789,7 +795,7 @@
     <div class="brand"><span class="logo"></span><span>Central</span></div>
     <nav class="nav" id="nav">
       <a href="#hoje" data-v="hoje"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 9.5 10 4l6.5 5.5V16a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1z"/><path d="M8 17v-4.5h4V17"/></svg><span class="nl">Hoje</span></a>
-      <a href="#aplicacoes" data-v="aplicacoes" data-grupo="aplicacoes convidados pesquisas"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="4" height="12" rx="1.2"/><rect x="8.5" y="4" width="4" height="8" rx="1.2"/><rect x="14" y="4" width="3" height="10" rx="1.2"/></svg><span class="nl">Formulários</span><span class="dot" hidden></span></a>
+      <a href="#aplicacoes" data-v="aplicacoes" data-grupo="aplicacoes convidados pesquisas theboys"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="4" height="12" rx="1.2"/><rect x="8.5" y="4" width="4" height="8" rx="1.2"/><rect x="14" y="4" width="3" height="10" rx="1.2"/></svg><span class="nl">Formulários</span><span class="dot" hidden></span></a>
       <a href="#membros" data-v="membros"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><circle cx="7.5" cy="7.5" r="2.6"/><path d="M2.8 16c.6-2.6 2.4-4 4.7-4s4.1 1.4 4.7 4"/><circle cx="14" cy="8" r="2"/><path d="M13 12.2c2.1-.2 3.6 1.1 4.2 3.8"/></svg><span class="nl">Membros</span></a>
       <a href="#parceiros" data-v="parceiros"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 7.5h13v8a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1z"/><path d="M7.5 7.5V5.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2"/><path d="M3.5 11.5h13"/></svg><span class="nl">Parceiros</span></a>
       <a href="#tarefas" data-v="tarefas"><svg class="ni" viewBox="0 0 20 20" aria-hidden="true"><rect x="3.5" y="3.5" width="13" height="13" rx="2.5"/><path d="M6.8 10.2l2.2 2.2 4.4-4.6"/></svg><span class="nl">Tarefas</span><span class="dot" hidden></span></a>
@@ -816,7 +822,7 @@
 
     <section id="v-aplicacoes" hidden>
       <h1 class="page">Formulários</h1>
-      <div class="fsub seg" role="tablist" aria-label="Formulários"><a href="#aplicacoes">Aplicações</a><a href="#convidados">Convidados</a><a href="#pesquisas">Pesquisas</a></div>
+      <div class="fsub seg" role="tablist" aria-label="Formulários"><a href="#aplicacoes">Aplicações</a><a href="#convidados">Convidados</a><a href="#pesquisas">Pesquisas</a><a href="#theboys">The Boys</a></div>
       <div class="seg bseg" id="filter" role="group" aria-label="Como chegou"></div>
       <div class="colnav" id="colnav" aria-label="Colunas"></div>
       <div class="board" id="board"></div>
@@ -869,11 +875,19 @@
 
     <section id="v-pesquisas" hidden>
       <h1 class="page">Formulários</h1>
-      <div class="fsub seg" role="tablist" aria-label="Formulários"><a href="#aplicacoes">Aplicações</a><a href="#convidados">Convidados</a><a href="#pesquisas">Pesquisas</a></div>
+      <div class="fsub seg" role="tablist" aria-label="Formulários"><a href="#aplicacoes">Aplicações</a><a href="#convidados">Convidados</a><a href="#pesquisas">Pesquisas</a><a href="#theboys">The Boys</a></div>
       <div class="seg" id="pq-lista" role="group" aria-label="Pesquisa" style="margin-bottom:16px" hidden></div>
       <div class="pq-head" id="pq-head"></div>
       <div class="pq-total" id="pq-total"></div>
       <div class="pq-qs" id="pq-qs"></div>
+    </section>
+
+    <section id="v-theboys" hidden>
+      <h1 class="page">Formulários</h1>
+      <div class="fsub seg" role="tablist" aria-label="Formulários"><a href="#aplicacoes">Aplicações</a><a href="#convidados">Convidados</a><a href="#pesquisas">Pesquisas</a><a href="#theboys">The Boys</a></div>
+      <p class="jsub" style="margin-top:-8px">Teste do The Boys by The Group: aplicações da TSL em aplicar.ogrupo.com.br/theboys. Ficam separadas das aplicações do The Group.</p>
+      <div class="pq-total" id="tb-total"></div>
+      <div id="tb-lista"></div>
     </section>
 
     <section id="v-tarefas" hidden>
@@ -1273,6 +1287,7 @@
     parceiros: () => api('parceiros?select=*&order=marca'),
     raioX: () => api('pesquisa_raio_x?select=criado_em,trafego,plataformas,pagamento,conta_dolar,vende_fora&order=criado_em.asc'),
     pesquisas: () => api('pesquisas?select=id,slug,titulo,sub,perguntas,aberta,criada_em,fechada_em&order=criada_em.desc'),
+    theboys: () => api('theboys_aplicacoes?select=*&order=criado_em.desc'),
     respostasPesquisa: id => api(`pesquisa_respostas?select=criado_em,respostas&pesquisa_id=eq.${id}&order=criado_em.asc`).then(l => l.map(r => ({ criado_em: r.criado_em, ...r.respostas }))),
     addParceiro: b => api('parceiros', { method: 'POST', body: JSON.stringify(b) }).then(r => r[0]),
     patchParceiro: (id, b) => api(`parceiros?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
@@ -1338,8 +1353,8 @@
   }
 
   /* ---------------- Navegação ---------------- */
-  const VIEWS = ['hoje', 'aplicacoes', 'membros', 'parceiros', 'tarefas', 'pesquisas', 'jornada', 'ideias'];
-  const TITULO = { hoje: 'Central', aplicacoes: 'Aplicações', membros: 'Membros', parceiros: 'Parceiros', tarefas: 'Tarefas', pesquisas: 'Pesquisas', receber: 'Receber', jornada: 'Jornada do membro', ideias: 'Ideias' };
+  const VIEWS = ['hoje', 'aplicacoes', 'membros', 'parceiros', 'tarefas', 'pesquisas', 'theboys', 'jornada', 'ideias'];
+  const TITULO = { hoje: 'Central', aplicacoes: 'Aplicações', membros: 'Membros', parceiros: 'Parceiros', tarefas: 'Tarefas', pesquisas: 'Pesquisas', theboys: 'The Boys', receber: 'Receber', jornada: 'Jornada do membro', ideias: 'Ideias' };
   // #convidados: mesmo quadro de Aplicações, só com quem aplicou pelo convite de um membro (convite_membro_id, migração 55).
   let aplModo = 'membro';
   function route() {
@@ -1348,6 +1363,7 @@
     VIEWS.forEach(k => { $('#v-' + k).hidden = k !== v; });
     document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('cur', a.dataset.v === v || (a.dataset.grupo || '').split(' ').includes(v)));
     document.querySelectorAll('.fsub a').forEach(a => a.classList.toggle('cur', a.getAttribute('href') === '#' + (h === 'convidados' ? h : v)));
+    document.querySelectorAll('.fsub').forEach(f => { const c = f.querySelector('a.cur'); if (c && f.offsetParent) f.scrollLeft = c.offsetLeft - f.offsetLeft - 8; });
     document.title = (h === 'convidados' ? 'Convidados' : TITULO[v]) + ' · The Group';
     renderAll();
   }
@@ -1355,7 +1371,7 @@
   const medeTopo = () => { const t = $('.top'); if (t) document.documentElement.style.setProperty('--toph', t.offsetHeight + 'px'); };
   window.addEventListener('resize', medeTopo); setTimeout(medeTopo, 0);
 
-  function renderAll() { renderHoje(); renderBoard(); renderMembros(); renderParceiros(); renderPesquisas(); renderJornada(); renderIdeias(); renderTarefas(); renderNav(); }
+  function renderAll() { renderHoje(); renderBoard(); renderMembros(); renderParceiros(); renderPesquisas(); renderTheBoys(); renderJornada(); renderIdeias(); renderTarefas(); renderNav(); }
   function renderNav() {
     const n = apls.filter(r => r.status === 'nova').length;
     const a = document.querySelector('#nav a[data-v="aplicacoes"]');
@@ -2514,6 +2530,26 @@
     renderPesquisas();
   }
   const pqPct = (n, d) => d ? Math.round(n / d * 100) : 0;
+  /* ---------- The Boys (69-theboys-aplicacoes.sql): só lista, nada vai para o quadro do The Group ---------- */
+  let tbDados = null, tbCarregando = false;
+  async function renderTheBoys() {
+    if ($('#v-theboys').hidden) return;
+    if (!tbDados && !tbCarregando) {
+      tbCarregando = true; $('#tb-lista').innerHTML = '<div class="empty">Carregando…</div>';
+      try { tbDados = await db.theboys(); } catch (e) { tbDados = []; if (e.message === 'auth') { fail(e, ''); return; } }
+      tbCarregando = false;
+    }
+    const l = tbDados || [], dia = 864e5, agora = Date.now();
+    const d7 = l.filter(r => agora - new Date(r.criado_em) < 7 * dia).length, hoje = l.filter(r => new Date(r.criado_em).toDateString() === new Date().toDateString()).length;
+    $('#tb-total').innerHTML = `<div class="pk"><div class="l">Aplicações</div><div class="n">${l.length}</div><div class="s">${hoje} hoje · ${d7} nos últimos 7 dias</div></div>`;
+    const resp = (r, k) => esc(String((r.respostas || {})[k] || '').trim()) || '-';
+    $('#tb-lista').innerHTML = l.length ? l.map(r => {
+      const wa = waLink(r.whatsapp), quando = new Date(r.criado_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      return `<div class="arow" style="display:block"><div class="anm" style="cursor:default"><b>${esc(r.nome)}</b><span>${quando}${r.instagram ? ` · <a href="${igUrl(r.instagram)}" target="_blank" rel="noopener">@${esc(igUser(r.instagram))}</a>` : ''}${r.email ? ` · <a href="mailto:${esc(r.email)}">${esc(r.email)}</a>` : ''}</span></div>
+        <dl class="tbr"><div><dt>O que tem feito nesse mercado</dt><dd>${resp(r, 'o_que_tem_feito')}</dd></div><div><dt>O que mais quer agora</dt><dd>${resp(r, 'o_que_mais_quer')}</dd></div></dl>
+        ${wa ? `<div class="aact" style="margin-top:8px"><a class="abtn" href="${wa}" target="_blank" rel="noopener">WhatsApp · ${esc(phone(r.whatsapp))}</a></div>` : ''}</div>`;
+    }).join('') : '<div class="empty">Nenhuma aplicação do The Boys ainda.</div>';
+  }
   function renderPesquisas() {
     if ($('#v-pesquisas').hidden) return;
     if (!pqCarregou) { carregaListaPesquisas(); return; }
@@ -3589,6 +3625,9 @@
       addMembro: b => { const m = { id: 'm' + k++, ...b }; M.push(m); return wait({ ...m }); },
       patchMembro: (id, b) => { Object.assign(M.find(x => x.id === id) || {}, b); return wait(null); },
       convitesMembro: () => wait(CM.map(x => ({ ...x }))),
+      theboys: () => wait([
+        { id: 'tb1', criado_em: ago(0, 2), nome: 'Rafael Exemplo', whatsapp: '11988887777', email: 'rafael@exemplo.com', instagram: 'rafaelexemplo', respostas: { o_que_tem_feito: 'Comecei a rodar tráfego para infoproduto há 8 meses, com um produto próprio.', o_que_mais_quer: 'Ter gente do meu nível do lado' }, origem: 'tsl-interativa' },
+        { id: 'tb2', criado_em: ago(3), nome: 'Bia Teste', whatsapp: '21977776666', email: null, instagram: null, respostas: { o_que_tem_feito: 'Copy para lançamentos.', o_que_mais_quer: 'Escalar a minha operação' }, origem: 'tsl-interativa' }]),
       gerarConviteMembro: id => { const m = M.find(x => x.id === id); if (m.status !== 'fundador' && CM.some(c => c.membro_id === id && !['cancelado', 'recusado'].includes(c.status) && Date.now() - new Date(c.criado_em) < 90 * 864e5)) return Promise.reject(new Error('Este membro já tem um convite.')); const c = { id: 'cm' + k++, token: Math.random().toString(36).slice(2, 14).padEnd(12, '0'), membro_id: id, membro_nome: m.nome, status: 'gerado', criado_em: new Date().toISOString(), aberturas: 0, inicio: null, fim: null }; CM.unshift(c); return wait({ token: c.token, membro: m.nome }); },
       cancelarConviteMembro: id => { const c = CM.find(x => x.id === id); if (c) c.status = 'cancelado'; return wait({ cancelado: !!c }); },
       patchConvite: (id, b) => { Object.assign(CM.find(x => x.id === id) || {}, b); return wait(null); },
