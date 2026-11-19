@@ -1264,7 +1264,7 @@
   // Camada de dados: Supabase de verdade, ou memória na prévia (?demo, só no computador).
   const db = DEMO ? demoDb() : {
     acesso: () => api('rpc/central_acesso', { method: 'POST', body: '{}' }),
-    apls: () => api('aplicacoes?select=*,convites(token,criado_em,expira_em,aberto_em,ultima_abertura,aberturas)&order=created_at.desc&convites.order=criado_em.desc'),
+    apls: () => api('aplicacoes?select=*,convites(token,criado_em,expira_em,aberto_em,ultima_abertura,aberturas,aceito_em)&order=created_at.desc&convites.order=criado_em.desc'),
     criarConvite: id => api('rpc/criar_convite', { method: 'POST', body: JSON.stringify({ p_aplicacao: id }) }),
     patchApl: (id, b) => api(`aplicacoes?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
     delApl: id => api(`aplicacoes?id=eq.${id}`, { method: 'DELETE' }),
@@ -1498,10 +1498,15 @@
       vagasHtml = `<div class="v">–</div><div class="none">${vagas === false ? 'O site de parceiros ainda não está no ar.' : 'Carregando…'}</div>`;
     }
 
+    // Aceitaram o convite de acesso e o cartão ainda não saiu de Novas, Em conversa ou Call: falta chamar no WhatsApp.
+    const aceitaram = apls.filter(r => conviteDe(r) && conviteDe(r).aceito_em && ['nova', 'conversa', 'call'].includes(r.status)).sort((a, b) => conviteDe(a).aceito_em < conviteDe(b).aceito_em ? 1 : -1);
     $('#stats').innerHTML = `
       <div class="stat"><div class="k">Aplicações novas <a href="#aplicacoes">Ver todas</a></div>
         <div class="v${novas.length ? ' hl' : ''}">${novas.length}</div>
         ${list(novas, aplItem, 'Nenhuma esperando.')}</div>
+      <div class="stat"><div class="k">Aceitaram o convite <a href="#aplicacoes">Ver todas</a></div>
+        <div class="v${aceitaram.length ? ' hl' : ''}">${aceitaram.length}</div>
+        ${list(aceitaram, r => `<li><button class="two" data-apl="${r.id}"><span class="nm" style="max-width:100%">${esc(r.nome)}</span><span class="meta">aceitou ${dataHora(conviteDe(r).aceito_em)} · chamar no WhatsApp</span></button></li>`, 'Ninguém esperando.')}</div>
       <div class="stat"><div class="k">Calls marcadas <a href="https://app.cal.com/bookings/upcoming" target="_blank" rel="noopener">Agenda</a></div>
         <div class="v">${calls.length}</div>
         ${list(calls, r => { const c = callTxt(r); return c && c.cls !== 'off' ? `<li><button class="two" data-apl="${r.id}"><span class="nm" style="max-width:100%">${esc(r.nome)}</span><span class="meta">${c.txt.replace(/^Call /, '')}</span></button></li>` : aplItem(r); }, 'Nenhuma call marcada.')}
@@ -1677,14 +1682,16 @@
     if (!c) return '';
     // Sem prazo: o link só deixa de abrir quando o cartão vai para Não selecionado.
     if (r.status === 'recusado') return 'Link desativado';
+    // 72-convite-aceito.sql: a pessoa tocou em "Aceitar convite" no fim da página. Aceitar não é pagar.
+    if (c.aceito_em) return `Aceitou em ${dataHora(c.aceito_em)}`;
     if (c.aberto_em) return `Abriu em ${dataHora(c.aberto_em)}`;
     return 'Convite enviado';
   };
   const linkDe = r => { const c = conviteDe(r); return c && r.status !== 'recusado' ? CONVITE_URL + c.token : ''; };
   // Mensagens do convite (texto revisado no tom do Kayoan; não mudar sem ele).
   // 19/11/2026: sem call. O convite explica o grupo e a conversa segue pelo WhatsApp (o botão no fim da página abre o WhatsApp do Kayoan).
-  const MSG_PADRAO = 'Fala, {primeiro nome}. Aqui é o Kayoan, do The Group.\n\nSeu perfil passou pela curadoria e você foi selecionado para conhecer o grupo de perto. Preparei um convite pessoal para você:\n\n{link do convite}\n\nLá está tudo: como o grupo funciona e o que você vai ter lá dentro. Depois de ver, me responde aqui e a gente segue a conversa.\n\nO link é só seu, então peço que não repasse.';
-  const MSG_INDICACAO = 'Fala, {primeiro nome}. Aqui é o Kayoan, do The Group. {quem indicou} me falou de você e o seu perfil passou pela curadoria.\n\nSeparei um convite pessoal para você conhecer o grupo:\n\n{link do convite}\n\nLá está tudo: como o grupo funciona e o que você vai ter lá dentro. Depois de ver, me responde aqui e a gente segue a conversa.\n\nO link é só seu, então peço que não repasse.';
+  const MSG_PADRAO = 'Fala, {primeiro nome}. Aqui é o Kayoan, do The Group.\n\nSeu perfil passou pela curadoria e você foi selecionado para conhecer o grupo de perto. Preparei um convite pessoal para você:\n\n{link do convite}\n\nLá está tudo: como o grupo funciona e o que você vai ter lá dentro. Se quiser fazer parte, é só aceitar o convite no final da página, e eu te chamo aqui para a gente seguir.\n\nO link é só seu, então peço que não repasse.';
+  const MSG_INDICACAO = 'Fala, {primeiro nome}. Aqui é o Kayoan, do The Group. {quem indicou} me falou de você e o seu perfil passou pela curadoria.\n\nSeparei um convite pessoal para você conhecer o grupo:\n\n{link do convite}\n\nLá está tudo: como o grupo funciona e o que você vai ter lá dentro. Se quiser fazer parte, é só aceitar o convite no final da página, e eu te chamo aqui para a gente seguir.\n\nO link é só seu, então peço que não repasse.';
   const indicadoPor = r => r.canal === 'indicacao' && r.indicado_por ? r.indicado_por.trim() : '';
   /* ---------- Mensagens prontas editáveis (71-mensagens-modelo.sql) ----------
      O texto padrão fica aqui. Quando o Kayoan edita, o texto novo vai para mensagens_modelo e vale no lugar do padrão.
@@ -1794,7 +1801,7 @@
       ['Instagram', `<a href="${igUrl(r.instagram)}" target="_blank" rel="noopener">@${esc(r.instagram)}</a>`, true],
       ['WhatsApp', `<a href="https://wa.me/${wa}" target="_blank" rel="noopener">${esc(phone(r.whatsapp))}</a>`, true],
       ['E-mail', `<a href="mailto:${esc(r.email)}">${esc(r.email)}</a>`, true],
-      ['Convite', !cv ? 'Não criado' : (seloConvite(r) + (cv.aberturas > 1 ? ` · ${cv.aberturas} vezes` : ''))],
+      ['Convite', !cv ? 'Não criado' : (seloConvite(r) + (cv.aberturas > 1 ? ` · aberto ${cv.aberturas} vezes` : ''))],
     ];
     $('#d-list').innerHTML = items.map(([k, v, html]) => `<div class="row"><dt>${k}</dt><dd>${html ? v : esc(v)}</dd></div>`).join('');
     $('#d-origem').innerHTML = Object.entries(ORIGEM).map(([k, l]) => `<button class="move${r.origem_lead === k ? ' cur' : ''}" data-o="${k}">${l}</button>`).join('');
@@ -3634,7 +3641,7 @@
       // Prévia: Juliana (a2) e Letícia (a6) aplicaram pelo convite de um membro.
       mercados: n === 0 ? ['nutra', 'app'] : n === 2 ? ['saas'] : null, faturamento_total: n === 0 ? '8' : null, opera_hoje: n === 0 ? 'Duas marcas de suplemento e um app de treino' : null, contribuicao_texto: n === 0 ? 'Compra de mídia em escala e estrutura de time de tráfego.' : n === 6 ? 'Rede de afiliados no Nutra e experiência em escalar ofertas no Brasil e no México.' : null, papel: n === 0 ? 'Sócia e responsável pelo tráfego' : n === 2 ? 'Fundadora e CEO' : null, convite_membro_id: n === 2 ? 'cm3' : n === 6 ? 'cm2' : null, convidado_por_nome: n === 2 ? 'Ana Membro' : n === 6 ? 'Carla Veterana' : null, contribuicao: n === 2 ? ['trafego', 'oferta'] : n === 6 ? ['copy'] : null,
       id: 'a' + n, created_at: ago(d, n), nome, instagram, whatsapp, email, funcao, funcao_outra: null, nicho, faturamento, canal, indicado_por, origem: n % 3 ? 'site' : 'app', status, origem_lead, nota: null, atua_dr: n !== 1, segmento: n === 1 ? 'e-commerce e drop' : null,
-      convites: n === 3 ? [{ token: 'k3m9xq2v7tpa', criado_em: ago(3), expira_em: '2099-12-31T23:59:59-03:00', aberto_em: ago(2, 5), ultima_abertura: ago(1), aberturas: 3 }]
+      convites: n === 3 ? [{ token: 'k3m9xq2v7tpa', criado_em: ago(3), expira_em: '2099-12-31T23:59:59-03:00', aberto_em: ago(2, 5), ultima_abertura: ago(1), aberturas: 3, aceito_em: ago(1) }]
         : n === 4 ? [{ token: 'r8w2nd5yq1zc', criado_em: ago(5), expira_em: '2099-12-31T23:59:59-03:00', aberto_em: null, ultima_abertura: null, aberturas: 0 }]
         : n === 7 ? [{ token: 'h4j6tb0sx9ke', criado_em: ago(12), expira_em: '2099-12-31T23:59:59-03:00', aberto_em: null, ultima_abertura: null, aberturas: 0 }] : [],
       call_em: n === 4 ? (() => { const d = new Date(Date.now() + 864e5); d.setHours(15, 0, 0, 0); return d.toISOString(); })() : n === 5 ? (() => { const d = new Date(Date.now() + 4 * 864e5); d.setHours(9, 30, 0, 0); return d.toISOString(); })() : n === 3 ? ago(1) : null,
