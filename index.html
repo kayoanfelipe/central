@@ -1662,8 +1662,9 @@
   };
   const linkDe = r => { const c = conviteDe(r); return c && r.status !== 'recusado' ? CONVITE_URL + c.token : ''; };
   // Mensagens do convite (texto revisado no tom do Kayoan; não mudar sem ele).
-  const MSG_PADRAO = 'Fala, {primeiro nome}. Aqui é o Kayoan, do The Group.\n\nSeu perfil passou pela curadoria e você foi selecionado pra conhecer o grupo de perto. Preparei um convite pessoal pra você:\n\n{link do convite}\n\nLá tem tudo: como o grupo funciona, o que você vai ter lá dentro e os próximos passos. Se fizer sentido, no final você já marca um horário comigo pra gente trocar uma ideia.\n\nO link é só seu, então peço que não repasse.';
-  const MSG_INDICACAO = 'Fala, {primeiro nome}. Aqui é o Kayoan, do The Group. O {quem indicou} me falou de você e o seu perfil passou pela curadoria.\n\nSeparei um convite pessoal pra você conhecer o grupo:\n\n{link do convite}\n\nSe fizer sentido, no final dá pra marcar uma conversa comigo. O link é só seu, então peço que não repasse.';
+  // 19/11/2026: sem call. O convite explica o grupo e a conversa segue pelo WhatsApp (o botão no fim da página abre o WhatsApp do Kayoan).
+  const MSG_PADRAO = 'Fala, {primeiro nome}. Aqui é o Kayoan, do The Group.\n\nSeu perfil passou pela curadoria e você foi selecionado para conhecer o grupo de perto. Preparei um convite pessoal para você:\n\n{link do convite}\n\nLá está tudo: como o grupo funciona e o que você vai ter lá dentro. Depois de ver, me responde aqui e a gente segue a conversa.\n\nO link é só seu, então peço que não repasse.';
+  const MSG_INDICACAO = 'Fala, {primeiro nome}. Aqui é o Kayoan, do The Group. {quem indicou} me falou de você e o seu perfil passou pela curadoria.\n\nSeparei um convite pessoal para você conhecer o grupo:\n\n{link do convite}\n\nLá está tudo: como o grupo funciona e o que você vai ter lá dentro. Depois de ver, me responde aqui e a gente segue a conversa.\n\nO link é só seu, então peço que não repasse.';
   const indicadoPor = r => r.canal === 'indicacao' && r.indicado_por ? r.indicado_por.trim() : '';
   const mensagemConvite = (r, link) => (indicadoPor(r) ? MSG_INDICACAO : MSG_PADRAO)
     .replace('{primeiro nome}', r.nome.trim().split(/\s+/)[0])
