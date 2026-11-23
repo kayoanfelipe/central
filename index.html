@@ -203,6 +203,26 @@
   #m-contrato .krow { background: var(--col); }
   #m-contrato .anm b { font-size: 13px; }
 
+  .cmbloco { border-top: 1px solid var(--line); padding: 2px 0; }
+  .cmbloco > summary { list-style: none; cursor: pointer; display: flex; gap: 8px; align-items: baseline; padding: 11px 2px; font-size: 13.5px; font-weight: 600; }
+  .cmbloco > summary::-webkit-details-marker { display: none; }
+  .cmbloco > summary span { color: var(--muted); font-weight: 400; font-size: 12px; }
+  .cmbloco > summary::after { content: '+'; margin-left: auto; color: var(--muted); font-weight: 400; }
+  .cmbloco[open] > summary::after { content: '−'; }
+  .cmbloco[data-cmb="abriu"] > summary { color: var(--gold); }
+  .cmrow { flex-wrap: wrap; }
+  .cmrow .aact { flex-wrap: wrap; }
+  @media (min-width: 561px) { .cmrow { flex-direction: column; align-items: stretch; } .cmrow .aact { justify-content: flex-start; } }
+  .cmfunil { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 0 0 12px; }
+  .cmfunil div { background: var(--card); border-radius: 12px; padding: 9px 6px; text-align: center; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .cmfunil b { font-size: 17px; font-weight: 600; }
+  .cmfunil span { font-size: 11px; color: var(--ink-2); line-height: 1.2; }
+  .cmlug { margin: 0 0 10px; }
+  .cmform { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-bottom: 18px; }
+  .cmrow .cmform { margin-bottom: 0; }
+  .cmform .fld > span { font-size: 12px; color: var(--ink-2); }
+  .cmform-b { display: flex; gap: 6px; flex-wrap: wrap; }
+
   .agrp { background: var(--col); border-radius: 20px; padding: 14px 14px 8px; margin-bottom: 12px; }
   .agrp h3 { margin: 2px 4px 10px; font-size: 13.5px; font-weight: 600; display: flex; gap: 8px; align-items: baseline; }
   .agrp h3 span { color: var(--muted); font-weight: 400; font-size: 12px; }
@@ -3231,7 +3251,7 @@
   // Ações depois da curadoria: liberar os 3 meses, encerrar e dar +3 meses para quem convidou (convite_membro_bonus).
   const cmBotoes = c => (c.status === 'aprovado' ? `<button class="abtn pri" data-cmlib="${c.id}">Liberar acesso</button>` : '')
     + (c.status === 'ativo' ? `<button class="abtn" data-cmfim="${c.id}">Encerrar</button>` : '')
-    + (['ativo', 'encerrado'].includes(c.status) && !c.bonus_em ? `<button class="abtn${c.status === 'encerrado' ? ' pri' : ''}" data-cmbonus="${c.id}">Virou membro: +3 meses para ${esc(String(c.membro_nome || '').split(' ')[0])}</button>` : '');
+    + (['ativo', 'encerrado'].includes(c.status) && !c.bonus_em && (byId(c.membro_id) || {}).status !== 'fundador' ? `<button class="abtn${c.status === 'encerrado' ? ' pri' : ''}" data-cmbonus="${c.id}">Virou membro: +3 meses para ${esc(String(c.membro_nome || '').split(' ')[0])}</button>` : '');
   async function cmAcao(t) {
     const c = convitesM.find(x => x.id === (t.dataset.cmlib || t.dataset.cmfim || t.dataset.cmbonus)); if (!c) return;
     const quem = convidadoNome(c) || 'o convidado', pn = String(c.membro_nome || '').split(' ')[0];
@@ -3256,7 +3276,7 @@
   }
   // Membros › Convidados: quem entra pelo convite de um membro, por 3 meses.
   function renderConvidados(termos) {
-    const bate = c => !termos.length || termos.every(t => norm(convidadoNome(c) + ' ' + c.membro_nome).includes(t));
+    const bate = c => !termos.length || termos.every(t => norm(convidadoNome(c) + ' ' + c.membro_nome + ' ' + (c.para || '') + ' ' + (c.onde || '')).includes(t));
     const l = convitesM.filter(c => c.status !== 'cancelado' && bate(c));
     const dFim = c => diasAte(c.fim);
     const g = [['atrasado', 'Terminam em até 15 dias', l.filter(c => c.status === 'ativo' && c.fim && dFim(c) <= 15).sort((a, b) => a.fim < b.fim ? -1 : 1)],
@@ -3270,44 +3290,125 @@
     const linha = c => {
       const a = aplDoConvite(c), wa = a ? waLink(a.whatsapp) : '', d = dFim(c);
       const sit = c.status === 'ativo' && c.fim ? `<span class="${d < 0 ? 'late' : ''}">${d < 0 ? `Terminou há ${-d} ${-d === 1 ? 'dia' : 'dias'}` : d === 0 ? 'Termina hoje' : `Termina em ${d} ${d === 1 ? 'dia' : 'dias'}`}</span> · de ${dataBR(c.inicio)} a ${dataBR(c.fim)}` : (CMST[c.status] || c.status) + (c.aberturas && ['gerado', 'aberto'].includes(c.status) ? ` · aberto ${c.aberturas} ${c.aberturas === 1 ? 'vez' : 'vezes'}` : '');
-      return `<div class="arow"><button class="anm" data-open="${c.membro_id}"><b>${esc(convidadoNome(c) || 'Convite ainda sem convidado')}</b><span>Convidado por ${esc(c.membro_nome)} · ${sit}${c.bonus_em ? ' · +3 meses já dados' : ''}</span></button>
+      return `<div class="arow"><button class="anm" data-open="${c.membro_id}"><b>${esc(convidadoNome(c) || c.para || 'Convite ainda sem convidado')}</b><span>Convidado por ${esc(c.membro_nome)}${c.onde ? ' · ' + esc(c.onde) : ''} · ${sit}${c.bonus_em ? ' · +3 meses já dados' : ''}</span></button>
         <span class="aact">${wa ? `<a class="abtn" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ''}${cmBotoes(c)}</span></div>`;
     };
     $('#mgrid').innerHTML = (g.length ? g.map(([k, t, xs]) => `<section class="agrp${k === 'atrasado' ? ' atrasado' : ''}"><h3>${t} <span>${xs.length}</span></h3>${xs.map(linha).join('')}</section>`).join('') : '<div class="empty" style="grid-column:1/-1">Nenhum convidado de membro ainda. O convite é gerado na ficha do membro, em Convite de membro.</div>')
       + (antigos.length ? `<section class="agrp"><h3>Fichas de convidado <span>${antigos.length}</span></h3>${antigos.map(m => `<div class="arow"><button class="anm" data-open="${m.id}"><b>${esc(m.nome)}</b><span>${esc(venceTxt(m) || 'Convidado')}${m.plano ? ' · ' + esc(m.plano) : ''}</span></button></div>`).join('')}</section>` : '');
   }
+  // Etapa de cada link, para organizar os links do fundador (que gera muitos, em eventos) em blocos.
+  const CM_PARADO_DIAS = 30;
+  function cmEtapa(c) {
+    const a = aplDoConvite(c), mb = a && a.membro_id ? byId(a.membro_id) : null;
+    if (c.bonus_em || (mb && ['ativo', 'veterano'].includes(mb.status))) return 'virou';
+    if (c.status === 'cancelado' || c.status === 'recusado' || c.status === 'encerrado') return 'fechado';
+    if (c.status === 'ativo') return 'nogrupo';
+    if (['aplicado', 'aprovado'].includes(c.status)) return 'curadoria';
+    if (c.status === 'aberto' || c.aberturas > 0) return 'abriu';
+    return (Date.now() - new Date(c.criado_em)) / 864e5 > CM_PARADO_DIAS ? 'parado' : 'naoabriu';
+  }
+  const CM_BLOCOS = [['abriu', 'Abriram, mas não aplicaram', 'Vale chamar no WhatsApp.'], ['curadoria', 'Aplicaram, na curadoria', ''], ['nogrupo', 'No grupo, nos 3 meses', ''],
+    ['naoabriu', 'Ainda não abriram', ''], ['parado', `Parados há mais de ${CM_PARADO_DIAS} dias`, 'Gerados e nunca abertos.'], ['virou', 'Viraram membro', ''], ['fechado', 'Encerrados e cancelados', '']];
+  const cmAbertos = new Set(['abriu', 'curadoria', 'nogrupo', 'naoabriu']);
+  let cmOnde = '', cmEdit = null, cmNovo = false;
+  const cmTitulo = c => c.para || convidadoNome(c) || 'Link sem nome';
+  const cmLugares = () => [...new Set(convitesM.filter(c => c.onde).sort((a, b) => a.criado_em < b.criado_em ? 1 : -1).map(c => c.onde))];
+  const cmForm = (id, c) => `<div class="cmform" data-cmform="${id}"><label class="fld"><span>Para quem</span><input data-cmpara maxlength="120" placeholder="Ex.: João, da agência X" value="${esc((c && c.para) || '')}"></label>
+      <label class="fld"><span>Onde vocês se conheceram</span><input data-cmonde maxlength="80" list="cm-lugares" placeholder="Ex.: Evento Y, nov/26" value="${esc((c && c.onde) || '')}"></label>
+      <div class="cmform-b"><button class="abtn pri" data-cmsalva="${id}">${c ? 'Salvar' : 'Gerar e copiar a mensagem'}</button><button class="abtn" data-cmfecha>Voltar</button></div></div>`;
   function renderConviteFicha(m) {
-    const l = convitesDe(m.id), pode = convidaStatus(m);
+    const l = convitesDe(m.id), pode = convidaStatus(m), fund = m.status === 'fundador';
     $('#fs-convite').hidden = !pode && !l.length;
     const prox = proximoConvite(m), aberto = l.find(c => ['gerado', 'aberto'].includes(c.status));
-    const linha = c => `<div class="krow"><div class="anm" style="cursor:default"><b>${CMST[c.status] || c.status}${convidadoNome(c) ? ` · ${esc(convidadoNome(c))}` : ''}</b><span>${c.bonus_em ? `+3 meses dados em ${dataBR(c.bonus_em.slice(0, 10))} · ` : ''}Gerado em ${dataBR(c.criado_em.slice(0, 10))}${c.aberturas ? ` · aberto ${c.aberturas} ${c.aberturas === 1 ? 'vez' : 'vezes'}` : ''}${c.inicio ? ` · de ${dataBR(c.inicio)}${c.fim ? ' a ' + dataBR(c.fim) : ''}` : ''}</span></div>
-      <div class="kbtns">${['gerado', 'aberto'].includes(c.status) ? `<button class="abtn pri" data-cmmsg="${c.id}">Copiar mensagem</button>${waLink(m.telefone) ? `<a class="abtn" href="${waLink(m.telefone)}?text=${encodeURIComponent(msgConviteMembro(m, c))}" target="_blank" rel="noopener">WhatsApp</a>` : ''}<button class="abtn" data-cmlink="${c.id}">Copiar link</button><button class="abtn" data-cmcancel="${c.id}">Cancelar</button>` : cmBotoes(c)}</div></div>`;
+    const linkBtns = c => `<button class="abtn pri" data-cmmsg="${c.id}">Copiar mensagem</button>${waLink(m.telefone) ? `<a class="abtn" href="${waLink(m.telefone)}?text=${encodeURIComponent(msgConviteMembro(m, c))}" target="_blank" rel="noopener">WhatsApp</a>` : ''}<button class="abtn" data-cmlink="${c.id}">Copiar link</button><button class="abtn" data-cmcancel="${c.id}">Cancelar</button>`;
+    const linha = c => {
+      if (cmEdit === c.id) return `<div class="arow cmrow">${cmForm(c.id, c)}</div>`;
+      const a = aplDoConvite(c), wa = a ? waLink(a.whatsapp) : '', sub = [];
+      if (c.para && convidadoNome(c) && norm(convidadoNome(c)) !== norm(c.para)) sub.push('Aplicou como ' + esc(convidadoNome(c)));
+      if (c.onde) sub.push(esc(c.onde));
+      sub.push(CMST[c.status] || c.status);
+      sub.push('gerado em ' + dataBR(new Date(c.criado_em).toLocaleDateString('sv')));
+      if (c.aberturas) sub.push(`aberto ${c.aberturas} ${c.aberturas === 1 ? 'vez' : 'vezes'}`);
+      if (c.inicio) sub.push(`de ${dataBR(c.inicio)}${c.fim ? ' a ' + dataBR(c.fim) : ''}`);
+      if (c.bonus_em) sub.push(`+3 meses dados em ${dataBR(c.bonus_em.slice(0, 10))}`);
+      return `<div class="arow cmrow"><div class="anm" style="cursor:default"><b>${esc(cmTitulo(c))}</b><span>${sub.join(' · ')}</span></div>
+        <div class="aact">${['gerado', 'aberto'].includes(c.status) ? linkBtns(c) : (wa ? `<a class="abtn" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>` : '') + cmBotoes(c)}<button class="abtn" data-cmnome="${c.id}">${c.para || c.onde ? 'Editar nome' : 'Dar nome'}</button></div></div>`;
+    };
     let topo = '';
     if (!pode) topo = '<div class="venc" style="margin:0 0 8px">Só ativos, veteranos e fundador convidam.</div>';
     else if (m.pode_convidar === false) topo = '<div class="venc" style="margin:0 0 8px">Este membro perdeu o direito de convidar.</div>';
     else if (prox) topo = `<div class="venc" style="margin:0 0 8px">Próximo convite a partir de ${dataBR(prox.toISOString().slice(0, 10))}.</div>`;
-    else topo = `<button class="move" data-cmnovo="${m.id}" style="margin-bottom:10px">${m.status === 'fundador' && aberto ? 'Gerar outro link' : 'Gerar convite'}</button>`;
+    else topo = cmNovo ? cmForm('novo') : `<button class="move" data-cmnovo="${m.id}" style="margin-bottom:10px">${fund && aberto ? 'Gerar outro link' : 'Gerar convite'}</button>`;
+    let corpo = '';
+    if (!l.length) corpo = pode ? '<div class="venc" style="margin:0 0 8px">Nenhum convite gerado ainda.</div>' : '';
+    else if (!fund) corpo = l.slice(0, 4).map(linha).join('');
+    else {
+      const lugares = cmLugares(); if (cmOnde && cmOnde !== '-' && !lugares.includes(cmOnde)) cmOnde = '';
+      const f = l.filter(c => !cmOnde || (cmOnde === '-' ? !c.onde : c.onde === cmOnde)), vivos = f.filter(c => c.status !== 'cancelado'), et = c => cmEtapa(c);
+      const n = { gerados: vivos.length, abriram: vivos.filter(c => c.aberturas > 0 || !['gerado', 'aberto'].includes(c.status)).length,
+        aplicaram: vivos.filter(c => c.aplicacao_id || ['aplicado', 'aprovado', 'recusado', 'ativo', 'encerrado'].includes(c.status)).length,
+        entraram: vivos.filter(c => c.inicio || ['ativo', 'encerrado'].includes(c.status)).length, viraram: vivos.filter(c => et(c) === 'virou').length };
+      const funil = `<div class="cmfunil">${[['gerados', 'gerados'], ['abriram', 'abriram'], ['aplicaram', 'aplicaram'], ['entraram', 'entraram'], ['viraram', 'viraram membro']].map(([k, t]) => `<div><b>${n[k]}</b><span>${t}</span></div>`).join('')}</div>`;
+      const filtro = lugares.length ? `<div class="fsub cmlug"><a href="#" class="${!cmOnde ? 'cur' : ''}" data-cmlug="">Todos</a>${lugares.map(o => `<a href="#" class="${cmOnde === o ? 'cur' : ''}" data-cmlug="${esc(o)}">${esc(o)}</a>`).join('')}${l.some(c => !c.onde) ? `<a href="#" class="${cmOnde === '-' ? 'cur' : ''}" data-cmlug="-">Sem lugar</a>` : ''}</div>` : '';
+      const blocos = CM_BLOCOS.map(([k, t, dica]) => {
+        const xs = f.filter(c => et(c) === k); if (!xs.length) return '';
+        const extra = k === 'parado' ? `<div style="margin:0 0 8px"><button class="abtn" data-cmparados>${xs.length === 1 ? 'Cancelar o link parado' : `Cancelar os ${xs.length} parados`}</button></div>` : '';
+        return `<details class="cmbloco" data-cmb="${k}"${cmAbertos.has(k) ? ' open' : ''}><summary>${t} <span>${xs.length}</span></summary>${dica ? `<div class="venc" style="margin:0 0 8px">${dica}</div>` : ''}${extra}${xs.map(linha).join('')}</details>`;
+      }).join('');
+      corpo = filtro + funil + (blocos || '<div class="venc" style="margin:0 0 8px">Nenhum link neste lugar.</div>');
+    }
     const direito = pode ? `<div class="sec">Pode convidar</div><div class="moves"><button class="move${m.pode_convidar !== false ? ' cur' : ''}" data-cmdir="1">Sim</button><button class="move${m.pode_convidar === false ? ' cur' : ''}" data-cmdir="0">Não</button></div>` : '';
     const editar = pode ? '<div style="margin-top:8px"><button class="lk-btn lk-btn2" type="button" data-medit="convite_membro">Editar a mensagem do convite</button></div>' : '';
-    $('#m-convite').innerHTML = topo + (l.length ? l.slice(0, m.status === 'fundador' ? 100 : 4).map(linha).join('') : (pode ? '<div class="venc" style="margin:0 0 8px">Nenhum convite gerado ainda.</div>' : '')) + direito + editar;
-    const el = $('#fsr-convite'); el.textContent = aberto ? 'link ativo' : l.length ? (CMST[l[0].status] || '').toLowerCase() : pode && m.pode_convidar !== false && !prox ? 'pode convidar' : '';
+    $('#m-convite').innerHTML = `<datalist id="cm-lugares">${cmLugares().map(o => `<option value="${esc(o)}">`).join('')}</datalist>` + topo + corpo + direito + editar;
+    const fc = $('#m-convite [data-cmform] input'); if (fc && (cmNovo || cmEdit)) fc.focus({ preventScroll: true });
+    const cur = $('#m-convite .cmlug a.cur'); if (cur) cur.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    const el = $('#fsr-convite'), nAb = l.filter(c => ['gerado', 'aberto'].includes(c.status)).length;
+    el.textContent = fund && nAb ? `${nAb} ${nAb === 1 ? 'link aberto' : 'links abertos'}` : aberto ? 'link ativo' : l.length ? (CMST[l[0].status] || '').toLowerCase() : pode && m.pode_convidar !== false && !prox ? 'pode convidar' : '';
   }
+  $('#m-convite').addEventListener('toggle', e => { const d = e.target.closest && e.target.closest('[data-cmb]'); if (d) d.open ? cmAbertos.add(d.dataset.cmb) : cmAbertos.delete(d.dataset.cmb); }, true);
+  $('#m-convite').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.closest('[data-cmform]')) { e.preventDefault(); const b = e.target.closest('[data-cmform]').querySelector('[data-cmsalva]'); if (b) b.click(); } });
   $('#m-convite').addEventListener('click', async e => {
     const ac = e.target.closest('[data-cmlib],[data-cmfim],[data-cmbonus]'); if (ac) { cmAcao(ac); return; }
-    const t = e.target.closest('[data-cmnovo],[data-cmmsg],[data-cmlink],[data-cmcancel],[data-cmdir]'); if (!t) return;
+    const t = e.target.closest('[data-cmnovo],[data-cmmsg],[data-cmlink],[data-cmcancel],[data-cmdir],[data-cmnome],[data-cmsalva],[data-cmfecha],[data-cmlug],[data-cmparados]'); if (!t) return;
+    if (t.tagName === 'A') e.preventDefault();
     const m = byId(memId); if (!m) return;
-    const c = convitesM.find(x => x.id === (t.dataset.cmmsg || t.dataset.cmlink || t.dataset.cmcancel));
+    const c = convitesM.find(x => x.id === (t.dataset.cmmsg || t.dataset.cmlink || t.dataset.cmcancel || t.dataset.cmnome || t.dataset.cmsalva));
     try {
+      if (t.dataset.cmlug !== undefined) cmOnde = t.dataset.cmlug;
+      if (t.dataset.cmfecha !== undefined) { cmNovo = false; cmEdit = null; }
+      if (t.dataset.cmnome && c) { cmEdit = c.id; cmNovo = false; }
       if (t.dataset.cmnovo) {
-        if (!confirm(m.status === 'fundador' ? 'Gerar um link de convite? Como fundador, você gera quantos quiser. Os links anteriores continuam abertos até você cancelar.' : `Gerar um convite de ${m.nome}? O próximo só poderá ser gerado daqui a 3 meses, a não ser que este seja cancelado ou recusado na curadoria.`)) return;
-        t.disabled = true; await db.gerarConviteMembro(m.id); convitesM = await db.convitesMembro();
-        const novo = convitesDe(m.id)[0]; if (novo) copia(msgConviteMembro(m, novo), 'Convite gerado. Mensagem copiada');
+        if (m.status === 'fundador') { cmNovo = true; cmEdit = null; }
+        else {
+          if (!confirm(`Gerar um convite de ${m.nome}? O próximo só poderá ser gerado daqui a 3 meses, a não ser que este seja cancelado ou recusado na curadoria.`)) return;
+          t.disabled = true; await db.gerarConviteMembro(m.id); convitesM = await db.convitesMembro();
+          const novo = convitesDe(m.id)[0]; if (novo) copia(msgConviteMembro(m, novo), 'Convite gerado. Mensagem copiada');
+        }
+      }
+      if (t.dataset.cmsalva) {
+        const f = t.closest('[data-cmform]'), para = f.querySelector('[data-cmpara]').value.trim().replace(/\s+/g, ' ').slice(0, 120) || null, onde = f.querySelector('[data-cmonde]').value.trim().replace(/\s+/g, ' ').slice(0, 80) || null;
+        t.disabled = true;
+        if (t.dataset.cmsalva === 'novo') {
+          const r = await db.gerarConviteMembro(m.id); convitesM = await db.convitesMembro();
+          const novo = convitesM.find(x => x.token === (r && r.token)) || convitesDe(m.id)[0];
+          if (novo && (para || onde)) { try { await db.patchConvite(novo.id, { para, onde }); Object.assign(novo, { para, onde }); } catch (err) { toast('Link gerado, mas o nome não foi salvo'); } }
+          if (novo) { copia(msgConviteMembro(m, novo), 'Link gerado. Mensagem copiada'); if (onde && cmOnde && cmOnde !== onde) cmOnde = ''; cmAbertos.add('naoabriu'); }
+          cmNovo = false;
+        } else if (c) {
+          await db.patchConvite(c.id, { para, onde }); Object.assign(c, { para, onde }); toast('Nome salvo'); cmEdit = null;
+        }
       }
       if (t.dataset.cmmsg && c) copia(msgConviteMembro(m, c), 'Mensagem copiada');
       if (t.dataset.cmlink && c) copia(CONVITE_M_URL + c.token);
       if (t.dataset.cmcancel && c) {
-        if (!confirm(`Cancelar o convite de ${m.nome}? O link para de abrir e ${m.nome.split(' ')[0]} pode gerar outro na hora.`)) return;
+        if (!confirm(m.status === 'fundador' ? `Cancelar o link ${c.para ? 'de ' + c.para : 'sem nome'}? Ele para de abrir.` : `Cancelar o convite de ${m.nome}? O link para de abrir e ${m.nome.split(' ')[0]} pode gerar outro na hora.`)) return;
         await db.cancelarConviteMembro(c.id); convitesM = await db.convitesMembro(); toast('Convite cancelado');
+      }
+      if (t.dataset.cmparados !== undefined) {
+        const ps = convitesDe(m.id).filter(x => cmEtapa(x) === 'parado' && (!cmOnde || (cmOnde === '-' ? !x.onde : x.onde === cmOnde)));
+        if (!ps.length || !confirm(`Cancelar ${ps.length} ${ps.length === 1 ? 'link parado' : 'links parados'}? Eles foram gerados há mais de ${CM_PARADO_DIAS} dias e nunca foram abertos. Depois de cancelados, param de abrir.`)) return;
+        t.disabled = true; let ok = 0; for (const x of ps) { try { await db.cancelarConviteMembro(x.id); ok++; } catch (err) { } }
+        convitesM = await db.convitesMembro(); toast(`${ok} ${ok === 1 ? 'link cancelado' : 'links cancelados'}`);
       }
       if (t.dataset.cmdir) { const v = t.dataset.cmdir === '1'; if (v === (m.pode_convidar !== false)) return; await db.patchMembro(m.id, { pode_convidar: v }); m.pode_convidar = v; toast(v ? 'Pode convidar de novo' : 'Perdeu o direito de convidar'); }
     } catch (err) { fail(err, err.message && err.message !== 'Erro' ? err.message : 'Não foi possível concluir'); }
@@ -3631,7 +3732,15 @@
     // Prévia: um convite de membro já aberto, para ver a seção na ficha.
     const CM = [{ id: 'cm1', token: 'previa000001', membro_id: 'm2', membro_nome: 'Bruno Exemplo', status: 'aberto', criado_em: ago(5), aberturas: 2, inicio: null, fim: null },
       { id: 'cm2', token: 'previa000002', membro_id: 'mx0', membro_nome: 'Carla Veterana', status: 'ativo', criado_em: ago(85), aberturas: 3, aplicacao_id: 'a6', inicio: ago(80).slice(0, 10), fim: new Date(Date.now() + 10 * 864e5).toISOString().slice(0, 10), bonus_em: null },
-      { id: 'cm3', token: 'previa000003', membro_id: 'm1', membro_nome: 'Ana Membro', status: 'aprovado', criado_em: ago(10), aberturas: 1, aplicacao_id: 'a2', inicio: null, fim: null, bonus_em: null }];
+      { id: 'cm3', token: 'previa000003', membro_id: 'm1', membro_nome: 'Ana Membro', status: 'aprovado', criado_em: ago(10), aberturas: 1, aplicacao_id: 'a2', inicio: null, fim: null, bonus_em: null },
+      { id: 'cm4', token: 'previa000004', membro_id: 'mx1', membro_nome: 'Diego Fundador', status: 'gerado', criado_em: ago(1), aberturas: 0, para: 'João, da agência X', onde: 'Evento Y, nov/26' },
+      { id: 'cm5', token: 'previa000005', membro_id: 'mx1', membro_nome: 'Diego Fundador', status: 'aberto', criado_em: ago(2), aberturas: 3, para: 'Marina, do app Z', onde: 'Evento Y, nov/26' },
+      { id: 'cm6', token: 'previa000006', membro_id: 'mx1', membro_nome: 'Diego Fundador', status: 'aplicado', criado_em: ago(3), aberturas: 1, aplicacao_id: 'a3', onde: 'Evento Y, nov/26' },
+      { id: 'cm7', token: 'previa000007', membro_id: 'mx1', membro_nome: 'Diego Fundador', status: 'ativo', criado_em: ago(40), aberturas: 2, para: 'Rafael', onde: 'Jantar SP, out/26', inicio: ago(35).slice(0, 10), fim: new Date(Date.now() + 55 * 864e5).toISOString().slice(0, 10) },
+      { id: 'cm8', token: 'previa000008', membro_id: 'mx1', membro_nome: 'Diego Fundador', status: 'gerado', criado_em: ago(45), aberturas: 0, onde: 'Jantar SP, out/26' },
+      { id: 'cm9', token: 'previa000009', membro_id: 'mx1', membro_nome: 'Diego Fundador', status: 'gerado', criado_em: ago(50), aberturas: 0 },
+      { id: 'cm10', token: 'previa000010', membro_id: 'mx1', membro_nome: 'Diego Fundador', status: 'encerrado', criado_em: ago(120), aberturas: 2, para: 'Paula', onde: 'Jantar SP, out/26', inicio: ago(115).slice(0, 10), fim: ago(25).slice(0, 10), bonus_em: ago(20) },
+      { id: 'cm11', token: 'previa000011', membro_id: 'mx1', membro_nome: 'Diego Fundador', status: 'cancelado', criado_em: ago(30), aberturas: 0, para: 'Teste' }];
     const PA = [
       { id: 'pa1', created_at: ago(40), updated_at: ago(2), marca: 'Payflow', razao_social: 'Payflow Pagamentos Ltda', cnpj: '11222333000181', contato_nome: 'Renata Lima', contato_whats: '(11) 98888-1111', contato_email: 'renata@exemplo.com', cota_interesse: 'oficial', segmento: 'Financeiro e pagamentos', status: 'ativo', inicio: '2026-09-01', nota: 'Quer ativação de pôquer na próxima The House.' },
       { id: 'pa2', created_at: ago(12), updated_at: ago(3), marca: 'Charutaria Norte', razao_social: null, cnpj: null, contato_nome: 'Paulo', contato_whats: '(48) 97777-2222', contato_email: null, cota_interesse: 'apoiador', segmento: 'Bebida e charuto', status: 'negociando', inicio: null, nota: null },
