@@ -1462,7 +1462,7 @@
     const fun = COLS.filter(([k]) => k !== 'recusado').map(([k, l]) => [k, l, apls.filter(r => r.status === k).length]);
     const maxF = Math.max(1, ...fun.map(x => x[2]));
     const at = membros.filter(m => m.status === 'ativo');
-    const entregues = at.filter(m => m.anel === 'entregue').length, pAnel = at.length ? Math.round(entregues / at.length * 100) : 0;
+    const cAnel = membros.filter(temAnel), entregues = cAnel.filter(m => m.anel === 'entregue').length, pAnel = cAnel.length ? Math.round(entregues / cAnel.length * 100) : 0;
     const atras = contaFase('atrasado'), pAcomp = at.length ? Math.round((at.length - atras) / at.length * 100) : 0;
     const ring = (pct, label, sub) => `<div class="pring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="trk" cx="18" cy="18" r="15.915"/><circle class="val" cx="18" cy="18" r="15.915" stroke-dasharray="${Math.max(pct, 0.5)} ${100 - Math.max(pct, 0.5)}"/></svg><div><b>${pct}%</b><span>${label}</span><small>${sub}</small></div></div>`;
     const kpi = (l, n, s, gold) => `<div class="pk"><div class="l">${l}</div><div class="n${gold ? ' gold' : ''}">${n}</div><div class="s">${s}</div></div>`;
@@ -1476,7 +1476,7 @@
       <div class="pcard"><div class="t">Aplicações por etapa <a href="#aplicacoes" style="color:var(--muted);font-weight:400;font-size:12px;text-decoration:none">Ver quadro</a></div>
         <div class="pfun">${fun.map(([k, l, n]) => `<div class="r${k === 'nova' && n ? ' hl' : ''}" data-tip="${l}: ${n}"><span class="lb">${l}</span><span class="tr"><i style="width:${n / maxF * 100}%"></i></span><b>${n}</b></div>`).join('')}</div></div>
       <div class="pcard"><div class="t">Saúde do grupo</div>
-        <div class="prings">${ring(pAcomp, 'Acompanhamento em dia', `${at.length - atras} de ${at.length} ativos`)}${ring(pAnel, 'Anéis entregues', `${entregues} de ${at.length} ativos`)}</div></div>`;
+        <div class="prings">${ring(pAcomp, 'Acompanhamento em dia', `${at.length - atras} de ${at.length} ativos`)}${ring(pAnel, 'Anéis entregues', `${entregues} de ${cAnel.length} ativos e veteranos`)}</div></div>`;
   }
   $('#pano').addEventListener('mousemove', e => { const t = e.target.closest('[data-tip]'), tip = $('#ptip'); if (!t) { tip.classList.remove('on'); return; } tip.textContent = t.dataset.tip; tip.style.left = Math.min(e.clientX + 12, innerWidth - tip.offsetWidth - 8) + 'px'; tip.style.top = (e.clientY - 34) + 'px'; tip.classList.add('on'); });
   $('#pano').addEventListener('mouseleave', () => $('#ptip').classList.remove('on'));
@@ -2296,7 +2296,7 @@
   /* Resumo do topo da ficha e o que fica aberto: só o que pede ação agora. */
   function fichaResumo(m, abrindo) {
     const p = proximoContato(m), v = venceTxt(m), d = diasAte(m.vencimento), nT = tarefas.filter(t => t.membro_id === m.id && t.status !== 'feito').length, nC = conexoesDe(m.id).length;
-    const anelTxt = m.status === 'ativo' ? (m.anel === 'entregue' ? `entregue${m.anel_tamanho ? ' · tamanho ' + esc(m.anel_tamanho) : ''}` : m.anel === 'em produção' || m.anel === 'enviar para produção' ? `${m.anel}${m.anel_tamanho ? ' · tamanho ' + esc(m.anel_tamanho) : ''}` : 'falta medida') : '';
+    const anelTxt = temAnel(m) ? (m.anel === 'entregue' ? `entregue${m.anel_tamanho ? ' · tamanho ' + esc(m.anel_tamanho) : ''}` : m.anel === 'em produção' || m.anel === 'enviar para produção' ? `${m.anel}${m.anel_tamanho ? ' · tamanho ' + esc(m.anel_tamanho) : ''}` : 'falta medida') : '';
     const linhas = [];
     if (atual(m) && m.vencimento) {
       const fim = new Date(m.vencimento + 'T12:00:00'), ini = new Date(fim); ini.setMonth(ini.getMonth() - periodo(m));
@@ -2312,10 +2312,10 @@
     s('fsr-renov', v, d !== null && d < 0); s('fsr-acomp', p ? prazoTxt(p) : 'só para ativos', p && p.dias < 0); s('fsr-anel', anelTxt || '—');
     const ks = kSt(m); s('fsr-contrato', ks ? ks.txt : 'sem contrato'); s('fsr-tarefas', nT ? `${nT} ${nT === 1 ? 'aberta' : 'abertas'}` : 'nenhuma'); s('fsr-conex', nC ? String(nC) : 'nenhuma');
     s('fsr-info', m.informacoes ? '' : 'vazio'); s('fsr-dados', STATUS[m.status] || '');
-    $('#fs-anel').hidden = m.status !== 'ativo';
+    $('#fs-anel').hidden = !temAnel(m);
     if (abrindo) {
       $('#fs-acomp').open = !!(p && p.dias <= 7);
-      $('#fs-anel').open = m.status === 'ativo' && m.anel !== 'entregue';
+      $('#fs-anel').open = temAnel(m) && m.anel !== 'entregue';
       $('#fs-renov').open = true;
       ['fs-contrato', 'fs-conex', 'fs-info', 'fs-dados'].forEach(x => { $('#' + x).open = false; });
       $('#fs-tarefas').open = nT > 0;
@@ -3099,8 +3099,10 @@
     const fase = dias < 0 ? 'atrasado' : dias <= 7 ? 'semana' : dias <= ult - fimMes.getDate() ? 'mes' : 'proximo';
     return { tipo, data, dias, fase, ultimo };
   }
-  // Pendente: todo membro ativo cujo anel ainda não foi entregue (falta medida ou em produção), não importa há quanto tempo entrou.
-  const anelPendente = m => m.status === 'ativo' && m.anel !== 'entregue';
+  // Anel: ativos e veteranos recebem (23/11/2026). Convidado de 3 meses e fundador, não.
+  function temAnel(m) { return ['ativo', 'veterano'].includes(m.status); }
+  // Pendente: todo ativo ou veterano cujo anel ainda não foi entregue (falta medida ou em produção), não importa há quanto tempo entrou.
+  const anelPendente = m => temAnel(m) && m.anel !== 'entregue';
   const ANEL_ORDEM = { 'falta medida': 0, 'enviar para produção': 1, 'em produção': 2 };
   const contaFase = f => membros.filter(m => proximoContato(m)?.fase === f).length;
   const prazoTxt = p => p.dias < 0 ? `atrasado há ${-p.dias} ${-p.dias === 1 ? 'dia' : 'dias'}` : p.dias === 0 ? 'vence hoje' : `até ${dataCurta(p.data)}`;
