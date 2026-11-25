@@ -1391,7 +1391,7 @@
     const v = h === 'convidados' ? 'aplicacoes' : VIEWS.includes(h) ? h : 'hoje';
     VIEWS.forEach(k => { $('#v-' + k).hidden = k !== v; });
     document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('cur', a.dataset.v === v || (a.dataset.grupo || '').split(' ').includes(v)));
-    document.querySelectorAll('.fsub a').forEach(a => a.classList.toggle('cur', a.getAttribute('href') === '#' + (h === 'convidados' ? h : v)));
+    document.querySelectorAll('.fsub a:not([data-anf])').forEach(a => a.classList.toggle('cur', a.getAttribute('href') === '#' + (h === 'convidados' ? h : v)));
     document.querySelectorAll('.fsub').forEach(f => { const c = f.querySelector('a.cur'); if (c && f.offsetParent) f.scrollLeft = c.offsetLeft - f.offsetLeft - 8; });
     document.title = (h === 'convidados' ? 'Convidados' : TITULO[v]) + ' · The Group';
     renderAll();
@@ -3103,7 +3103,8 @@
   function temAnel(m) { return ['ativo', 'veterano'].includes(m.status); }
   // Pendente: todo ativo ou veterano cujo anel ainda não foi entregue (falta medida ou em produção), não importa há quanto tempo entrou.
   const anelPendente = m => temAnel(m) && m.anel !== 'entregue';
-  const ANEL_ORDEM = { 'falta medida': 0, 'enviar para produção': 1, 'em produção': 2 };
+  const ANEL_ORDEM = { 'falta medida': 0, 'enviar para produção': 1, 'em produção': 2, 'entregue': 3 };
+  let anelFiltro = ''; // '' = pendentes
   const contaFase = f => membros.filter(m => proximoContato(m)?.fase === f).length;
   const prazoTxt = p => p.dias < 0 ? `atrasado há ${-p.dias} ${-p.dias === 1 ? 'dia' : 'dias'}` : p.dias === 0 ? 'vence hoje' : `até ${dataCurta(p.data)}`;
   const ultimoTxt = p => p.ultimo ? `último contato em ${dataCurta(p.ultimo.data)}${p.ultimo.por ? ' por ' + esc(p.ultimo.por.split(' ')[0]) : ''}` : 'nenhum contato registrado';
@@ -3151,14 +3152,21 @@
       }).join('')}</section>`).join('') : '<div class="empty" style="grid-column:1/-1">Nenhum contato pendente</div>';
       return;
     }
-    const l = membros.filter(m => anelPendente(m) && bate(m)).sort((a, b) => (ANEL_ORDEM[a.anel] ?? 0) - (ANEL_ORDEM[b.anel] ?? 0) || ((a.anel_desde || a.entrada || '9') < (b.anel_desde || b.entrada || '9') ? -1 : 1));
-    const fm = l.filter(m => !m.anel || m.anel === 'falta medida').length, en = l.filter(m => m.anel === 'enviar para produção').length, ep = l.filter(m => m.anel === 'em produção').length;
-    $('#mcount').textContent = `Membros sem anel entregue: pegar a medida, mandar produzir e entregar · ${l.length} no total · ${fm} sem medida · ${en} para enviar à produção · ${ep} em produção`;
-    $('#mgrid').innerHTML = l.length ? `<section class="agrp"><h3>Anéis pendentes <span>${l.length}</span></h3>${l.map(m => {
-      const wa = waLink(m.telefone), parado = m.anel_desde && m.anel_desde !== m.entrada ? -diasAte(m.anel_desde) : null, prox = !m.anel || m.anel === 'falta medida' ? 'enviar para produção' : m.anel === 'enviar para produção' ? 'em produção' : 'entregue';
-      return `<div class="arow"><button class="anm" data-open="${m.id}"><b>${esc(m.nome)}</b><span><span class="atp anel">${ANEL[m.anel] || 'Sem status'}</span>${parado !== null ? ` <span class="${parado >= 60 ? 'late' : ''}">${parado === 0 ? 'desde hoje' : `há ${parado} ${parado === 1 ? 'dia' : 'dias'}`}</span>` : ''} · no grupo há ${-diasAte(m.entrada)} dias${m.anel_tamanho ? ' · tamanho ' + esc(m.anel_tamanho) : ''}</span></button>
-        <span class="aact">${wa ? `<a class="abtn" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ''}<button class="abtn pri" data-anel="${m.id}" data-v="${prox}">${prox === 'enviar para produção' ? 'Medida tirada' : prox === 'em produção' ? 'Foi para produção' : 'Entregue'}</button></span></div>`;
-    }).join('')}</section>` : '<div class="empty" style="grid-column:1/-1">Nenhum anel pendente</div>';
+    // Filtro por etapa do anel (25/11/2026): Pendentes (padrão), Falta medida, Enviar para produção, Em produção, Entregue.
+    const etapaAnel = m => !m.anel || m.anel === 'falta medida' ? 'falta medida' : m.anel;
+    const base = membros.filter(m => temAnel(m) && bate(m));
+    const nE = k => base.filter(m => etapaAnel(m) === k).length, nPend = base.filter(anelPendente).length;
+    const l = base.filter(m => anelFiltro ? etapaAnel(m) === anelFiltro : anelPendente(m)).sort((a, b) => (ANEL_ORDEM[etapaAnel(a)] ?? 3) - (ANEL_ORDEM[etapaAnel(b)] ?? 3) || ((a.anel_desde || a.entrada || '9') < (b.anel_desde || b.entrada || '9') ? -1 : 1));
+    $('#mcount').textContent = `Anéis de ativos e veteranos: pegar a medida, mandar produzir e entregar · ${nPend} pendentes · ${nE('falta medida')} sem medida · ${nE('enviar para produção')} para enviar à produção · ${nE('em produção')} em produção · ${nE('entregue')} ${nE('entregue') === 1 ? 'entregue' : 'entregues'}`;
+    const filtro = `<div class="fsub anf" style="grid-column:1/-1;margin:0 0 4px">${[['', 'Pendentes', nPend], ...Object.entries(ANEL).map(([k, t]) => [k, t, nE(k)])].map(([k, t, n]) => `<a href="#" class="${anelFiltro === k ? 'cur' : ''}" data-anf="${k}">${t} ${n}</a>`).join('')}</div>`;
+    const titulo = anelFiltro ? ANEL[anelFiltro] : 'Anéis pendentes';
+    $('#mgrid').innerHTML = filtro + (l.length ? `<section class="agrp"><h3>${titulo} <span>${l.length}</span></h3>${l.map(m => {
+      const wa = waLink(m.telefone), parado = m.anel_desde && m.anel_desde !== m.entrada ? -diasAte(m.anel_desde) : null, e = etapaAnel(m), prox = e === 'falta medida' ? 'enviar para produção' : e === 'enviar para produção' ? 'em produção' : e === 'em produção' ? 'entregue' : null;
+      return `<div class="arow"><button class="anm" data-open="${m.id}"><b>${esc(m.nome)}</b><span><span class="atp anel">${ANEL[e]}</span>${parado !== null ? ` <span class="${parado >= 60 && prox ? 'late' : ''}">${parado === 0 ? 'desde hoje' : `há ${parado} ${parado === 1 ? 'dia' : 'dias'}`}</span>` : ''} · no grupo há ${-diasAte(m.entrada)} dias${m.anel_tamanho ? ' · tamanho ' + esc(m.anel_tamanho) : ''}</span></button>
+        <span class="aact">${wa ? `<a class="abtn" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ''}${prox ? `<button class="abtn pri" data-anel="${m.id}" data-v="${prox}">${prox === 'enviar para produção' ? 'Medida tirada' : prox === 'em produção' ? 'Foi para produção' : 'Entregue'}</button>` : `<button class="abtn" data-open="${m.id}">Abrir ficha</button>`}</span></div>`;
+    }).join('')}</section>` : `<div class="empty" style="grid-column:1/-1">${anelFiltro ? `Ninguém em "${ANEL[anelFiltro]}"` : 'Nenhum anel pendente'}</div>`);
+
+    const anCur = $('#mgrid .anf a.cur'); if (anCur) anCur.parentElement.scrollLeft = anCur.offsetLeft - anCur.parentElement.offsetLeft - 8;
   }
 
   async function registraContato(id, tipo, nota) {
@@ -3172,6 +3180,7 @@
   $('#mgrid').addEventListener('click', e => {
     const cm = e.target.closest('[data-cmlib],[data-cmfim],[data-cmbonus]'); if (cm) { e.stopPropagation(); cmAcao(cm); return; }
     const ch = e.target.closest('[data-chamei]'); if (ch) { e.stopPropagation(); const p = proximoContato(byId(ch.dataset.chamei)); registraContato(ch.dataset.chamei, p ? p.tipo : 'mensal'); return; }
+    const af = e.target.closest('[data-anf]'); if (af) { e.preventDefault(); e.stopPropagation(); anelFiltro = af.dataset.anf; renderMembros(); return; }
     const an = e.target.closest('[data-anel]'); if (an) { e.stopPropagation(); salvaMembro(an.dataset.anel, 'anel', an.dataset.v).then(() => toast(`Anel: ${ANEL[an.dataset.v].toLowerCase()}`)); return; }
     // O link "ficha" da lista de contratos é <a href="#">: sem o preventDefault, a página voltava para o Hoje.
     const op = e.target.closest('[data-open]'); if (op) { e.preventDefault(); e.stopPropagation(); openMembro(op.dataset.open); }
