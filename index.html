@@ -1558,7 +1558,7 @@
     const sub = a => esc(a.sub || a.url.replace(/^https?:\/\//, '').replace(/\/$/, ''));
     $('#links').innerHTML = editAt
       ? atalhos.map(a => `<button data-at="${a.id}"><div><b>${esc(a.titulo)}</b><span>${sub(a)}</span></div>${LAPIS}</button>`).join('') + '<button class="novo" data-at="">+ Novo atalho</button>'
-      : atalhos.map(a => `<a href="${esc(a.url)}" target="_blank" rel="noopener"><div><b>${esc(a.titulo)}</b><span>${sub(a)}</span></div>${SETA}</a>`).join('')
+      : atalhos.map(a => `<a href="${/^https:\/\//i.test(a.url) ? esc(a.url) : '#'}" target="_blank" rel="noopener"><div><b>${esc(a.titulo)}</b><span>${sub(a)}</span></div>${SETA}</a>`).join('')
         || '<button class="novo" data-at="">+ Novo atalho</button>';
   }
   $('#a-edit').addEventListener('click', () => { editAt = !editAt; renderLinks(); });
@@ -3234,7 +3234,7 @@
     const quando = k.status === 'pago' && k.pago_em ? `pago em ${dataBR(k.pago_em.slice(0, 10))}` : k.aceito_em ? `aceito em ${dataBR(k.aceito_em.slice(0, 10))}` : k.preenchido_em ? `preenchido em ${dataBR(k.preenchido_em.slice(0, 10))}` : `criado em ${dataBR(k.criado_em.slice(0, 10))}`;
     return `<div class="arow krow" data-k="${k.id}">
       <div class="anm" style="cursor:default"><b>${esc(k.nome)} <span class="knum">${esc(k.numero)}${k.tipo === 'renovacao' ? ' · renovação' : ''}${k.publico === 'convidado' ? ` · convidado de ${esc(k.convidado_por_nome || '')}, até ${dataBR(kFimConv(k.inicio))}` : ''}${k.publico === 'patrocinio' ? ` · ${esc(COTA[k.cota]?.l || '')}, ${rsM(k.anual, k.moeda)}${k.empresa_exterior ? ', empresa de fora' : ''}${k.cota === 'principal' && k.vagas_membro ? `, ${k.vagas_membro === 1 ? '1 vaga' : k.vagas_membro + ' vagas'} de membro` : ''}` : ''}</span></b>
-        <span>${kPassos(k)} <span class="atp k-${k.status}">${KSTATUS[k.status]}</span> ${quando}${kForma(k) ? ' · ' + kForma(k) : ''}${(() => { const s = kSchedule(k); return s && !s.vista ? ' · ' + kParcTxt(k, s, kProxima(s)) : ''; })()}${comFicha && ficha ? ` · <a href="#" data-open="${ficha.id}">ficha</a>` : ''}</span></div>
+        <span>${kPassos(k)} <span class="atp k-${k.status}">${KSTATUS[k.status]}</span> ${quando}${kForma(k) ? ' · ' + esc(kForma(k)) : ''}${(() => { const s = kSchedule(k); return s && !s.vista ? ' · ' + kParcTxt(k, s, kProxima(s)) : ''; })()}${comFicha && ficha ? ` · <a href="#" data-open="${ficha.id}">ficha</a>` : ''}</span></div>
       <span class="aact">
         ${['enviado', 'preenchido'].includes(k.status) ? `<button class="abtn" data-kcopy="${k.id}">Copiar mensagem</button>` : ''}
         ${(() => { const s = kSchedule(k), px = s && !s.vista ? kProxima(s) : null; return px ? `<button class="abtn${px.dias <= 7 ? ' pri' : ''}" data-kparc="${k.id}">Recebi a ${px.n}ª</button>` : ''; })()}
